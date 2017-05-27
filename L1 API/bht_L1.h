@@ -110,8 +110,8 @@ typedef enum {
 
 typedef enum
 {
-    BHT_L1_A429_PARITY_ODD  = 0,
-    BHT_L1_A429_PARITY_EVEN = 1,
+    BHT_L1_A429_PARITY_ODD  = 1,
+    BHT_L1_A429_PARITY_EVEN = 0,
     BHT_L1_A429_PARITY_NONE = 2,
 }bht_L1_a429_parity_e;
 
@@ -152,8 +152,8 @@ typedef struct
 {
     bht_L0_u32 gather_enable;               /* 0 - disable, 1 - enable */
     bht_L1_a429_recv_mod_e recv_mode;       /* select list mode or sample mode */
-    bht_L0_u8 threshold_count;              /* 0-16 */
-    bht_L0_u8 threshold_time;               /* 0-16, 单位100us */
+    bht_L0_u16 threshold_count;              /* 0-1024 */
+    bht_L0_u16 threshold_time;               /* 单位100us */
 }bht_L1_a429_rx_chan_gather_param_t;
 
 typedef struct

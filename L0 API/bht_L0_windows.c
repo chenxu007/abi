@@ -13,15 +13,19 @@ modification history
 --------------------
 01a,17may17,cx_  add support in windows
 */
-
- 
-#include <bht_L0.h>
-
 #ifdef WINDOWS_OPS
 
-#include <wdc_lib.h>
+#ifdef __cplusplus
+    extern "C" {
+#endif
 
-#define LICENSE_10_2 "6C3CC2CFE89E7AD0424A070D434A6F6DC4950E31.hwacreate"
+#include <wdc_lib.h> 
+
+#include <bht_L0.h>
+
+
+
+#define LICENSE_10_2 "6C3CC2CFE89E7AD0424A070D434A6F6DC4950E1D.BibHong-tech"
 
 /* windows pci device control block */
 typedef struct
@@ -77,7 +81,7 @@ static bht_L0_u32 wd_lib_init(void)
  */
 void bht_L0_msleep(bht_L0_u32 msdelay)
 {
-    WDC_Sleep(1000 * msdelay);
+    WDC_Sleep(1000 * msdelay, WDC_SLEEP_NON_BUSY);
 }
 
 /* Function : bht_L0_map_memory
@@ -104,6 +108,7 @@ bht_L0_u32 bht_L0_map_memory(bht_L0_u32 dev_id, void * arg)
                 DWORD pci_vendor_id = BHT_PCI_VENDOR_ID;
                 DWORD pci_device_id = 0;
                 WDC_PCI_SCAN_RESULT scan_result;
+				win_pci_device_cb_t *pci_device_cb = NULL;
                 
                 if(devices_cb[backplane_type >> 28][board_type >> 20][board_num >> 16] != 0)
                     break;
@@ -120,8 +125,8 @@ bht_L0_u32 bht_L0_map_memory(bht_L0_u32 dev_id, void * arg)
                     result = BHT_ERR_UNSUPPORTED_BOARDTYPE;
                     break;
                 }
-
-                win_pci_device_cb_t *pci_device_cb = (win_pci_device_cb_t *)calloc(1, sizeof(win_pci_device_cb_t));
+                
+				pci_device_cb = (win_pci_device_cb_t *)calloc(1, sizeof(win_pci_device_cb_t));
                 if(NULL == pci_device_cb)
                 {
                     result = BHT_ERR_MEM_ALLOC_FAIL;
@@ -197,7 +202,7 @@ bht_L0_u32 bht_L0_unmap_memory(bht_L0_u32 dev_id)
 bht_L0_u32 bht_L0_read_mem32(bht_L0_u32 dev_id, bht_L0_u32 offset, bht_L0_u32 *data, bht_L0_u32 count)
 {
     bht_L0_u32 result = BHT_SUCCESS;	
-    bht_L0_u32 backplane_type, board_type, board_num, channel_type, idx, temp;
+    bht_L0_u32 backplane_type, board_type, board_num, channel_type, idx;
     
     backplane_type = dev_id & 0xF0000000;
 	board_type     = dev_id & 0x0FF00000;
@@ -250,7 +255,7 @@ bht_L0_u32 bht_L0_write_mem16(bht_L0_u32 dev_id, bht_L0_u32 offset, bht_L0_u16 *
 bht_L0_u32 bht_L0_write_mem32(bht_L0_u32 dev_id, bht_L0_u32 offset, bht_L0_u32 *data, bht_L0_u32 count)
 {
     bht_L0_u32 result = BHT_SUCCESS;	
-    bht_L0_u32 backplane_type, board_type, board_num, channel_type, idx, temp;
+    bht_L0_u32 backplane_type, board_type, board_num, channel_type, idx;
     
     backplane_type = dev_id & 0xF0000000;
 	board_type     = dev_id & 0x0FF00000;
@@ -288,7 +293,7 @@ bht_L0_u32 bht_L0_write_mem32(bht_L0_u32 dev_id, bht_L0_u32 offset, bht_L0_u32 *
 bht_L0_u32 bht_L0_read_setupmem32(bht_L0_u32 dev_id, bht_L0_u32 offset, bht_L0_u32 *data, bht_L0_u32 count)
 {
     bht_L0_u32 result = BHT_SUCCESS;	
-    bht_L0_u32 backplane_type, board_type, board_num, channel_type, idx, temp;
+    bht_L0_u32 backplane_type, board_type, board_num, channel_type, idx;
     
     backplane_type = dev_id & 0xF0000000;
 	board_type     = dev_id & 0x0FF00000;
@@ -319,12 +324,14 @@ bht_L0_u32 bht_L0_read_setupmem32(bht_L0_u32 dev_id, bht_L0_u32 offset, bht_L0_u
         default:
             result = BHT_ERR_UNSUPPORTED_BACKPLANE;
     }
+
+	return result;
 }
 
 bht_L0_u32 bht_L0_write_setupmem32(bht_L0_u32 dev_id, bht_L0_u32 offset, bht_L0_u32 *data, bht_L0_u32 count)
 {
     bht_L0_u32 result = BHT_SUCCESS;	
-    bht_L0_u32 backplane_type, board_type, board_num, channel_type, idx, temp;
+    bht_L0_u32 backplane_type, board_type, board_num, channel_type, idx;
     
     backplane_type = dev_id & 0xF0000000;
 	board_type     = dev_id & 0x0FF00000;
@@ -355,12 +362,14 @@ bht_L0_u32 bht_L0_write_setupmem32(bht_L0_u32 dev_id, bht_L0_u32 offset, bht_L0_
         default:
             result = BHT_ERR_UNSUPPORTED_BACKPLANE;
     }
+
+	return result;
 }
 
 bht_L0_u32 bht_L0_attach_inthandler(bht_L0_u32 dev_id, bht_L0_u32 chan_regoffset, BHT_L0_USER_ISRFUNC isr, void * arg)
 {
     bht_L0_u32 result = BHT_SUCCESS;	
-    bht_L0_u32 backplane_type, board_type, board_num, channel_type, idx, temp;
+    bht_L0_u32 backplane_type, board_type, board_num;
     
     backplane_type = dev_id & 0xF0000000;
 	board_type     = dev_id & 0x0FF00000;
@@ -373,14 +382,8 @@ bht_L0_u32 bht_L0_attach_inthandler(bht_L0_u32 dev_id, bht_L0_u32 chan_regoffset
             {
                 win_pci_device_cb_t * pci_device_cb = (win_pci_device_cb_t *)\
                     devices_cb[backplane_type >> 28][board_type >> 20][board_num >> 16];
+				
 
-//                WD_TRANSFER* pTrans = (WD_TRANSFER*) calloc(1, sizeof(WD_TRANSFER));  
-//                pTrans.dwPort = pAddrDesc->kptAddr + INTCSR;
-//                pTrans.cmdTrans = WM_DWORD;
-//                pTrans[0].Data.Dword = 0x00000000;
-//                WDC_IntEnable(pci_device_cb->wd_handle, WD_TRANSFER *pTransCmds,
-//    DWORD dwNumCmds, DWORD dwOptions, INT_HANDLER funcIntHandler,
-//    PVOID pData, BOOL fUseKP);
             }
             else
                 result = BHT_ERR_DEV_NOT_INITED;
@@ -400,4 +403,8 @@ bht_L0_u32 bht_L0_detach_inthandler(bht_L0_u32 dev_id)
     return BHT_FAILURE;
 }
 
+#endif
+
+#ifdef __cplusplus
+	}
 #endif

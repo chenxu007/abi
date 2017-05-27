@@ -216,6 +216,7 @@ typedef enum
 
 typedef void (*BHT_L0_USER_ISRFUNC)(void*);
 
+#ifndef _BITS_H_
 enum 
 {
     BIT0  = 0x00000001, BIT1  = 0x00000002, BIT2  = 0x00000004, BIT3  = 0x00000008,
@@ -228,6 +229,7 @@ enum
     BIT28 = 0x10000000, BIT29 = 0x20000000, BIT30 = 0x40000000,
     BIT31 = 0x80000000
 };
+#endif
 
 extern void 
 bht_L0_msleep(bht_L0_u32 msdelay);
