@@ -30,12 +30,12 @@ extern "C" {
 #ifdef WINDOWS_BIT64
 #define FPGA_UPDATE_FILE_PATH           "c:\\Windows\\SysWOW64\\"
 #else
-#define FPGA_UPDATE_FILE_PATH           "c:\\Windows\\System32\\"
+#define FPGA_UPDATE_FILE_PATH           "W:\\"
 #endif
 #else
 #define FPGA_UPDATE_FILE_PATH           "/tffs0/"
 #endif
-#define FPGA_UPDATE_FILE_NAME           "A429_FPGA_1_0.bin"
+#define FPGA_UPDATE_FILE_NAME           "A429_FPGA.bin"
 
 const char * bht_L1_error_to_string(bht_L0_u32 err_num)
 {

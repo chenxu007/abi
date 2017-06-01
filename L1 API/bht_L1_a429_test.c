@@ -87,21 +87,21 @@ static DWORD WINAPI a429_channel_recv_thread(const void * arg)
 						break;
 					}
 					//channel staus
-check_status:		if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_STATUS_CHANNEL_RECV, &chan_status, 1)))
-					{
-						printf("%s read channel status failed, error info: %s ,result = %d\n", \
-							__FUNCTION__, bht_L1_error_to_string(result), result);
-						break;
-					}
+//check_status:		if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_STATUS_CHANNEL_RECV, &chan_status, 1)))
+//					{
+//						printf("%s read channel status failed, error info: %s ,result = %d\n", \
+//							__FUNCTION__, bht_L1_error_to_string(result), result);
+//						break;
+//					}
 					//if not empty, read it
-					if(chan_status & BIT0)
+//					if(chan_status & BIT0)
 					{
 						memset((void*)&rxp, 0x00, sizeof(rxp));
 						bht_L0_read_mem32(dev_id, BHT_A429_WORD_RD_CHANNEL_FREASH, &rxp.data, 1);
-						bht_L0_read_mem32(dev_id, BHT_A429_WORD_TIMR_RD_CHANNEL, &rxp.timestamp, 1);
-						printf("%s recv data : %08x , timestamp : %08x\n", rxp.data, rxp.timestamp);
+//						bht_L0_read_mem32(dev_id, BHT_A429_WORD_TIMR_RD_CHANNEL, &rxp.timestamp, 1);
+						printf("%s recv data : %08x , timestamp : %08x\n", __FUNCTION__, rxp.data, rxp.timestamp);
 
-						goto check_status;
+//						goto check_status;
 					}
 
 				}
@@ -121,7 +121,7 @@ int main (void)
 	bht_L0_u32 value, idx;
 	bht_L1_a429_chan_comm_param_t comm_param;
 	bht_L1_a429_rx_chan_gather_param_t gather_param;
-	a429_send_thread_arg_t arg_tx = {DEVID, 1, 100	};
+	a429_send_thread_arg_t arg_tx = {DEVID, 1, 3};
 	a429_recv_thread_arg_t arg_rx = {DEVID, 1};
 #ifdef WINDOWS_OPS
 	DWORD dwThreadId[2] = {0};
@@ -240,22 +240,6 @@ int main (void)
 		printf("CreateThread failed\n");
 		goto test_error;
 	}
-	
-//	bht_L0_msleep(10);
-//	if(BHT_SUCCESS != (result = bht_L0_read_mem32(DEVID, BHT_A429_INTR_CHANNEL_VECTOR, &value, 1)))
-//	{
-//		printf("%s read channel vector failed, error info: %s ,result = %d\n", \
-//			__FUNCTION__, bht_L1_error_to_string(result), result);
-//		goto test_error;
-//	}
-//    printf("channel interrupt status 0x%08x\n", value);
-
-//	if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_send(DEVID, 1, 0x12345678)))
-//	{
-//		printf("tx_chan_send failed, error info : %s, result = %d\n", \
-//			bht_L1_error_to_string(result), result);
-//		goto test_error;
-//	}
 
 	//create receive thread
     if(NULL == (hThread[0] = CreateThread(NULL, 10000* 1024, (LPTHREAD_START_ROUTINE)a429_channel_recv_thread, &arg_rx, 0, &dwThreadId[0])))
@@ -263,63 +247,7 @@ int main (void)
 		printf("CreateThread failed\n");
 		goto test_error;
 	}
-	// check receive interrupt
-//	idx = 2000;
-//	while(idx--)
-//	{
-//		bht_L0_msleep(1);
-//		if(BHT_SUCCESS != (result = bht_L0_read_mem32(DEVID, BHT_A429_INTR_CHANNEL_VECTOR, &value, 1)))
-//		{
-//			printf("%s read channel vector failed, error info: %s ,result = %d\n", \
-//				__FUNCTION__, bht_L1_error_to_string(result), result);
-//			goto test_error;
-//		}
-//		if(0 != value)
-//			break;
-//	}
 
-//    printf("channel interrupt status 0x%08x\n", value);
-//	if(0 != value)
-//	{
-//		for(idx = 16; idx < 32; idx++)
-//		{
-//			if(value & (0x01 << idx))
-//			{
-//				bht_L0_u32 chan_status;
-//				bht_L1_a429_rxp_t rxp;
-//				//choose channel idx
-//check_status:	if(BHT_SUCCESS != (result = bht_L0_write_mem32(DEVID, BHT_A429_CHANNEL_NUM_RECV, &idx, 1)))
-//				{
-//					printf("%s write channel choose failed, error info: %s ,result = %d\n", \
-//						__FUNCTION__, bht_L1_error_to_string(result), result);
-//					break;
-//				}
-//				//channel status
-//				if(BHT_SUCCESS != (result = bht_L0_read_mem32(DEVID, BHT_A429_STATUS_CHANNEL_RECV, &chan_status, 1)))
-//				{
-//					printf("%s read channel status failed, error info: %s ,result = %d\n", \
-//						__FUNCTION__, bht_L1_error_to_string(result), result);
-//					break;
-//				}
-//				//if not empty, read it
-//				if(chan_status & BIT0)
-//				{
-//					printf("chan_status = 0x%08x\n", chan_status);
-//					memset((void*)&rxp, 0x00, sizeof(rxp));
-//					bht_L0_read_mem32(DEVID, BHT_A429_WORD_RD_CHANNEL_FREASH, &rxp.data, 1);
-//					bht_L0_read_mem32(DEVID, BHT_A429_WORD_TIMR_RD_CHANNEL, &rxp.timestamp, 1);
-//					printf("%s channel %d recv data : %08x , timestamp : %08x\n",__FUNCTION__, idx, rxp.data, rxp.timestamp);
-
-//					goto check_status;
-//				}
-
-//			}
-//		}
-//	}
-    
-
-	while(1)
-		Sleep(100);
 	//Wait until all threads have terminated.
 	WaitForMultipleObjects(2,hThread,TRUE,INFINITE);
 

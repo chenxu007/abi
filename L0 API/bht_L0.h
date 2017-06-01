@@ -186,6 +186,8 @@ extern "C" {
 #define BHT_ERR_KP_OPEN_FAIL     		19		/*!< \brief Kernel Plug-In Open failure */
 #define BHT_ERR_WINDRIVER_INIT_FAIL     20		/*!< \brief WinDriver lib init failure */
 #define BHT_ERR_MEM_ALLOC_FAIL          21		/*!< \brief malloc failure */
+#define BHT_ERR_DRIVER_INT_ATTACH_FAIL  22
+#define BHT_ERR_DRIVER_INT_DETACH_FAIL  23
 
 #ifndef NULL
 #define NULL 0UL

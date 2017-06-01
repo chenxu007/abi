@@ -1,6 +1,4 @@
-#include <bht_pci.h>
-
-#ifdef WINDOWS_OPS
+#ifndef WINDOWS_OPS
 
 
 
