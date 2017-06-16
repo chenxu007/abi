@@ -201,12 +201,17 @@ extern "C" {
 #define ERROR -1
 #endif
 
+#define BHT_FALSE                   0
+#define BHT_TRUE                    1
+
+#define BHT_WAITFOREVER             (-1)
 
 typedef unsigned char    bht_L0_u8;
 typedef unsigned short   bht_L0_u16;
 typedef unsigned int     bht_L0_u32;
 typedef signed int       bht_L0_s32;
 typedef unsigned long    bht_L0_u64;
+typedef signed int       bht_L0_sem;
 
 typedef enum
 {
@@ -292,6 +297,15 @@ bht_L0_attach_inthandler(bht_L0_u32 dev_id,
 
 extern bht_L0_u32 
 bht_L0_detach_inthandler(bht_L0_u32 dev_id);
+
+extern bht_L0_sem
+bht_L0_semc_create(bht_L0_u32 initial_cnt, bht_L0_u32 max_cnt);
+
+extern bht_L0_u32 
+bht_L0_sem_take(bht_L0_sem sem, bht_L0_s32 timeout_ms);
+
+extern bht_L0_u32
+bht_L0_sem_give(bht_L0_sem sem);
 
 
 #ifdef __cplusplus

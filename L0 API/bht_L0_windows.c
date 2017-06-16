@@ -19,7 +19,8 @@ modification history
     extern "C" {
 #endif
 
-#include <wdc_lib.h> 
+#include <wdc_lib.h>
+#include <wdc_defs.h>
 
 #include <bht_L0.h>
 
@@ -134,7 +135,7 @@ bht_L0_u32 bht_L0_map_memory(bht_L0_u32 dev_id, void * arg)
                 }
 
                 if(WD_STATUS_SUCCESS != WDC_PciScanDevices(pci_vendor_id, pci_device_id, &scan_result))
-                    result = BHT_ERR_UNSUPPORTED_BOARDTYPE;
+                    result = BHT_ERR_NO_DEVICE;
                 else if(scan_result.dwNumDevices < ((board_num >> 16) + 1))
                     result = BHT_ERR_NO_DEVICE;
                 else
@@ -382,9 +383,43 @@ bht_L0_u32 bht_L0_attach_inthandler(bht_L0_u32 dev_id, bht_L0_u32 chan_regoffset
             {
                 win_pci_device_cb_t * pci_device_cb = (win_pci_device_cb_t *)\
                     devices_cb[backplane_type >> 28][board_type >> 20][board_num >> 16];
-				if(WD_STATUS_SUCCESS != WDC_IntEnable(pci_device_cb->wd_handle, NULL, 0, 0, \
-                    (INT_HANDLER)isr, (PVOID)pci_device_cb->wd_handle, FALSE))
+                WD_TRANSFER*pTrans = (WD_TRANSFER*) calloc(3, sizeof(WD_TRANSFER));
+                WDC_DEVICE *dev = (WDC_DEVICE *)pci_device_cb->wd_handle;
+#ifndef PLX9056_INTCSR
+#define PLX9056_INTCSR 0x68
+#endif
+#if 1 
+#if 1
+                (pTrans)->dwPort = (dev->pAddrDesc+2)->kptAddr + 0x28;
+                (pTrans)->cmdTrans = RM_DWORD;
+                
+                //(pTrans+1)->dwPort = (dev->pAddrDesc+2)->kptAddr + 0x28;
+                (pTrans+1)->cmdTrans = CMD_MASK;
+                (pTrans+1)->Data.Dword = BIT4;
+                
+                (pTrans+2)->dwPort = (dev->pAddrDesc+2)->kptAddr + 0x24;
+                (pTrans+2)->cmdTrans = WM_DWORD;
+                (pTrans+2)->Data.Dword = BIT0;
+#else
+                (pTrans)->dwPort = dev->pAddrDesc->kptAddr + PLX9056_INTCSR;
+                (pTrans)->cmdTrans = RM_DWORD;
+                
+                (pTrans+1)->dwPort = dev->pAddrDesc->kptAddr + PLX9056_INTCSR;
+                (pTrans+1)->cmdTrans = CMD_MASK;
+                (pTrans+1)->Data.Dword = BIT15;
+                
+                (pTrans+2)->dwPort = dev->pAddrDesc->kptAddr + PLX9056_INTCSR;
+                (pTrans+2)->cmdTrans = WM_DWORD;
+                (pTrans+2)->Data.Dword = 0x00000000;
+#endif        
+				if(WD_STATUS_SUCCESS != WDC_IntEnable(pci_device_cb->wd_handle, pTrans, 3, 0, \
+                    (INT_HANDLER)isr, (PVOID)arg, FALSE))
                     result = BHT_ERR_DRIVER_INT_ATTACH_FAIL;
+#else
+				if(WD_STATUS_SUCCESS != WDC_IntEnable(pci_device_cb->wd_handle, NULL, 0, 0, \
+                    (INT_HANDLER)isr, (PVOID)arg, FALSE))
+                    result = BHT_ERR_DRIVER_INT_ATTACH_FAIL;
+#endif
             }
             else
                 result = BHT_ERR_DEV_NOT_INITED;
@@ -423,6 +458,50 @@ bht_L0_u32 bht_L0_detach_inthandler(bht_L0_u32 dev_id)
     }
     
     return result;
+}
+
+bht_L0_sem
+bht_L0_semc_create(bht_L0_u32 initial_cnt, bht_L0_u32 max_cnt)
+{
+    HANDLE semc;
+
+    semc = CreateSemaphore(NULL, initial_cnt, max_cnt, NULL);
+
+    return (bht_L0_sem)semc;
+}
+
+bht_L0_u32 
+bht_L0_sem_take(bht_L0_sem sem, bht_L0_s32 timeout_ms)
+{
+    DWORD ret;
+    DWORD wtimeout;
+    HANDLE wsem = (HANDLE)sem;
+
+    if(BHT_WAITFOREVER == timeout_ms)
+        wtimeout = INFINITE;
+    else
+        wtimeout = (DWORD)timeout_ms;
+        
+    ret = WaitForSingleObject(wsem, wtimeout);
+
+    if(ret == 0)
+        return BHT_SUCCESS;
+    else
+        return BHT_FAILURE;
+}
+
+bht_L0_u32 
+bht_L0_sem_give(bht_L0_sem sem)
+{
+    DWORD ret;
+    HANDLE wsem = (HANDLE)sem;
+
+    ret = (DWORD)ReleaseSemaphore(wsem, 1, NULL);
+
+    if(BHT_TRUE == ret)
+        return BHT_SUCCESS;
+    else
+        return BHT_FAILURE;
 }
 
 #endif

@@ -54,8 +54,8 @@ extern "C" {
 
 typedef enum
 {
-    BHT_L1_OPT_NOWAIT = 0, 
-    BHT_L1_OPT_WAIT_FOREVER = 1
+    BHT_L1_WAIT_FOREVER = -1,
+    BHT_L1_NOWAIT = 0
 };
 
 typedef enum
@@ -103,9 +103,11 @@ typedef enum
 }bht_L1_a429_chan_work_mode_e;
 
 typedef enum {
+   BHT_L1_A429_BAUD_5K = 5000, 
     BHT_L1_A429_BAUD_12_5K = 12500,
-    BHT_L1_A429_BAUD_50K = 50000,
-    BHT_L1_A429_BAUD_100K = 100000
+    BHT_L1_A429_BAUD_100K = 100000,
+	BHT_L1_A429_BAUD_150K = 150000,
+    BHT_L1_A429_BAUD_200K = 200000
 }bht_L1_a429_baud_rate_e;
 
 typedef enum
@@ -387,7 +389,8 @@ bht_L1_a429_rx_chan_mib_get(bht_L0_u32 dev_id,
  * @param max_rxp, the max number of data the rxp_buf can store
  * @param rxp_num, if receive success, this pointer will store 
     a number that how many data received
- * @param opt, opt can be BHT_L1_OPT_NOWAIT or BHT_L1_OPT_WAIT_FOREVER
+ * @param timeout_ms, opt can be BHT_L1_NOWAIT, BHT_L1_WAIT_FOREVER 
+    or the miliseconds you can wait
  * return BHT_SUCCESS or other error number.
  */         
 extern bht_L0_u32 
@@ -396,7 +399,7 @@ bht_L1_a429_rx_chan_recv(bht_L0_u32 dev_id,
         bht_L1_a429_rxp_t *rxp_buf, 
         bht_L0_u32 max_rxp, 
         bht_L0_u32 *rxp_num, 
-        bht_L0_u32 opt);
+        bht_L0_s32 timeout_ms);
 
 /* 1553B */
 

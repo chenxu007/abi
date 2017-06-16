@@ -13,17 +13,32 @@ modification history
 --------------------
 01a,17may18,cx_  add file
 */
-//#ifdef __cplusplus
-//extern "C" {
-//#endif
 
 #include <bht_L0.h>
 #include <bht_L1.h>
 #include <bht_L1_a429.h>
+#include <bht_L1_plx9056.h>
+#include <bht_L1_ring.h>
 #include <assert.h>
+#include <stdarg.h>
 
 #define BHT_A429_DEVICE_MAX      16
 #define BHT_A429_CHANNEL_MAX     16
+#define A429_RXP_BUF_MAX         1024
+
+#define A429_DEBUG 
+#ifdef A429_DEBUG
+#define DEBUG(x, ...)\
+do\
+{\
+    va_list ap;\
+    va_start(ap, x);\
+    (void)printf(x, ap);\
+    va_end(ap);\
+}while(0);
+#else
+#define DEBUG(x, ...)
+#endif
 
 typedef struct
 {
@@ -49,7 +64,31 @@ typedef struct
     a429_rx_chan_param_t rx_chan_param[BHT_A429_CHANNEL_MAX];
 }a429_device_param_t;
 
+typedef struct
+{
+    bht_L0_sem semc;
+    struct ring_buf rxp_ring_buf;
+    bht_L1_a429_rxp_t rxp_buf[A429_RXP_BUF_MAX];
+}a429_chan_data_t;
+
+//typedef struct
+//{
+//    bht_L0_u32 board_num;
+//    struct ring_buf rxp_ring_buf;
+//    a429_chan_data_t chan_data[BHT_A429_CHANNEL_MAX];
+//}a429_device_data_t;
+
 static a429_device_param_t a429_device_param[BHT_A429_DEVICE_MAX];
+/* store rx channel receive data */
+static a429_chan_data_t a429_chan_data[BHT_A429_DEVICE_MAX][BHT_A429_CHANNEL_MAX];
+
+bht_L0_u32  int_count = 0;
+
+static bht_L0_u32 
+a429_interrupt_enable(bht_L0_u32 dev_id);
+
+static bht_L0_u32 
+a429_interrupt_disable(bht_L0_u32 dev_id);
 
 extern bht_L0_u32 bht_L1_device_softreset(bht_L0_u32);
 
@@ -90,7 +129,7 @@ a429_chan_cfg_reg_generate(bht_L1_chan_type_e chan_type,
 /* a429 general*/
 
 static bht_L0_u32 
-bht_L1_a429_mib_clearall(bht_L0_u32 dev_id)
+a429_mib_clearall(bht_L0_u32 dev_id)
 {
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_u32 value;
@@ -111,7 +150,7 @@ bht_L1_a429_mib_clearall(bht_L0_u32 dev_id)
  * @param chan_num 1 - 16
  */
 static bht_L0_u32 
-bht_L1_a429_mib_clear(bht_L0_u32 dev_id, 
+a429_mib_clear(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num, 
         bht_L1_chan_type_e chan_type)
 {
@@ -143,7 +182,7 @@ bht_L1_a429_mib_clear(bht_L0_u32 dev_id,
  * @param chan_num 1 - 16
  */
 static bht_L0_u32 
-bht_L1_a429_mib_get(bht_L0_u32 dev_id, 
+a429_mib_get(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num, 
         bht_L1_chan_type_e chan_type, 
         bht_L1_a429_mib_data_t *mib_data)
@@ -166,36 +205,292 @@ bht_L1_a429_mib_get(bht_L0_u32 dev_id,
     return result;
 }
 
-bht_L0_u32 
-bht_L1_a429_default_init(bht_L0_u32 dev_id)
+int isr_count = 0;
+int isr_vecter_idle_err_num = 0;
+int isr_rdwr_err_num = 0;
+int isr_ring_err_num = 0;
+int isr_sem_err_num = 0;
+static int isr_flag = 0;
+#if 1
+static void * 
+a429_isr(void *arg)
 {
-    bht_L0_u32 board_num, chan_num;
-    bht_L0_u32 result = BHT_SUCCESS;    
+    bht_L0_u32 result;
+    bht_L0_u32 value;
+    const bht_L0_u32 dev_id = (bht_L0_u32) arg;
+    const bht_L0_u32 board_num = (dev_id & 0x000F0000) >> 16;    
+    bht_L0_u32 idx;
+	bht_L0_u32 int_clear_flag = 0;
+
+    isr_count++;
     
-    /* reset a429 device */
-    if(BHT_SUCCESS != (result = bht_L1_device_softreset(dev_id)))
-        return result;
-
-    /* clear MIB */
-    result = bht_L1_a429_mib_clearall(dev_id);
-
-    /* record loop and slope register default stat */
-    for(board_num = 0; board_num < BHT_A429_DEVICE_MAX; board_num++)
+//    if(BHT_SUCCESS != bht_L0_read_setupmem32(dev_id, PLX9056_INTCSR, &value, 1))
+//    {
+//        isr_rdwr_err_num++;
+//        return NULL;
+//    }
+//    
+//    if(BIT15 & value)
     {
-        for(chan_num = 0; chan_num < BHT_A429_CHANNEL_MAX; chan_num++)
+//        value = BIT0;
+//        if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_INTR_CLR, &value, 1)))
+//        {
+//            isr_rdwr_err_num++;
+//            return NULL;
+//        }
+
+        if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_INTR_CHANNEL_VECTOR, &value, 1)))
+    	{
+    		isr_rdwr_err_num++;
+    		goto isr_end;
+    	}
+        if(0 == value)
+    	{
+    		isr_vecter_idle_err_num++;
+            goto isr_end;
+    	}
+
+    	for(idx = 16; idx < 32; idx++)
+    	{
+    		if(value & (0x01 << idx))
+    		{
+    			bht_L1_a429_rxp_t rxp;
+                struct ring_buf * r = &a429_chan_data[board_num][idx - 16].rxp_ring_buf;
+                const bht_L0_sem semc = a429_chan_data[board_num][idx - 16].semc;
+                
+    			//choose channel idx
+    			if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CHANNEL_NUM_RECV, &idx, 1)))
+    			{
+    				printf("%s write channel choose failed, error info: %s ,result = %d\n", \
+    					__FUNCTION__, bht_L1_error_to_string(result), result);
+    				isr_rdwr_err_num++;
+    				goto isr_end;
+    			}
+                if(BHT_L1_A429_RECV_MODE_SAMPLE == a429_device_param[board_num].rx_chan_param[idx - 16].gather_param.recv_mode)
+                {
+                    if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_WORD_RD_CHANNEL_TIMESTAMP, &rxp.timestamp, 1)))
+    				{
+    					isr_rdwr_err_num++;
+                        goto isr_end;
+    				}
+                    if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_WORD_RD_CHANNEL_FREASH, &rxp.data, 1)))
+    				{
+    					isr_rdwr_err_num++;
+                        goto isr_end;
+    				}
+                    if(NULL == ring_buf_put(r, (unsigned char*)&rxp))
+    				{
+    					isr_ring_err_num++;
+                        goto isr_end;
+    				}
+
+                    if(BHT_SUCCESS != bht_L0_sem_give(semc))
+    				{
+    					isr_sem_err_num++;
+    					goto isr_end;
+    				}
+
+                    int_count ++;
+    //                printf("%s int_count = %d, idx = %d\n", __FUNCTION__, int_count, idx);
+                }
+                else
+    			{
+                    if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_STATUS_CHANNEL_RECV, &value, 1)))
+                        goto isr_end;
+                    if((value &0x01) == 0)
+                    {
+                        bht_L0_u32 count = value >> 16;
+
+                        while(count--)
+                        {
+                            if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_WORD_RD_CHANNEL_TIMESTAMP, &rxp.timestamp, 1)))
+                                goto isr_end;
+                            if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_WORD_RD_CHANNEL_FREASH, &rxp.data, 1)))
+                                goto isr_end;
+                            if(NULL == ring_buf_put(r, (unsigned char*)&rxp))
+                                goto isr_end;
+                            int_count ++;
+                            bht_L0_sem_give(semc);
+                        }
+                    }
+    			}
+    		}
+    	}
+
+isr_end: 
+
+//        value = BIT8 | BIT11 | BIT16 | BIT18 | BIT19;
+//        if(BHT_SUCCESS != (result = bht_L0_write_setupmem32(dev_id, PLX9056_INTCSR, &value, 1)))
+//        {
+//            isr_rdwr_err_num++;
+//            return NULL;
+//        }
+    
+        value = BIT0;
+        if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_INTR_EN, &value, 1)))
         {
-            /* send channel, slope default is 1.5us */
-            a429_device_param[board_num].tx_chan_param[chan_num].slope = BHT_L1_A429_SLOPE_1_5_US;
-            /* default not enable */
-            a429_device_param[board_num].tx_chan_param[chan_num].loop_enable = BHT_L1_OPT_DISABLE;
+            isr_rdwr_err_num++;
+            return NULL;
         }
     }
+
+	return NULL;
+}
+#else
+static void* 
+a429_isr(void *arg)
+{
+    bht_L0_u32 result;
+    bht_L0_u32 value;
+    const bht_L0_u32 dev_id = (bht_L0_u32) arg;
+    const bht_L0_u32 board_num = (dev_id & 0x000F0000) >> 16;    
+    bht_L0_u32 idx;
+	bht_L0_u32 int_clear_flag = 0;
+
+	if(isr_flag)
+		goto isr_end;
+
+	isr_flag = 1;
+	/*disable interrupt */
+    a429_interrupt_disable(dev_id);
+	int_clear_flag = 1;
+
+	isr_count++;
+#if 1
+	if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_INTR_CHANNEL_VECTOR, &value, 1)))
+	{
+		isr_rdwr_err_num++;
+		goto isr_end;
+	}
+    if(0 == value)
+	{
+		isr_vecter_idle_err_num++;
+        goto isr_end;
+	}
+
+	for(idx = 16; idx < 32; idx++)
+	{
+		if(value & (0x01 << idx))
+		{
+			bht_L1_a429_rxp_t rxp;
+            struct ring_buf * r = &a429_chan_data[board_num][idx - 16].rxp_ring_buf;
+            const bht_L0_sem semc = a429_chan_data[board_num][idx - 16].semc;
+            
+			//choose channel idx
+			if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CHANNEL_NUM_RECV, &idx, 1)))
+			{
+				printf("%s write channel choose failed, error info: %s ,result = %d\n", \
+					__FUNCTION__, bht_L1_error_to_string(result), result);
+				isr_rdwr_err_num++;
+				goto isr_end;
+			}
+            if(BHT_L1_A429_RECV_MODE_SAMPLE == a429_device_param[board_num].rx_chan_param[idx - 16].gather_param.recv_mode)
+            {
+                if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_WORD_RD_CHANNEL_TIMESTAMP, &rxp.timestamp, 1)))
+				{
+					isr_rdwr_err_num++;
+                    goto isr_end;
+				}
+                if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_WORD_RD_CHANNEL_FREASH, &rxp.data, 1)))
+				{
+					isr_rdwr_err_num++;
+                    goto isr_end;
+				}
+                if(NULL == ring_buf_put(r, (unsigned char*)&rxp))
+				{
+					isr_ring_err_num++;
+                    goto isr_end;
+				}
+
+                if(BHT_SUCCESS != bht_L0_sem_give(semc))
+				{
+					isr_sem_err_num++;
+					goto isr_end;
+				}
+
+                int_count ++;
+//                printf("%s int_count = %d, idx = %d\n", __FUNCTION__, int_count, idx);
+            }
+            else
+			{
+                if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_STATUS_CHANNEL_RECV, &value, 1)))
+                    goto isr_end;
+                if((value &0x01) == 0)
+                {
+                    bht_L0_u32 count = value >> 16;
+
+                    while(count--)
+                    {
+                        if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_WORD_RD_CHANNEL_TIMESTAMP, &rxp.timestamp, 1)))
+                            goto isr_end;
+                        if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_WORD_RD_CHANNEL_FREASH, &rxp.data, 1)))
+                            goto isr_end;
+                        if(NULL == ring_buf_put(r, (unsigned char*)&rxp))
+                            goto isr_end;
+                        int_count ++;
+                        bht_L0_sem_give(semc);
+                    }
+                }
+			}
+		}
+	}
+#endif     
+isr_end:
+#if 1
+	if(isr_flag)
+	{
+		a429_interrupt_enable(dev_id);
+		isr_flag = 0;
+	}
+#endif
+	return NULL;
+}
+#endif
+static bht_L0_u32 
+a429_interrupt_enable(bht_L0_u32 dev_id)
+{
+    bht_L0_u32 result = BHT_SUCCESS;
+    bht_L0_u32 value;
+    
+    /* clear 429 pci interrupt status */
+    //value = BIT0 | BIT4;
+    //if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_INTR_CLR, &value, 1)))
+    //    return result;
+
+    /* enable 429 device interrupt */
+    value = BIT8 | BIT11 | BIT16 | BIT18 | BIT19;
+    if(BHT_SUCCESS != (result = bht_L0_write_setupmem32(dev_id, PLX9056_INTCSR, &value, 1)))
+        return result;
+
+    /* enable 429 pci interrupt */
+    value = BIT0;
+    if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_INTR_EN, &value, 1)))
+        return result;
 
     return result;
 }
 
 static bht_L0_u32 
-bht_L1_a429_chan_comm_param(bht_L0_u32 dev_id, 
+a429_interrupt_disable(bht_L0_u32 dev_id)
+{
+    bht_L0_u32 result = BHT_SUCCESS;
+    bht_L0_u32 value;
+    
+    /* clear 429 pci interrupt status */
+    value = BIT0;
+    if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_INTR_CLR, &value, 1)))
+        return result;
+
+    /* disable 429 pci interrupt */
+//    value = 0;
+//    if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_INTR_EN, &value, 1)))
+//        return result;
+
+    return result;
+}
+
+static bht_L0_u32 
+a429_chan_comm_param(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num,
         bht_L1_chan_type_e chan_type,
         bht_L1_a429_chan_comm_param_t *comm_param, 
@@ -275,12 +570,73 @@ bht_L1_a429_chan_comm_param(bht_L0_u32 dev_id,
     return result;
 }
 
+//bht_L0_u32
+//bht_L1_a429_chan_add(bht_L0_u32 dev_id, bht_L0_u32 chan_num, bht_L1_chan_type_e chan_type)
+//{
+//    bht_L0_u32 board_num = (dev_id & 0x000F0000) >> 16;
+
+//    if((chan_num > 16) | (chan_num < 1))
+//        return BHT_ERR_INVALID_CHANNEL_NUM;
+
+//    if(BHT_L1_CHAN_TYPE_RX == chan_type)
+//    {
+//        a429_data_u * a429_data = (a429_data_u *)malloc(sizeof(a429_data_u));
+
+//        if(NULL == a429_data)
+//            return BHT_FAILURE;
+//        
+//        a429_device_data[board_num].rx_data[chan_num - 1] = a429_data;
+//    }
+//}
+
+bht_L0_u32 
+bht_L1_a429_default_init(bht_L0_u32 dev_id)
+{
+    bht_L0_u32 board_num, chan_num;
+    bht_L0_u32 result = BHT_SUCCESS;
+    bht_L0_u32 value;
+
+    board_num = (dev_id & 0x000F0000) >> 16;    
+    
+    /* reset a429 device */
+    if(BHT_SUCCESS != (result = bht_L1_device_softreset(dev_id)))
+        return result;
+
+    /* clear MIB */
+    result = a429_mib_clearall(dev_id);
+
+    /* record loop and slope register default stat */
+    for(chan_num = 0; chan_num < BHT_A429_CHANNEL_MAX; chan_num++)
+    {
+        bht_L0_sem semc;
+        /* send channel, slope default is 1.5us */
+        a429_device_param[board_num].tx_chan_param[chan_num].slope = BHT_L1_A429_SLOPE_1_5_US;
+        /* default not enable */
+        a429_device_param[board_num].tx_chan_param[chan_num].loop_enable = BHT_L1_OPT_DISABLE;
+
+        /* create rx channel data sync semphare */
+        if(0 > (semc = bht_L0_semc_create(0, A429_RXP_BUF_MAX)))
+            return BHT_FAILURE;
+        a429_chan_data[board_num][chan_num].semc = semc;
+    }
+
+    /* attach isr and enable 429 device interrupt */
+    if(BHT_SUCCESS != (result = bht_L0_attach_inthandler(dev_id, 0, (BHT_L0_USER_ISRFUNC)a429_isr, dev_id)))
+        return result;
+    
+    /* enable interrupt */
+    if(BHT_SUCCESS != (result = a429_interrupt_enable(dev_id)))
+        return result;
+
+    return result;
+}
+
 bht_L0_u32 bht_L1_a429_tx_chan_comm_param(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num,
         bht_L1_a429_chan_comm_param_t *comm_param, 
         bht_L1_param_opt_e param_opt)
 {
-    return bht_L1_a429_chan_comm_param(dev_id, chan_num, BHT_L1_CHAN_TYPE_TX, comm_param, param_opt);
+    return a429_chan_comm_param(dev_id, chan_num, BHT_L1_CHAN_TYPE_TX, comm_param, param_opt);
 }
 
 /* a429 tx channel */
@@ -440,7 +796,7 @@ bht_L0_u32
 bht_L1_a429_tx_chan_mib_clear(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num)
 {
-    return bht_L1_a429_mib_clear(dev_id, chan_num, BHT_L1_CHAN_TYPE_TX);
+    return a429_mib_clear(dev_id, chan_num, BHT_L1_CHAN_TYPE_TX);
 }
 
 bht_L0_u32 
@@ -448,7 +804,7 @@ bht_L1_a429_tx_chan_mib_get(bht_L0_u32 dev_id,
         bht_L0_u32 chan_num, 
         bht_L1_a429_mib_data_t *mib_data)
 {
-    return bht_L1_a429_mib_get(dev_id, chan_num, BHT_L1_CHAN_TYPE_TX, mib_data);
+    return a429_mib_get(dev_id, chan_num, BHT_L1_CHAN_TYPE_TX, mib_data);
 }
 
 bht_L0_u32
@@ -471,10 +827,10 @@ bht_L1_a429_tx_chan_send(bht_L0_u32 dev_id,
     /* check channel status stat: full or not full */
     if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_STATUS_CHANNEL_SEND, &value, 1)))
         return result;
+    
     if(value & BIT0)
-
 	{
-	    printf("channel status stat : 0x%08x\n", value);
+//	    printf("channel status stat : 0x%08x\n", value);
         return BHT_ERR_BUFFER_FULL;
 	}
 
@@ -484,12 +840,13 @@ bht_L1_a429_tx_chan_send(bht_L0_u32 dev_id,
     return result;
 }
 
-bht_L0_u32 bht_L1_a429_rx_chan_comm_param(bht_L0_u32 dev_id, 
+bht_L0_u32 
+bht_L1_a429_rx_chan_comm_param(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num,
         bht_L1_a429_chan_comm_param_t *comm_param, 
         bht_L1_param_opt_e param_opt)
 {
-    return bht_L1_a429_chan_comm_param(dev_id, chan_num, BHT_L1_CHAN_TYPE_RX, comm_param, param_opt);
+    return a429_chan_comm_param(dev_id, chan_num, BHT_L1_CHAN_TYPE_RX, comm_param, param_opt);
 }
 
 /* a429 rx channel */
@@ -563,6 +920,18 @@ bht_L1_a429_rx_chan_gather_param(bht_L0_u32 dev_id,
     
     //TODO generate chan common param change event
 
+    //initialize ring buf
+//    if((BHT_L1_A429_RECV_MODE_LIST == gather_param->recv_mode) &&
+//        (BHT_L1_A429_RECV_MODE_SAMPLE == old_gather_param->recv_mode))
+
+	{
+        struct ring_buf * r = (struct ring_buf *)&(a429_chan_data[board_num][chan_num - 1].rxp_ring_buf.base);
+		unsigned char *base = (unsigned char *)&(a429_chan_data[board_num][chan_num - 1].rxp_buf[0].timestamp);
+        
+        if(NULL == ring_buf_init(r, base, sizeof(bht_L1_a429_rxp_t), A429_RXP_BUF_MAX))
+            return BHT_FAILURE;
+    }
+    
     memcpy(old_gather_param, gather_param, sizeof(bht_L1_a429_rx_chan_gather_param_t));
     
     return result;
@@ -575,7 +944,7 @@ bht_L1_a429_rx_chan_filter_cfg(bht_L0_u32 dev_id,
 {
     bht_L0_u32 value = 0, idx;
     bht_L0_u32 result = BHT_SUCCESS;
-    bht_L0_u32 board_num = (dev_id & 0x000F0000) >> 16;
+    const bht_L0_u32 board_num = (dev_id & 0x000F0000) >> 16;
     
     if((chan_num > 16) | (chan_num < 1))
         return BHT_ERR_INVALID_CHANNEL_NUM;
@@ -608,7 +977,7 @@ bht_L0_u32
 bht_L1_a429_rx_chan_mib_clear(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num)
 {
-    return bht_L1_a429_mib_clear(dev_id, chan_num, BHT_L1_CHAN_TYPE_RX);
+    return a429_mib_clear(dev_id, chan_num, BHT_L1_CHAN_TYPE_RX);
 }
 
 bht_L0_u32 
@@ -616,7 +985,7 @@ bht_L1_a429_rx_chan_mib_get(bht_L0_u32 dev_id,
         bht_L0_u32 chan_num, 
         bht_L1_a429_mib_data_t *mib_data)
 {
-    return bht_L1_a429_mib_get(dev_id, chan_num, BHT_L1_CHAN_TYPE_RX, mib_data);
+    return a429_mib_get(dev_id, chan_num, BHT_L1_CHAN_TYPE_RX, mib_data);
 }
 
 bht_L0_u32 
@@ -625,13 +994,53 @@ bht_L1_a429_rx_chan_recv(bht_L0_u32 dev_id,
         bht_L1_a429_rxp_t *rxp_buf, 
         bht_L0_u32 max_rxp, 
         bht_L0_u32 *rxp_num, 
-        bht_L0_u32 opt)
+        bht_L0_s32 timeout_ms)
 {
-    return BHT_FAILURE;
+    bht_L0_u32 result = BHT_SUCCESS;
+    bht_L0_u32 cnt = 0;
+    const bht_L0_u32 board_num = (dev_id & 0x000F0000) >> 16;
+    bht_L1_a429_recv_mod_e recv_mode;
+    static bht_L0_s32 errn = 0;
+    bht_L0_s32 ratio = 0;
+
+    if((timeout_ms < BHT_L1_WAIT_FOREVER) || (max_rxp == 0) ||
+        (chan_num < 1) || (chan_num > 16))
+        return BHT_ERR_BAD_INPUT;
+
+    if(BHT_L1_WAIT_FOREVER == timeout_ms)
+        timeout_ms = 0x7FFFFFFF;
+
+    if(timeout_ms > 0)
+        ratio = 1;
+
+    do
+    {
+        const a429_chan_data_t *chan_data = &a429_chan_data[board_num][chan_num - 1];
+		const struct ring_buf * r = &a429_chan_data[board_num][chan_num - 1].rxp_ring_buf;
+        
+        if(BHT_SUCCESS == bht_L0_sem_take(chan_data->semc, ratio))
+        {
+            if(0 < ring_buf_get(r, (unsigned char *)(rxp_buf + cnt)))
+            {
+                cnt++;
+            }
+            else
+            {
+                errn--;
+            }
+        }
+        //³¬Ê±
+        else
+        {
+            timeout_ms -= ratio;
+        }
+		if(0 == timeout_ms)
+			errn--;
+    }while(timeout_ms && (cnt < max_rxp));
+
+    *rxp_num = cnt;
+
+    return result;
 }
 
-
-//#ifdef __cplusplus
-//}
-//#endif
 

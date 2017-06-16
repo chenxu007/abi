@@ -14,10 +14,6 @@ modification history
 01a,17may18,cx_  add file
 */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <bht_L0.h>
 #include <bht_L1.h>
 #include <bht_L1_a429.h>
@@ -30,12 +26,14 @@ extern "C" {
 #ifdef WINDOWS_BIT64
 #define FPGA_UPDATE_FILE_PATH           "c:\\Windows\\SysWOW64\\"
 #else
-#define FPGA_UPDATE_FILE_PATH           "W:\\"
+//#define FPGA_UPDATE_FILE_PATH           "W:\\"
+#define FPGA_UPDATE_FILE_PATH           "C:\\WINDOWS\\system32\\"
 #endif
 #else
 #define FPGA_UPDATE_FILE_PATH           "/tffs0/"
 #endif
-#define FPGA_UPDATE_FILE_NAME           "A429_FPGA.bin"
+//#define FPGA_UPDATE_FILE_NAME           "A429_FPGA_1_0.bin"
+#define FPGA_UPDATE_FILE_NAME           "a429_fpga_top.bin"
 
 const char * bht_L1_error_to_string(bht_L0_u32 err_num)
 {
@@ -315,7 +313,7 @@ bht_L0_u32 bht_L1_device_probe(bht_L0_u32 dev_id)
         {
             return result;
         }
-        if(value & BIT2 == 0)
+        if((value & BIT2) == 0)
         {
             printf("9056 is not initiated yet.");
             assert(0);
@@ -338,7 +336,7 @@ bht_L0_u32 bht_L1_device_probe(bht_L0_u32 dev_id)
         }
         /* 1.4 command 0xc-read mult line; 0xe- read line; 0x6- read */
 	    value = 0xd767c;
-        if(BHT_SUCCESS != (result = bht_L0_write_setupmem32(dev_id, PLX9056_INTCSR, &value, 1)))
+        if(BHT_SUCCESS != (result = bht_L0_write_setupmem32(dev_id, PLX9056_CNTRL, &value, 1)))
         {
             return result;
         }
@@ -352,6 +350,16 @@ bht_L0_u32 bht_L1_device_probe(bht_L0_u32 dev_id)
     }
     else
         result = BHT_ERR_UNSUPPORTED_BACKPLANE;
+
+//    /* enable pci interrupt */
+//    value = 0x01;
+//    if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_INTR_EN, &value, 1)))
+//        return result;
+//    /* attach intterrupt handler */
+//    if(BHT_SUCCESS != (result = bht_L0_attach_inthandler(dev_id, 0, (BHT_L0_USER_ISRFUNC)test_isr, dev_id)))
+//        return result;
+//    else
+//        printf("bht_L0_attach_inthandler success\n");
     
     return result;
 }
@@ -360,8 +368,4 @@ bht_L0_u32 bht_L1_device_remove(bht_L0_u32 dev_id)
 {
     return bht_L0_unmap_memory(dev_id);   
 }
-
-#ifdef __cplusplus
-}
-#endif
 
