@@ -103,7 +103,7 @@ typedef enum
 }bht_L1_a429_chan_work_mode_e;
 
 typedef enum {
-   BHT_L1_A429_BAUD_5K = 5000, 
+    BHT_L1_A429_BAUD_5K = 5000, 
     BHT_L1_A429_BAUD_12_5K = 12500,
     BHT_L1_A429_BAUD_100K = 100000,
 	BHT_L1_A429_BAUD_150K = 150000,
@@ -135,6 +135,14 @@ typedef enum
     BHT_L1_A429_RECV_MODE_LIST = 0,
     BHT_L1_A429_RECV_MODE_SAMPLE = 1,
 }bht_L1_a429_recv_mod_e;
+
+typedef enum
+{
+    BHT_L1_A429_OPT_RANDOM_SEND,
+    BHT_L1_A429_OPT_PERIOD_SEND_UPDATE,
+    BHT_L1_A429_OPT_PERIOD_SEND_START,
+    BHT_L1_A429_OPT_PERIOD_SEND_STOP
+}bht_L1_a429_send_opt_e;
 
 typedef struct
 {
@@ -308,12 +316,23 @@ bht_L1_a429_tx_chan_mib_get(bht_L0_u32 dev_id,
  * data send function
  * @param dev_id
  * @param chan_num, 1 <= chan_num <= 16
- * @param data, this data will send on the assigned channel
+ * @param opt
+            BHT_L1_A429_OPT_RANDOM_SEND, if the tx channel's period param is zero, if you want to 
+                                         send a word on the channel, you need to use this opt.
+            BHT_L1_A429_OPT_PERIOD_SEND_UPDATE,if the tx channel's period param is not zero,if you 
+                                         want to update the word which be sended repeatedly on the 
+                                         channel, you need to use this opt.
+            BHT_L1_A429_OPT_PERIOD_SEND_START,this option is means to start the period send
+            BHT_L1_A429_OPT_PERIOD_SEND_STOP,this option is means to stop the period send
+            
+ * @param data, if send_opt is BHT_L1_A429_OPT_RANDOM_SEND or BHT_L1_A429_OPT_PERIOD_SEND_UPDATE,
+          this param will be necessary, witch will be send on the assigned channel
  * return BHT_SUCCESS or other error number.
  */             
 extern bht_L0_u32
 bht_L1_a429_tx_chan_send(bht_L0_u32 dev_id, 
-        bht_L0_u32 chan_num,  
+        bht_L0_u32 chan_num,
+        bht_L1_a429_send_opt_e opt,
         bht_L0_u32 data);
 
 /**************************a429 rx channel*************************/

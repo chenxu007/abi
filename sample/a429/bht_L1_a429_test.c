@@ -10,9 +10,9 @@
 
 #define DEVID BHT_DEVID_BACKPLANETYPE_PCI | BHT_DEVID_BOARDTYPE_PMCA429 | BHT_DEVID_BOARDNUM_01 
 
-#define A429_DATAWORD_TEST_NUM      (2000)
+#define A429_DATAWORD_TEST_NUM      (20*1000)
 #define A429_TEST_CHAN_NUM			(1)
-#define A429_CUR_TEST_CHAN_NUM		(5)
+#define A429_CUR_TEST_CHAN_NUM		(1)
 
 #define BAUD	BHT_L1_A429_BAUD_200K
 #define A429_RECV_MODE_SAMPLE
@@ -72,7 +72,7 @@ static DWORD WINAPI a429_channel_send_thread(const void * arg)
 	{
 		if(recv_err_flag == 1)
 			break;
-		if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_send(dev_id, chan_num, test_tx_buf[idx])))
+		if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_send(dev_id, chan_num, BHT_L1_A429_OPT_RANDOM_SEND, test_tx_buf[idx])))
 		{
 //			printf("tx_chan_send failed[idx = %d], error info : %s, result = %d\n", \
 //				idx, bht_L1_error_to_string(result), result);

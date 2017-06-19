@@ -113,6 +113,7 @@ extern "C" {
 #define BHT_A429_NUM_ERR_WORD_CHANNEL30		0X12E4
 #define BHT_A429_NUM_WORD_CHANNEL31			0X12F0
 #define BHT_A429_NUM_ERR_WORD_CHANNEL31		0X12F4
+#define BHT_A429_TX_CHAN_SEND_PERIOD		0X1300
                                
 
 #ifdef __cplusplus
