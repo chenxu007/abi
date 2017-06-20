@@ -14,7 +14,7 @@
 #define A429_TEST_CHAN_NUM			(1)
 #define A429_CUR_TEST_CHAN_NUM		(5)
 
-#define BAUD	BHT_L1_A429_BAUD_12_5K
+#define BAUD	BHT_L1_A429_BAUD_200K
 #define A429_RECV_MODE_SAMPLE
 #ifndef A429_RECV_MODE_SAMPLE
 #define THRESHOLD_COUNT 1022
@@ -187,7 +187,7 @@ static DWORD WINAPI a429_channel_recv_thread(const void * arg)
 #endif
 }
 
-int main (void)
+int main11 (void)
 {
     int result;
 	bht_L0_u32 value, idx;

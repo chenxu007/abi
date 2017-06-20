@@ -93,7 +93,7 @@ static int isr_sem_err_num = 0;
 extern bht_L0_u32 bht_L1_device_softreset(bht_L0_u32);
 
 static bht_L0_u32 
-a429_chan_cfg_reg_generate(bht_L1_chan_type_e chan_type, 
+a429_cfg_reg_generate(bht_L1_chan_type_e chan_type, 
         bht_L1_a429_chan_comm_param_t *comm_param,
         bht_L1_a429_rx_chan_gather_param_t *gather_param,
         bht_L1_a429_tx_chan_inject_param_t *inject_param,
@@ -373,7 +373,7 @@ a429_chan_comm_param(bht_L0_u32 dev_id,
     if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CHOOSE_CHANNEL_NUM, &value, 1)))
         return result;
 
-    value = a429_chan_cfg_reg_generate(chan_type, comm_param, gather_param, inject_param, trans_mode);
+    value = a429_cfg_reg_generate(chan_type, comm_param, gather_param, inject_param, trans_mode);
 	printf("%s, chan[%d], common param, cfg register = 0x%08x\n", (chan_type == BHT_L1_CHAN_TYPE_TX) ? "TX" : "RX", chan_num, value);
     if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CHANNEL_CFG, &value, 1)))
         return result;
@@ -522,7 +522,7 @@ bht_L1_a429_tx_chan_inject_param(bht_L0_u32 dev_id,
 
     trans_mode = (device_param->tx_chan_param[chan_num - 1].period > 0) ? \
             A429_TX_CHAN_TRANS_MODE_PERIOD : A429_TX_CHAN_TRANS_MODE_RANDOM;
-    value = a429_chan_cfg_reg_generate(BHT_L1_CHAN_TYPE_TX, comm_param, NULL, inject_param, trans_mode);
+    value = a429_cfg_reg_generate(BHT_L1_CHAN_TYPE_TX, comm_param, NULL, inject_param, trans_mode);
     if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CHANNEL_CFG, &value, 1)))
         return result;
     
@@ -586,7 +586,7 @@ bht_L1_a429_tx_chan_period_param(bht_L0_u32 dev_id,
         return result;
 
     trans_mode = ((*period) > 0) ? A429_TX_CHAN_TRANS_MODE_PERIOD : A429_TX_CHAN_TRANS_MODE_RANDOM;
-    value = a429_chan_cfg_reg_generate(BHT_L1_CHAN_TYPE_TX, comm_param, NULL, inject_param, trans_mode);
+    value = a429_cfg_reg_generate(BHT_L1_CHAN_TYPE_TX, comm_param, NULL, inject_param, trans_mode);
     printf("TX, chan[%d], period param, cfg register = 0x%08x\n", chan_num, value);
     if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CHANNEL_CFG, &value, 1)))
         return result;
@@ -886,7 +886,7 @@ bht_L1_a429_rx_chan_gather_param(bht_L0_u32 dev_id,
     if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CHOOSE_CHANNEL_NUM, &value, 1)))
         return result;
 
-    value = a429_chan_cfg_reg_generate(BHT_L1_CHAN_TYPE_RX, comm_param, gather_param, NULL, A429_TX_CHAN_TRANS_MODE_RANDOM);
+    value = a429_cfg_reg_generate(BHT_L1_CHAN_TYPE_RX, comm_param, gather_param, NULL, A429_TX_CHAN_TRANS_MODE_RANDOM);
 	printf("RX, chan[%d], gather param, cfg register = 0x%08x\n", chan_num, value);
     if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CHANNEL_CFG, &value, 1)))
         return result;
@@ -1070,7 +1070,7 @@ bht_L1_a429_chan_dump(bht_L0_u32 dev_id,
 
     baud_r = 100 * 1000000 / comm_param->baud;
 
-    cfg_r = a429_chan_cfg_reg_generate(type, comm_param, gather_param, inject_param, trans_mode);
+    cfg_r = a429_cfg_reg_generate(type, comm_param, gather_param, inject_param, trans_mode);
 
     a429_mib_get(dev_id, chan_num, type, &mib_data);
     
