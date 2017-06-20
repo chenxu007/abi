@@ -12,7 +12,7 @@
 
 #define A429_DATAWORD_TEST_NUM      (20*1000)
 #define A429_TEST_CHAN_NUM			(1)
-#define A429_CUR_TEST_CHAN_NUM		(1)
+#define A429_CUR_TEST_CHAN_NUM		(5)
 
 #define BAUD	BHT_L1_A429_BAUD_200K
 #define A429_RECV_MODE_SAMPLE
@@ -63,10 +63,11 @@ static DWORD WINAPI a429_channel_send_thread(const void * arg)
 	bht_L0_u32 idx = 0;
 	bht_L0_u32 result = BHT_SUCCESS;
 	bht_L0_u32 value;
+    bht_L1_a429_mib_data_t mib_data;
 
 	printf("tx channel[%d] start\n", chan_num);
 
-	bht_L0_msleep(10000);
+	bht_L0_msleep(2000);
 
 	while(idx < A429_DATAWORD_TEST_NUM)
 	{
@@ -89,6 +90,13 @@ static DWORD WINAPI a429_channel_send_thread(const void * arg)
 
     bht_L0_msleep(5000);
     printf("tx channel[%d] send complete\n", chan_num);
+
+    bht_L1_a429_rx_chan_mib_get(dev_id, chan_num, &mib_data);
+    printf("RX, chan[%d], mib data: cnt[%d], err_cnt[%d]\n", chan_num, mib_data.cnt, mib_data.err_cnt);
+
+    bht_L1_a429_tx_chan_mib_get(dev_id, chan_num, &mib_data);
+    printf("TX, chan[%d], mib data: cnt[%d], err_cnt[%d]\n", chan_num, mib_data.cnt, mib_data.err_cnt);
+
 #if 0
 	//bht_L0_msleep(1);
 
@@ -185,7 +193,7 @@ static DWORD WINAPI a429_channel_recv_thread(const void * arg)
 #endif
 }
 
-int main (void)
+int main11 (void)
 {
     int result;
 	bht_L0_u32 value, idx;
@@ -198,7 +206,7 @@ int main (void)
 	HANDLE hThread[32] = {0};
 #endif
 
-    /*generate rand number */
+    /* generate rand number */
     testbuf_rand(test_tx_buf, sizeof(test_tx_buf)/ sizeof(test_tx_buf[0]));
 
 	/* probe device */

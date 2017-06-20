@@ -420,6 +420,17 @@ bht_L1_a429_rx_chan_recv(bht_L0_u32 dev_id,
         bht_L0_u32 *rxp_num, 
         bht_L0_s32 timeout_ms);
 
+/* bht_L1_a429_chan_dump ,print chan param and mib data
+ * @param dev_id
+ * @param chan_num, 1 <= chan_num <= 16
+ * @param type, channel type
+ * return BHT_SUCCESS or other error number.
+ */
+extern bht_L0_u32
+bht_L1_a429_chan_dump(bht_L0_u32 dev_id, 
+        bht_L0_u32 chan_num, 
+        bht_L1_chan_type_e type);
+
 /* 1553B */
 
 #ifdef __cplusplus

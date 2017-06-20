@@ -8,12 +8,13 @@
 #include <windows.h>
 #endif
 
+
 #define DEVID BHT_DEVID_BACKPLANETYPE_PCI | BHT_DEVID_BOARDTYPE_PMCA429 | BHT_DEVID_BOARDNUM_01 
 #define A429_DATA_MASK      0x7FFFFFFF
 
 #define A429_DATAWORD_TEST_NUM      (2000)
 #define A429_TEST_CHAN_NUM			(1)
-#define A429_CUR_TEST_CHAN_NUM		(5)
+#define A429_CUR_TEST_CHAN_NUM		(2)
 
 #define BAUD	BHT_L1_A429_BAUD_12_5K
 #define A429_RECV_MODE_SAMPLE
@@ -36,7 +37,8 @@ typedef struct
 	bht_L0_u32 chan_num;
 }a429_recv_thread_arg_t;
 
-static bht_L0_u32 recv_err_flag = 0;
+static bht_L0_u32 app_recv_data_count = 0;
+
 
 #ifdef WINDOWS_OPS
 static DWORD WINAPI a429_channel_recv_thread(const void * arg)
@@ -62,8 +64,8 @@ static DWORD WINAPI a429_channel_recv_thread(const void * arg)
             printf("rx channel[%d] recv err\n", chan_num);
             break;
         }
-
-        printf("chan[%d] recv timestamp:%08x data:%08x\n", chan_num, rxp.timestamp, rxp.data & A429_DATA_MASK);
+        app_recv_data_count++;
+//        printf("chan[%d] recv timestamp:%08x data:%08x\n", chan_num, rxp.timestamp, rxp.data & A429_DATA_MASK);
 	}
 
     printf("%s end\n", __FUNCTION__);
@@ -83,6 +85,7 @@ int main (void)
 	bht_L1_a429_rx_chan_gather_param_t gather_param;
 	a429_send_thread_arg_t arg_tx[A429_TEST_CHAN_NUM] = {0};
 	a429_recv_thread_arg_t arg_rx[A429_TEST_CHAN_NUM] = {0};
+    bht_L1_a429_mib_data_t mib_data;
 #ifdef WINDOWS_OPS
 	HANDLE hThread[32] = {0};
 #endif
@@ -124,7 +127,6 @@ int main (void)
 #error "operate system not support!!!"
 #endif
 
-	//chan_num = A429_CUR_TEST_CHAN_NUM;
     //common param config
     chan_num = A429_CUR_TEST_CHAN_NUM;
 
@@ -172,9 +174,9 @@ int main (void)
 			bht_L1_error_to_string(result), result);
 		goto test_error;
 	}
-
+    
     //period config
-    value = 1000;
+    value = 5;
     if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_period_param(DEVID, chan_num, &value, BHT_L1_PARAM_OPT_SET)))
     {
         printf("tx_chan_period_param set failed, error info: %s, result = %d\n", \
@@ -183,12 +185,13 @@ int main (void)
     }
 
     //period send update
-    if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_send(DEVID, chan_num, BHT_L1_A429_OPT_PERIOD_SEND_UPDATE, 0xDDDDDDDD)))
+    if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_send(DEVID, chan_num, BHT_L1_A429_OPT_PERIOD_SEND_UPDATE, 1)))
     {
         printf("bht_L1_a429_tx_chan_send update failed, error info: %s, result = %d\n", \
 			bht_L1_error_to_string(result), result);
 		goto test_error;
     }
+
     //period send start
     if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_send(DEVID, chan_num, BHT_L1_A429_OPT_PERIOD_SEND_START, 0)))
     {
@@ -197,8 +200,11 @@ int main (void)
 		goto test_error;
     }
 	else
+    {   
 		printf("period send start\n");
+    }
 
+    //delay 10 seconds
     bht_L0_msleep(10000);
 
     //period send stop
@@ -210,6 +216,14 @@ int main (void)
     }
 	else
 		printf("period send stop\n");
+
+    //delay 1 second
+	bht_L0_msleep(1000);
+
+    //check the RX/TX statistics data
+    bht_L1_a429_chan_dump(DEVID, chan_num, BHT_L1_CHAN_TYPE_TX);
+	bht_L1_a429_chan_dump(DEVID, chan_num, BHT_L1_CHAN_TYPE_RX);
+    printf("application RX count  [0x%08x]\n", app_recv_data_count);
 
 #ifdef WINDOWS_OPS		
 	//Wait until all threads have terminated.
