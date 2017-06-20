@@ -23,7 +23,6 @@
 #define THRESHOLD_TIME	5000
 #endif
 
-
 typedef struct
 {
 	bht_L0_u32 dev_id;
@@ -50,7 +49,6 @@ static DWORD WINAPI a429_channel_recv_thread(const void * arg)
 	bht_L0_u32 result = BHT_SUCCESS;
 	bht_L0_u32 value;
     bht_L0_u32 intr_state;
-    extern bht_L0_u32 int_count;
     bht_L1_a429_rxp_t rxp;
     bht_L0_u32 num;
     bht_L0_u32 tot_num = 0;
@@ -75,7 +73,7 @@ static DWORD WINAPI a429_channel_recv_thread(const void * arg)
 #endif
 }
 
-int main (void)
+int main11 (void)
 {
     int result;
 	bht_L0_u32 value, idx;
@@ -176,7 +174,7 @@ int main (void)
 	}
     
     //period config
-    value = 5;
+    value = 3;
     if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_period_param(DEVID, chan_num, &value, BHT_L1_PARAM_OPT_SET)))
     {
         printf("tx_chan_period_param set failed, error info: %s, result = %d\n", \
@@ -218,12 +216,12 @@ int main (void)
 		printf("period send stop\n");
 
     //delay 1 second
-	bht_L0_msleep(1000);
+	bht_L0_msleep(2000);
 
     //check the RX/TX statistics data
     bht_L1_a429_chan_dump(DEVID, chan_num, BHT_L1_CHAN_TYPE_TX);
 	bht_L1_a429_chan_dump(DEVID, chan_num, BHT_L1_CHAN_TYPE_RX);
-    printf("application RX count  [0x%08x]\n", app_recv_data_count);
+    printf("application RX count [0x%08x]\n", app_recv_data_count);
 
 #ifdef WINDOWS_OPS		
 	//Wait until all threads have terminated.

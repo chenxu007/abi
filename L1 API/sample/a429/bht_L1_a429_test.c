@@ -10,11 +10,11 @@
 
 #define DEVID BHT_DEVID_BACKPLANETYPE_PCI | BHT_DEVID_BOARDTYPE_PMCA429 | BHT_DEVID_BOARDNUM_01 
 
-#define A429_DATAWORD_TEST_NUM      (20*1000)
+#define A429_DATAWORD_TEST_NUM      (200*1024)
 #define A429_TEST_CHAN_NUM			(1)
 #define A429_CUR_TEST_CHAN_NUM		(5)
 
-#define BAUD	BHT_L1_A429_BAUD_200K
+#define BAUD	BHT_L1_A429_BAUD_12_5K
 #define A429_RECV_MODE_SAMPLE
 #ifndef A429_RECV_MODE_SAMPLE
 #define THRESHOLD_COUNT 1022
@@ -24,7 +24,6 @@
 
 static bht_L0_u32 test_tx_buf[A429_DATAWORD_TEST_NUM];
 static bht_L0_u32 test_rx_buf[16][A429_DATAWORD_TEST_NUM];
-
 
 typedef struct
 {
@@ -51,7 +50,6 @@ static void testbuf_rand(bht_L0_u32 *testbuf, bht_L0_u32 size)
         //testbuf[idx] = 0x7FFFFFFF & rand();
 		testbuf[idx] = 0x7FFFFFFF & idx;
 }
-
 
 #ifdef WINDOWS_OPS
 static DWORD WINAPI a429_channel_send_thread(const void * arg)
@@ -91,11 +89,8 @@ static DWORD WINAPI a429_channel_send_thread(const void * arg)
     bht_L0_msleep(5000);
     printf("tx channel[%d] send complete\n", chan_num);
 
-    bht_L1_a429_rx_chan_mib_get(dev_id, chan_num, &mib_data);
-    printf("RX, chan[%d], mib data: cnt[%d], err_cnt[%d]\n", chan_num, mib_data.cnt, mib_data.err_cnt);
-
-    bht_L1_a429_tx_chan_mib_get(dev_id, chan_num, &mib_data);
-    printf("TX, chan[%d], mib data: cnt[%d], err_cnt[%d]\n", chan_num, mib_data.cnt, mib_data.err_cnt);
+    bht_L1_a429_chan_dump(dev_id, chan_num, BHT_L1_CHAN_TYPE_TX);
+	bht_L1_a429_chan_dump(dev_id, chan_num, BHT_L1_CHAN_TYPE_RX);
 
 #if 0
 	//bht_L0_msleep(1);
@@ -148,7 +143,6 @@ static DWORD WINAPI a429_channel_recv_thread(const void * arg)
 	bht_L0_u32 result = BHT_SUCCESS;
 	bht_L0_u32 value;
     bht_L0_u32 intr_state;
-    extern bht_L0_u32 int_count;
     bht_L1_a429_rxp_t rxp;
     bht_L0_u32 num;
     bht_L0_u32 tot_num = 0;
@@ -193,7 +187,7 @@ static DWORD WINAPI a429_channel_recv_thread(const void * arg)
 #endif
 }
 
-int main11 (void)
+int main (void)
 {
     int result;
 	bht_L0_u32 value, idx;
@@ -246,7 +240,7 @@ int main11 (void)
         //common param config
     	comm_param.work_mode = BHT_L1_A429_CHAN_WORK_MODE_ENABLE;
     	comm_param.baud = BAUD;
-    	comm_param.par = BHT_L1_A429_PARITY_ODD;
+    	comm_param.par = BHT_L1_A429_PARITY_NONE;
     	
     	if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_comm_param(DEVID, chan_num, &comm_param, BHT_L1_PARAM_OPT_SET)))
     	{

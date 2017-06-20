@@ -24,8 +24,6 @@ modification history
 
 #include <bht_L0.h>
 
-
-
 #define LICENSE_10_2 "6C3CC2CFE89E7AD0424A070D434A6F6DC4950E1D.BibHong-tech"
 
 /* windows pci device control block */
@@ -385,41 +383,25 @@ bht_L0_u32 bht_L0_attach_inthandler(bht_L0_u32 dev_id, bht_L0_u32 chan_regoffset
                     devices_cb[backplane_type >> 28][board_type >> 20][board_num >> 16];
                 WD_TRANSFER*pTrans = (WD_TRANSFER*) calloc(3, sizeof(WD_TRANSFER));
                 WDC_DEVICE *dev = (WDC_DEVICE *)pci_device_cb->wd_handle;
-#ifndef PLX9056_INTCSR
-#define PLX9056_INTCSR 0x68
+#ifndef BHT_A429_INTR_CLR
+#define BHT_A429_INTR_CLR					0X0024
 #endif
-#if 1 
-#if 1
-                (pTrans)->dwPort = (dev->pAddrDesc+2)->kptAddr + 0x28;
+#ifndef BHT_A429_INTR_STATE
+#define BHT_A429_INTR_STATE					0X0028
+#endif
+                (pTrans)->dwPort = (dev->pAddrDesc+2)->kptAddr + BHT_A429_INTR_STATE;
                 (pTrans)->cmdTrans = RM_DWORD;
                 
-                //(pTrans+1)->dwPort = (dev->pAddrDesc+2)->kptAddr + 0x28;
                 (pTrans+1)->cmdTrans = CMD_MASK;
                 (pTrans+1)->Data.Dword = BIT4;
                 
-                (pTrans+2)->dwPort = (dev->pAddrDesc+2)->kptAddr + 0x24;
+                (pTrans+2)->dwPort = (dev->pAddrDesc+2)->kptAddr + BHT_A429_INTR_CLR;
                 (pTrans+2)->cmdTrans = WM_DWORD;
                 (pTrans+2)->Data.Dword = BIT0;
-#else
-                (pTrans)->dwPort = dev->pAddrDesc->kptAddr + PLX9056_INTCSR;
-                (pTrans)->cmdTrans = RM_DWORD;
-                
-                (pTrans+1)->dwPort = dev->pAddrDesc->kptAddr + PLX9056_INTCSR;
-                (pTrans+1)->cmdTrans = CMD_MASK;
-                (pTrans+1)->Data.Dword = BIT15;
-                
-                (pTrans+2)->dwPort = dev->pAddrDesc->kptAddr + PLX9056_INTCSR;
-                (pTrans+2)->cmdTrans = WM_DWORD;
-                (pTrans+2)->Data.Dword = 0x00000000;
-#endif        
+     
 				if(WD_STATUS_SUCCESS != WDC_IntEnable(pci_device_cb->wd_handle, pTrans, 3, 0, \
                     (INT_HANDLER)isr, (PVOID)arg, FALSE))
                     result = BHT_ERR_DRIVER_INT_ATTACH_FAIL;
-#else
-				if(WD_STATUS_SUCCESS != WDC_IntEnable(pci_device_cb->wd_handle, NULL, 0, 0, \
-                    (INT_HANDLER)isr, (PVOID)arg, FALSE))
-                    result = BHT_ERR_DRIVER_INT_ATTACH_FAIL;
-#endif
             }
             else
                 result = BHT_ERR_DEV_NOT_INITED;
