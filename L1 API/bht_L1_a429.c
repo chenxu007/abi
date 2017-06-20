@@ -80,9 +80,9 @@ typedef struct
     bht_L1_a429_rxp_t rxp_buf[A429_RXP_BUF_MAX];
 }a429_chan_data_t;
 
-static a429_device_param_t a429_device_param[BHT_A429_DEVICE_MAX];
+static a429_device_param_t a429_device_param[BHT_A429_DEVICE_MAX] = {0};
 /* store rx channel receive data */
-static a429_chan_data_t a429_chan_data[BHT_A429_DEVICE_MAX][BHT_A429_CHANNEL_MAX];
+static a429_chan_data_t a429_chan_data[BHT_A429_DEVICE_MAX][BHT_A429_CHANNEL_MAX] = {0};
 
 static int isr_count = 0;
 static int isr_vecter_idle_err_num = 0;
@@ -1074,6 +1074,7 @@ bht_L1_a429_chan_dump(bht_L0_u32 dev_id,
 
     a429_mib_get(dev_id, chan_num, type, &mib_data);
     
+	printf("param size = %d\ndata size = %d\n", sizeof(a429_device_param), sizeof(a429_chan_data));
     if(BHT_L1_CHAN_TYPE_RX == type)
     {
         printf("RX chan[%d] dump\n", chan_num);
