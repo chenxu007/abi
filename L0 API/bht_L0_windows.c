@@ -15,10 +15,6 @@ modification history
 */
 #ifdef WINDOWS_OPS
 
-#ifdef __cplusplus
-    extern "C" {
-#endif
-
 #include <wdc_lib.h>
 #include <wdc_defs.h>
 
@@ -488,6 +484,3 @@ bht_L0_sem_give(bht_L0_sem sem)
 
 #endif
 
-#ifdef __cplusplus
-	}
-#endif

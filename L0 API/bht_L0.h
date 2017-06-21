@@ -201,8 +201,8 @@ extern "C" {
 #define ERROR -1
 #endif
 
-#define BHT_FALSE                   0
-#define BHT_TRUE                    1
+ #define BHT_FALSE                   0
+ #define BHT_TRUE                    1
 
 #define BHT_WAITFOREVER             (-1)
 
