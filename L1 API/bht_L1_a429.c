@@ -235,7 +235,7 @@ a429_cfg_reg_generate(bht_L1_chan_type_e chan_type,
         
         assert(NULL != inject_param);
 
-        value = value | (inject_param->tb_bits << 28) | \
+        value = value | (inject_param->tb_bits << 27) | \
                 (inject_param->tb_gap << 26) | \
                 (inject_param->tb_par_en << 25);
 
@@ -530,7 +530,7 @@ bht_L1_a429_tx_chan_inject_param(bht_L0_u32 dev_id,
     if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CFG_ENABLE, &value, 1)))
         return result;
     
-    value = 0x01 << (chan_num - 1);
+    value = (chan_num - 1);
     if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CHOOSE_CHANNEL_NUM, &value, 1)))
         return result;
 
@@ -738,8 +738,7 @@ bht_L1_a429_tx_chan_send(bht_L0_u32 dev_id,
     bht_L0_u32 is_changed = BHT_L0_FALSE;
     const a429_tx_chan_param_t *tx_chan_param = NULL;
     const bht_L0_u32 board_num = (dev_id & 0x000F0000) >> 16;
-    bht_L0_u32 cnt = 0;
-    
+    bht_L0_u32 cnt = 0;    
 
     /*check input */
     if((chan_num > 16) | (chan_num < 1))

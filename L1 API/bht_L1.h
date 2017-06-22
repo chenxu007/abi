@@ -203,7 +203,7 @@ typedef struct
 /* bht_L1_error_to_string converts error number to error 
  * message, the return value is the head of the error message 
  */
-extern const char *
+__declspec(dllexport) const char *
 bht_L1_error_to_string(bht_L0_u32 err_num);
 
 /* bht_L1_device_probe detect the device with the dev_id,
@@ -214,14 +214,14 @@ bht_L1_error_to_string(bht_L0_u32 err_num);
  *    - board number (4 bits)   -	(dev_id & 0x000F0000) 
  * return BHT_SUCCESS or other error number.
  */
-extern bht_L0_u32 
+__declspec(dllexport) bht_L0_u32 
 bht_L1_device_probe(bht_L0_u32 dev_id);
 
 /* bht_L1_device_remove remove device from driver
  * @param dev_id
  * return BHT_SUCCESS or other error number.
  */
-extern bht_L0_u32 
+__declspec(dllexport) bht_L0_u32 
 bht_L1_device_remove(bht_L0_u32 dev_id);
 
 /**************************a429 general*************************/
@@ -230,7 +230,7 @@ bht_L1_device_remove(bht_L0_u32 dev_id);
  * @param dev_id
  * return BHT_SUCCESS or other error number.
  */
-extern bht_L0_u32 
+__declspec(dllexport) bht_L0_u32 
 bht_L1_a429_default_init(bht_L0_u32 dev_id);
 
 /**************************a429 tx channel*************************/
@@ -242,7 +242,7 @@ bht_L1_a429_default_init(bht_L0_u32 dev_id);
  * @param param_opt, param_opt can be BHT_L1_PARAM_OPT_GET or BHT_L1_PARAM_OPT_SET
  * return BHT_SUCCESS or other error number.
  */
-extern bht_L0_u32 
+__declspec(dllexport) bht_L0_u32 
 bht_L1_a429_tx_chan_comm_param(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num,
         bht_L1_a429_chan_comm_param_t *comm_param, 
@@ -257,7 +257,7 @@ bht_L1_a429_tx_chan_comm_param(bht_L0_u32 dev_id,
  * @param param_opt, param_opt can be BHT_L1_PARAM_OPT_GET or BHT_L1_PARAM_OPT_SET
  * return BHT_SUCCESS or other error number.
  */   
-extern bht_L0_u32 
+__declspec(dllexport) bht_L0_u32 
 bht_L1_a429_tx_chan_inject_param(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num, 
         bht_L1_a429_tx_chan_inject_param_t *inject_param, 
@@ -270,7 +270,7 @@ bht_L1_a429_tx_chan_inject_param(bht_L0_u32 dev_id,
  * @param opt, opt can be BHT_L1_OPT_ENABLE or BHT_L1_OPT_DISABLE
  * return BHT_SUCCESS or other error number.
  */          
-extern bht_L0_u32 
+__declspec(dllexport) bht_L0_u32 
 bht_L1_a429_tx_chan_loop(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num, 
         bht_L0_u32 opt);
@@ -283,7 +283,7 @@ bht_L1_a429_tx_chan_loop(bht_L0_u32 dev_id,
  *  default value is 1.5us
  * return BHT_SUCCESS or other error number.
  */         
-extern bht_L0_u32 
+__declspec(dllexport) bht_L0_u32 
 bht_L1_a429_tx_chan_slope_cfg(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num, 
         bht_L1_a429_slope_e slope);
@@ -295,7 +295,7 @@ bht_L1_a429_tx_chan_slope_cfg(bht_L0_u32 dev_id,
  * @param chan_num, 1 <= chan_num <= 16
  * return BHT_SUCCESS or other error number.
  */        
-extern bht_L0_u32 
+__declspec(dllexport) bht_L0_u32 
 bht_L1_a429_tx_chan_mib_clear(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num);
         
@@ -307,7 +307,7 @@ bht_L1_a429_tx_chan_mib_clear(bht_L0_u32 dev_id,
  * @param mib_data, if success, the mib info will store in this poiter 
  * return BHT_SUCCESS or other error number.
  */        
-extern bht_L0_u32 
+__declspec(dllexport) bht_L0_u32 
 bht_L1_a429_tx_chan_mib_get(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num, 
         bht_L1_a429_mib_data_t *mib_data); 
@@ -329,7 +329,7 @@ bht_L1_a429_tx_chan_mib_get(bht_L0_u32 dev_id,
           this param will be necessary, witch will be send on the assigned channel
  * return BHT_SUCCESS or other error number.
  */             
-extern bht_L0_u32
+__declspec(dllexport) bht_L0_u32
 bht_L1_a429_tx_chan_send(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num,
         bht_L1_a429_send_opt_e opt,
@@ -344,7 +344,7 @@ bht_L1_a429_tx_chan_send(bht_L0_u32 dev_id,
  * @param param_opt, param_opt can be BHT_L1_PARAM_OPT_GET or BHT_L1_PARAM_OPT_SET
  * return BHT_SUCCESS or other error number.
  */
-extern bht_L0_u32 
+__declspec(dllexport) bht_L0_u32 
 bht_L1_a429_rx_chan_comm_param(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num,
         bht_L1_a429_chan_comm_param_t *comm_param, 
@@ -358,7 +358,7 @@ bht_L1_a429_rx_chan_comm_param(bht_L0_u32 dev_id,
  * @param param_opt, param_opt can be BHT_L1_PARAM_OPT_GET or BHT_L1_PARAM_OPT_SET
  * return BHT_SUCCESS or other error number.
  */        
-extern bht_L0_u32 
+__declspec(dllexport) bht_L0_u32 
 bht_L1_a429_rx_chan_gather_param(bht_L0_u32 dev_id,
         bht_L0_u32 chan_num,
         bht_L1_a429_rx_chan_gather_param_t *gather_param,
@@ -371,7 +371,7 @@ bht_L1_a429_rx_chan_gather_param(bht_L0_u32 dev_id,
  * @param filter, this struct contain label filter config
  * return BHT_SUCCESS or other error number.
  */  
-extern bht_L0_u32 
+__declspec(dllexport) bht_L0_u32 
 bht_L1_a429_rx_chan_filter_cfg(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num, 
         bht_L1_a429_rx_chan_filter_t *filter);
@@ -383,7 +383,7 @@ bht_L1_a429_rx_chan_filter_cfg(bht_L0_u32 dev_id,
  * @param chan_num, 1 <= chan_num <= 16
  * return BHT_SUCCESS or other error number.
  */        
-extern bht_L0_u32 
+__declspec(dllexport) bht_L0_u32 
 bht_L1_a429_rx_chan_mib_clear(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num);
         
@@ -395,7 +395,7 @@ bht_L1_a429_rx_chan_mib_clear(bht_L0_u32 dev_id,
  * @param mib_data, if success, the mib info will store in this poiter 
  * return BHT_SUCCESS or other error number.
  */        
-extern bht_L0_u32 
+__declspec(dllexport) bht_L0_u32 
 bht_L1_a429_rx_chan_mib_get(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num, 
         bht_L1_a429_mib_data_t *mib_data); 
@@ -412,7 +412,7 @@ bht_L1_a429_rx_chan_mib_get(bht_L0_u32 dev_id,
     or the miliseconds you can wait
  * return BHT_SUCCESS or other error number.
  */         
-extern bht_L0_u32 
+__declspec(dllexport) bht_L0_u32 
 bht_L1_a429_rx_chan_recv(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num, 
         bht_L1_a429_rxp_t *rxp_buf, 
@@ -426,7 +426,7 @@ bht_L1_a429_rx_chan_recv(bht_L0_u32 dev_id,
  * @param type, channel type
  * return BHT_SUCCESS or other error number.
  */
-extern bht_L0_u32
+__declspec(dllexport) bht_L0_u32
 bht_L1_a429_chan_dump(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num, 
         bht_L1_chan_type_e type);

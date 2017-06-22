@@ -10,7 +10,7 @@
 
 #define DEVID BHT_DEVID_BACKPLANETYPE_PCI | BHT_DEVID_BOARDTYPE_PMCA429 | BHT_DEVID_BOARDNUM_01 
 
-#define A429_DATAWORD_TEST_NUM      (200*1024)
+#define A429_DATAWORD_TEST_NUM      (2*1024)
 #define A429_TEST_CHAN_NUM			(1)
 #define A429_CUR_TEST_CHAN_NUM		(5)
 
@@ -187,13 +187,14 @@ static DWORD WINAPI a429_channel_recv_thread(const void * arg)
 #endif
 }
 
-int main11 (void)
+int main (void)
 {
     int result;
 	bht_L0_u32 value, idx;
     bht_L0_u32 chan_num;
 	bht_L1_a429_chan_comm_param_t comm_param;
 	bht_L1_a429_rx_chan_gather_param_t gather_param;
+    bht_L1_a429_tx_chan_inject_param_t inject_param;
 	a429_send_thread_arg_t arg_tx[A429_TEST_CHAN_NUM] = {0};
 	a429_recv_thread_arg_t arg_rx[A429_TEST_CHAN_NUM] = {0};
 #ifdef WINDOWS_OPS
@@ -240,7 +241,7 @@ int main11 (void)
         //common param config
     	comm_param.work_mode = BHT_L1_A429_CHAN_WORK_MODE_ENABLE;
     	comm_param.baud = BAUD;
-    	comm_param.par = BHT_L1_A429_PARITY_NONE;
+    	comm_param.par = BHT_L1_A429_PARITY_ODD;
     	
     	if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_comm_param(DEVID, chan_num, &comm_param, BHT_L1_PARAM_OPT_SET)))
     	{
@@ -248,6 +249,23 @@ int main11 (void)
     			bht_L1_error_to_string(result), result);
     		goto test_error;
     	}
+
+//        if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_comm_param(DEVID, chan_num, &inject_param, BHT_L1_PARAM_OPT_GET)))
+//    	{
+//    		printf("tx_chan_comm_param set failed, error info: %s, result = %d\n", \
+//    			bht_L1_error_to_string(result), result);
+//    		goto test_error;
+//    	}
+        inject_param.tb_bits = BHT_L1_A429_WORD_BIT32;
+        inject_param.tb_gap = BHT_L1_A429_GAP_4BIT;
+        inject_param.tb_par_en = BHT_L1_ENABLE;
+        if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_inject_param(DEVID, chan_num, &inject_param, BHT_L1_PARAM_OPT_SET)))
+    	{
+    		printf("tx_chan_inject_param set failed, error info: %s, result = %d\n", \
+    			bht_L1_error_to_string(result), result);
+    		goto test_error;
+    	}
+        
     	//the same common param with receive channel
     	if(BHT_SUCCESS != (result = bht_L1_a429_rx_chan_comm_param(DEVID, chan_num, &comm_param, BHT_L1_PARAM_OPT_SET)))
     	{
