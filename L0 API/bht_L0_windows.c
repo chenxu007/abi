@@ -361,6 +361,82 @@ bht_L0_u32 bht_L0_write_setupmem32(bht_L0_u32 dev_id, bht_L0_u32 offset, bht_L0_
 	return result;
 }
 
+bht_L0_u32 bht_L0_read_setupmem16(bht_L0_u32 dev_id, bht_L0_u32 offset, bht_L0_u16 *data, bht_L0_u32 count)
+{
+    bht_L0_u32 result = BHT_SUCCESS;	
+    bht_L0_u32 backplane_type, board_type, board_num, channel_type, idx;
+    
+    backplane_type = dev_id & 0xF0000000;
+	board_type     = dev_id & 0x0FF00000;
+	board_num      = dev_id & 0x000F0000;
+	channel_type   = dev_id & 0x0000FF00;
+
+    switch(backplane_type)
+    {
+        case BHT_DEVID_BACKPLANETYPE_PCI:            
+            if(devices_cb[backplane_type >> 28][board_type >> 20][board_num >> 16] != 0)
+            {
+                win_pci_device_cb_t * pci_device_cb = (win_pci_device_cb_t *)devices_cb[backplane_type >> 28][board_type >> 20][board_num >> 16];
+
+                idx = 0;
+                while(count != idx)
+                {
+                    if(WD_STATUS_SUCCESS != WDC_ReadAddr16(pci_device_cb->wd_handle, 0, (offset + 2 * idx), &data[idx]))
+                    {
+                        result = BHT_ERR_DRIVER_READ_FAIL;
+                        break;
+                    }
+                    idx++;
+                }
+            }
+            else
+                result = BHT_ERR_DEV_NOT_INITED;
+            break;
+        default:
+            result = BHT_ERR_UNSUPPORTED_BACKPLANE;
+    }
+
+	return result;
+}
+
+bht_L0_u32 bht_L0_write_setupmem16(bht_L0_u32 dev_id, bht_L0_u32 offset, bht_L0_u16 *data, bht_L0_u32 count)
+{
+    bht_L0_u32 result = BHT_SUCCESS;	
+    bht_L0_u32 backplane_type, board_type, board_num, channel_type, idx;
+    
+    backplane_type = dev_id & 0xF0000000;
+	board_type     = dev_id & 0x0FF00000;
+	board_num      = dev_id & 0x000F0000;
+	channel_type   = dev_id & 0x0000FF00;
+
+    switch(backplane_type)
+    {
+        case BHT_DEVID_BACKPLANETYPE_PCI:            
+            if(devices_cb[backplane_type >> 28][board_type >> 20][board_num >> 16] != 0)
+            {
+                win_pci_device_cb_t * pci_device_cb = (win_pci_device_cb_t *)devices_cb[backplane_type >> 28][board_type >> 20][board_num >> 16];
+
+                idx = 0;
+                while(count != idx)
+                {
+                    if(WD_STATUS_SUCCESS != WDC_WriteAddr16(pci_device_cb->wd_handle, 0, (offset + 2 * idx), data[idx]))
+                    {
+                        result = BHT_ERR_DRIVER_WRITE_FAIL;
+                        break;
+                    }
+                    idx++;
+                }
+            }
+            else
+                result = BHT_ERR_DEV_NOT_INITED;
+            break;
+        default:
+            result = BHT_ERR_UNSUPPORTED_BACKPLANE;
+    }
+
+	return result;
+}
+
 bht_L0_u32 bht_L0_attach_inthandler(bht_L0_u32 dev_id, bht_L0_u32 chan_regoffset, BHT_L0_USER_ISRFUNC isr, void * arg)
 {
     bht_L0_u32 result = BHT_SUCCESS;	

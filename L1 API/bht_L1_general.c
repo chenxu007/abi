@@ -27,7 +27,7 @@ modification history
 #define FPGA_UPDATE_FILE_PATH           "c:\\Windows\\SysWOW64\\"
 #else
 #define FPGA_UPDATE_FILE_PATH           "W:\\"
-//#define FPGA_UPDATE_FILE_PATH           "C:\\WINDOWS\\system32\\"
+#define FPGA_UPDATE_FILE_PATH           "C:\\WINDOWS\\system32\\"
 #endif
 #else
 #define FPGA_UPDATE_FILE_PATH           "/tffs0/"

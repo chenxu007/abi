@@ -289,6 +289,18 @@ bht_L0_write_setupmem32(bht_L0_u32 dev_id,
         bht_L0_u32 offset, 
         bht_L0_u32 *data, 
         bht_L0_u32 count);
+
+extern bht_L0_u32 
+bht_L0_read_setupmem16(bht_L0_u32 dev_id, 
+        bht_L0_u32 offset, 
+        bht_L0_u16 *data, 
+        bht_L0_u32 count);
+
+extern bht_L0_u32 
+bht_L0_write_setupmem16(bht_L0_u32 dev_id, 
+        bht_L0_u32 offset, 
+        bht_L0_u16 *data, 
+        bht_L0_u32 count);
         
 extern bht_L0_u32 
 bht_L0_attach_inthandler(bht_L0_u32 dev_id, 

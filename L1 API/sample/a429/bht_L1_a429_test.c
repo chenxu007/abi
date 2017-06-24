@@ -187,7 +187,7 @@ static DWORD WINAPI a429_channel_recv_thread(const void * arg)
 #endif
 }
 
-int main (void)
+int main43 (void)
 {
     int result;
 	bht_L0_u32 value, idx;
