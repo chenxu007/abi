@@ -433,6 +433,32 @@ a429_chan_comm_param(bht_L0_u32 dev_id,
 //}
 
 bht_L0_u32 
+bht_L1_a429_irigb_mode_cfg(bht_L0_u32 dev_id, 
+        bht_L1_a429_irigb_mode_e mode)
+{
+    bht_L0_u32 result = BHT_SUCCESS;
+    bht_L0_u32 value = mode;
+
+    return bht_L0_write_mem32(dev_id, BHT_A429_IRIG_B_SET, &value, 1);
+}
+
+bht_L0_u32 
+bht_L1_a429_irigb_time(bht_L0_u32 dev_id, 
+        bht_L1_a429_irigb_time_t *ti, 
+        bht_L1_param_opt_e param_opt)
+{
+    bht_L0_u32 result = BHT_SUCCESS;
+    bht_L0_u32 value;
+
+    if(BHT_L1_PARAM_OPT_SET == param_opt)
+        result = bht_L0_write_mem32(dev_id, BHT_A429_HOST_TIME1, (bht_L0_u32*)ti, 2);
+    else
+        result = bht_L0_read_mem32(dev_id, BHT_A429_HOST_TIME1, (bht_L0_u32*)ti, 2);
+
+    return result;
+}
+
+bht_L0_u32 
 bht_L1_a429_default_init(bht_L0_u32 dev_id)
 {
     bht_L0_u32 board_num, chan_num;
