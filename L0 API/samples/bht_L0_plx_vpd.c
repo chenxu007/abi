@@ -25,7 +25,6 @@ modification history
 
 #define DEVID BHT_DEVID_BACKPLANETYPE_PCI | BHT_DEVID_BOARDTYPE_PMCA429 | BHT_DEVID_BOARDNUM_01 
 #define EEPROM_SIZE 256
-#define EEDO BIT31
 #define F_bit BIT15
 
 
@@ -72,14 +71,14 @@ int main (void)
         goto plx_vpd_err;
 
     /* read read the entire eeprom data */
-    for(addr = 0x60; addr < EEPROM_SIZE; addr += 4)
+    for(addr = 0; addr < EEPROM_SIZE; addr += 4)
     {
         /* 1.disable eedo input (CNTRL[31] = 0) */
         if(BHT_SUCCESS != (result = bht_L0_read_setupmem32(DEVID, PLX9056_CNTRL, &value, 1)))
             goto plx_vpd_err;
-        if(value & EEDO)
+        if(value & PLX9056_CNTRL_EEDO_ENABLE)
         {
-            value &= (~EEDO);
+            value &= (~PLX9056_CNTRL_EEDO_ENABLE);
             if(BHT_SUCCESS != (result = bht_L0_write_setupmem32(DEVID, PLX9056_CNTRL, &value, 1)))
                 goto plx_vpd_err;
         }
