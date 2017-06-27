@@ -24,6 +24,7 @@ extern "C" {
 #define BHT_L0_API_VERSION          0x01000000      /* Version V 1.0.0.0 */
 
 /* PCI Vendor and Device IDs */
+//#define BHT_PCI_VENDOR_ID               0x10B5
 #define BHT_PCI_VENDOR_ID               0x8620
 
 #define BHT_PCI_DEVICE_ID_TEST1553		0x0001

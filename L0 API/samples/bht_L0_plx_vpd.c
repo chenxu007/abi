@@ -29,7 +29,7 @@ modification history
 #define F_bit BIT15
 
 
-int main56 (void)
+int main (void)
 {
     int fd;
     int result;

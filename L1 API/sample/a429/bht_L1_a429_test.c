@@ -10,7 +10,7 @@
 
 #define DEVID BHT_DEVID_BACKPLANETYPE_PCI | BHT_DEVID_BOARDTYPE_PMCA429 | BHT_DEVID_BOARDNUM_01 
 
-#define A429_DATAWORD_TEST_NUM      (2*1024)
+#define A429_DATAWORD_TEST_NUM      (200*1024)
 #define A429_TEST_CHAN_NUM			(1)
 #define A429_CUR_TEST_CHAN_NUM		(5)
 
@@ -187,7 +187,7 @@ static DWORD WINAPI a429_channel_recv_thread(const void * arg)
 #endif
 }
 
-int main43 (void)
+int main (void)
 {
     int result;
 	bht_L0_u32 value, idx;
@@ -256,6 +256,7 @@ int main43 (void)
 //    			bht_L1_error_to_string(result), result);
 //    		goto test_error;
 //    	}
+#if 0
         inject_param.tb_bits = BHT_L1_A429_WORD_BIT32;
         inject_param.tb_gap = BHT_L1_A429_GAP_4BIT;
         inject_param.tb_par_en = BHT_L1_ENABLE;
@@ -265,7 +266,7 @@ int main43 (void)
     			bht_L1_error_to_string(result), result);
     		goto test_error;
     	}
-        
+#endif   
     	//the same common param with receive channel
     	if(BHT_SUCCESS != (result = bht_L1_a429_rx_chan_comm_param(DEVID, chan_num, &comm_param, BHT_L1_PARAM_OPT_SET)))
     	{
