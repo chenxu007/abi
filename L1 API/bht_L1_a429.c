@@ -637,6 +637,11 @@ bht_L1_a429_tx_chan_period_param(bht_L0_u32 dev_id,
         if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_TX_CHAN_SEND_PERIOD, period, 1)))
             return result;
     }
+    else
+    {
+        result = bht_L1_a429_tx_chan_send(dev_id, chan_num, BHT_L1_A429_OPT_PERIOD_SEND_STOP, 0);
+        assert(BHT_SUCCESS == result);
+    }
     
     value = 0;
     if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CFG_ENABLE, &value, 1)))
