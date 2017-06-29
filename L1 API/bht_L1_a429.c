@@ -21,6 +21,7 @@ modification history
 #include <bht_L1_ring.h>
 #include <assert.h>
 #include <stdarg.h>
+#include <string.h>
 
 #define BHT_A429_DEVICE_MAX      16
 #define BHT_A429_CHANNEL_MAX     16
@@ -96,7 +97,7 @@ a429_isr(void *arg)
 {
     bht_L0_u32 idx;
     bht_L0_u32 result;
-    bht_L0_u32 value;
+    bht_L0_u32 value, value1;
     bht_L1_a429_rxp_t rxp;
     const bht_L0_u32 dev_id = (bht_L0_u32) arg;
     const bht_L0_u32 board_num = (dev_id & 0x000F0000) >> 16;    
@@ -107,6 +108,9 @@ a429_isr(void *arg)
 
     isr_count++;
 
+//    if(BHT_SUCCESS != bht_L0_detach_inthandler(dev_id))
+//        printf("detach_inthandler fail\n");
+#if 0
     /* check 429 channel interrupt vector */
     if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_INTR_CHANNEL_VECTOR, &value, 1)))
 	{
@@ -119,6 +123,12 @@ a429_isr(void *arg)
         goto isr_end;
 	}
 
+//    value1 = BIT7;
+//    if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_INTR_CLR, &value1, 1)))
+//	{
+//		isr_rdwr_err_num++;
+//		goto isr_end;
+//	}
 	for(idx = 16; idx < 32; idx++)
 	{
 	    if(0 == (value & (0x01 << idx)))
@@ -212,15 +222,15 @@ isr_end:
         isr_rdwr_err_num++;
         return NULL;
     }
-
+#endif
 	return NULL;
 }
 
 static bht_L0_u32 
 a429_cfg_reg_generate(bht_L1_chan_type_e chan_type, 
-        bht_L1_a429_chan_comm_param_t *comm_param,
-        bht_L1_a429_rx_chan_gather_param_t *gather_param,
-        bht_L1_a429_tx_chan_inject_param_t *inject_param,
+        const bht_L1_a429_chan_comm_param_t *comm_param,
+        const bht_L1_a429_rx_chan_gather_param_t *gather_param,
+        const bht_L1_a429_tx_chan_inject_param_t *inject_param,
         a429_tx_chan_trans_mode_e trans_mode)
 {
     bht_L0_u32 value = 0;
@@ -370,7 +380,7 @@ a429_chan_comm_param(bht_L0_u32 dev_id,
 
     if(BHT_L1_PARAM_OPT_GET == param_opt)
     {
-        memcpy(comm_param, old_comm_param, sizeof(bht_L1_a429_chan_comm_param_t));
+        (void)memcpy(comm_param, old_comm_param, sizeof(bht_L1_a429_chan_comm_param_t));
         return result;
     }
     
@@ -392,7 +402,7 @@ a429_chan_comm_param(bht_L0_u32 dev_id,
         return result;
 
     value = a429_cfg_reg_generate(chan_type, comm_param, gather_param, inject_param, trans_mode);
-	printf("%s, chan[%d], common param, cfg register = 0x%08x\n", (chan_type == BHT_L1_CHAN_TYPE_TX) ? "TX" : "RX", chan_num, value);
+//	printf("%s, chan[%d], common param, cfg register = 0x%08x\n", (chan_type == BHT_L1_CHAN_TYPE_TX) ? "TX" : "RX", chan_num, value);
     if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CHANNEL_CFG, &value, 1)))
         return result;
 
@@ -460,7 +470,7 @@ bht_L1_a429_default_init(bht_L0_u32 dev_id)
     }
 
     /* attach isr and enable 429 device interrupt */
-    if(BHT_SUCCESS != (result = bht_L0_attach_inthandler(dev_id, 0, (BHT_L0_USER_ISRFUNC)a429_isr, dev_id)))
+    if(BHT_SUCCESS != (result = bht_L0_attach_inthandler(dev_id, 0, (BHT_L0_USER_ISRFUNC)a429_isr, (void*)dev_id)))
         return result;
     
     /* enable 429 device interrupt */
@@ -601,13 +611,13 @@ bht_L1_a429_tx_chan_period_param(bht_L0_u32 dev_id,
 
     trans_mode = ((*period) > 0) ? A429_TX_CHAN_TRANS_MODE_PERIOD : A429_TX_CHAN_TRANS_MODE_RANDOM;
     value = a429_cfg_reg_generate(BHT_L1_CHAN_TYPE_TX, comm_param, NULL, inject_param, trans_mode);
-    printf("TX, chan[%d], period param, cfg register = 0x%08x\n", chan_num, value);
+    //(void)printf("TX, chan[%d], period param, cfg register = 0x%08x\n", chan_num, value);
     if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CHANNEL_CFG, &value, 1)))
         return result;
 
     if((*period) > 0)
     {
-		printf("TX, chan[%d], period param, period regis = 0x%08x\n", chan_num, *period);
+		//(void)printf("TX, chan[%d], period param, period regis = 0x%08x\n", chan_num, *period);
         if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_TX_CHAN_SEND_PERIOD, period, 1)))
             return result;
     }
@@ -659,7 +669,7 @@ bht_L1_a429_tx_chan_loop(bht_L0_u32 dev_id,
     else
         value &= (~(0x01 << (chan_num - 1)));
 
-    printf("TX, chan[%d], loop enable, Loop register = 0x%08x\n", chan_num, value);
+//    printf("TX, chan[%d], loop enable, Loop register = 0x%08x\n", chan_num, value);
     
     result = bht_L0_write_mem32(dev_id, BHT_A429_LOOP_EN, &value, 1);
 
@@ -856,7 +866,7 @@ bht_L1_a429_rx_chan_gather_param(bht_L0_u32 dev_id,
         bht_L1_a429_rx_chan_gather_param_t *gather_param,
         bht_L1_param_opt_e param_opt)
 {
-    bht_L0_u32 value, idx;
+    bht_L0_u32 value;
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_u32 is_changed = BHT_L0_FALSE;
     bht_L0_u32 board_num = (dev_id & 0x000F0000) >> 16;
@@ -900,7 +910,7 @@ bht_L1_a429_rx_chan_gather_param(bht_L0_u32 dev_id,
         return result;
 
     value = a429_cfg_reg_generate(BHT_L1_CHAN_TYPE_RX, comm_param, gather_param, NULL, A429_TX_CHAN_TRANS_MODE_RANDOM);
-	printf("RX, chan[%d], gather param, cfg register = 0x%08x\n", chan_num, value);
+//	printf("RX, chan[%d], gather param, cfg register = 0x%08x\n", chan_num, value);
     if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CHANNEL_CFG, &value, 1)))
         return result;
     
@@ -936,7 +946,7 @@ bht_L1_a429_rx_chan_filter_cfg(bht_L0_u32 dev_id,
         bht_L0_u32 chan_num, 
         bht_L1_a429_rx_chan_filter_t *filter)
 {
-    bht_L0_u32 value = 0, idx;
+    bht_L0_u32 value = 0;
     bht_L0_u32 result = BHT_SUCCESS;
     const bht_L0_u32 board_num = (dev_id & 0x000F0000) >> 16;
     
@@ -990,7 +1000,6 @@ bht_L1_a429_rx_chan_recv(bht_L0_u32 dev_id,
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_u32 cnt = 0;
     const bht_L0_u32 board_num = (dev_id & 0x000F0000) >> 16;
-    bht_L1_a429_recv_mod_e recv_mode;
     static bht_L0_s32 errn = 0;
     bht_L0_s32 ratio = 0;
 

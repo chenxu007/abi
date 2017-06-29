@@ -132,6 +132,12 @@ typedef enum
 
 typedef enum
 {
+    BHT_L1_A429_IRIGB_MODE_SLAVE = 0,
+    BHT_L1_A429_IRIGB_MODE_MASTER = 1
+}bht_L1_a429_irigb_mode_e;
+
+typedef enum
+{
     BHT_L1_A429_RECV_MODE_LIST = 0,
     BHT_L1_A429_RECV_MODE_SAMPLE = 1,
 }bht_L1_a429_recv_mod_e;
@@ -143,6 +149,22 @@ typedef enum
     BHT_L1_A429_OPT_PERIOD_SEND_START,
     BHT_L1_A429_OPT_PERIOD_SEND_STOP
 }bht_L1_a429_send_opt_e;
+
+typedef union
+{
+    bht_L0_u32 time[2];
+    
+    struct
+    {
+        bht_L0_u32 tm_us : 10;
+        bht_L0_u32 tm_ms : 10;
+        bht_L0_u32 tm_sec : 6;
+        bht_L0_u32 tm_min : 6;
+        bht_L0_u32 tm_hour : 5;
+        bht_L0_u32 tm_day : 9;
+        bht_L0_u32 resv : 18;
+    }tm;
+}bht_L1_a429_irigb_time_t;
 
 typedef struct
 {
@@ -190,10 +212,7 @@ typedef struct
 
 typedef struct
 {
-    bht_L0_u32 timestamp;                   /* it is a relative time, bits[31:26] - minute, 
-                                                                      bits[25:20] - second, 
-                                                                      bits[19:10] - millisecond, 
-                                                                      bits[ 9: 0] - microsecond*/
+    bht_L0_u32 timestamp;                   /* the unit of timestamp is 0.1 millisecond*/
     bht_L0_u32 data;
 }bht_L1_a429_rxp_t;
 
@@ -232,6 +251,27 @@ bht_L1_device_remove(bht_L0_u32 dev_id);
  */
 __declspec(dllexport) bht_L0_u32 
 bht_L1_a429_default_init(bht_L0_u32 dev_id);
+
+/* bht_L1_a429_irigb_mode_cfg ,the a429 device irig-b mode config
+ * @param dev_id
+ * @param mode, witch can be config to master or slave
+ * return BHT_SUCCESS or other error number.
+ */
+__declspec(dllexport) bht_L0_u32 
+bht_L1_a429_irigb_mode_cfg(bht_L0_u32 dev_id, 
+        bht_L1_a429_irigb_mode_e mode);
+
+/* bht_L1_a429_irigb_time ,the a429 device irig-b time config
+ * @param dev_id
+ * @param ti, this pointer store the irig-b time
+ * @param opt, the opt can be BHT_L1_PARAM_OPT_GET or BHT_L1_PARAM_OPT_SET, 
+    witch means to get or set the irig-b time
+ * return BHT_SUCCESS or other error number.
+ */
+__declspec(dllexport) bht_L0_u32 
+bht_L1_a429_irigb_time(bht_L0_u32 dev_id, 
+        bht_L1_a429_irigb_time_t *ti, 
+        bht_L1_param_opt_e param_opt);
 
 /**************************a429 tx channel*************************/
 /* bht_L1_a429_tx_chan_comm_param ,the a429 transmit channel 

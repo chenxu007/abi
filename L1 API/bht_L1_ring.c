@@ -4,6 +4,7 @@
 //#define RING_BUF_DEFINE(_name, _element)
 
 #include <bht_L1_ring.h>
+#include <string.h>
 
 #define NULL ((void*)0)
 
@@ -38,7 +39,7 @@ unsigned char * ring_buf_put(struct ring_buf *r, unsigned char * item)
     if((r->item_in - out_temp) == r->item_cnt)
         return NULL;
     
-    memcpy((r->base + r->item_size * (r->item_in & (r->item_cnt - 1))), item, r->item_size);
+    (void)memcpy((r->base + r->item_size * (r->item_in & (r->item_cnt - 1))), item, r->item_size);
     
     r->item_in++;
     

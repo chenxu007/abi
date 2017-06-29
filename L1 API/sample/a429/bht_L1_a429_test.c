@@ -4,15 +4,19 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
+#include <bht_L0_plx9056.h>
 #ifdef WINDOWS_OPS
 #include <windows.h>
 #endif
 
 #define DEVID BHT_DEVID_BACKPLANETYPE_PCI | BHT_DEVID_BOARDTYPE_PMCA429 | BHT_DEVID_BOARDNUM_01 
 
-#define A429_DATAWORD_TEST_NUM      (200*1024)
-#define A429_TEST_CHAN_NUM			(1)
-#define A429_CUR_TEST_CHAN_NUM		(5)
+/* the number of a429 data words send on tx channel */
+#define A429_DATAWORD_TEST_NUM      (2*1024)
+/* the first channel number to be test */
+#define A429_TEST_FIRST_CHAN_NUM		(5)
+/* the toal number of channel to be test */
+#define A429_TEST_TOTAL_CHAN_NUM		(1)
 
 #define BAUD	BHT_L1_A429_BAUD_200K
 #define A429_RECV_MODE_SAMPLE
@@ -20,7 +24,6 @@
 #define THRESHOLD_COUNT 1022
 #define THRESHOLD_TIME	5000
 #endif
-
 
 static bht_L0_u32 test_tx_buf[A429_DATAWORD_TEST_NUM];
 static bht_L0_u32 test_rx_buf[16][A429_DATAWORD_TEST_NUM];
@@ -195,8 +198,8 @@ int main (void)
 	bht_L1_a429_chan_comm_param_t comm_param;
 	bht_L1_a429_rx_chan_gather_param_t gather_param;
     bht_L1_a429_tx_chan_inject_param_t inject_param;
-	a429_send_thread_arg_t arg_tx[A429_TEST_CHAN_NUM] = {0};
-	a429_recv_thread_arg_t arg_rx[A429_TEST_CHAN_NUM] = {0};
+	a429_send_thread_arg_t arg_tx[A429_TEST_TOTAL_CHAN_NUM] = {0};
+	a429_recv_thread_arg_t arg_rx[A429_TEST_TOTAL_CHAN_NUM] = {0};
 #ifdef WINDOWS_OPS
 	HANDLE hThread[32] = {0};
 #endif
@@ -215,14 +218,6 @@ int main (void)
 	}
 
 	bht_L0_msleep(10);
-/*	if(BHT_SUCCESS != (result = bht_L0_read_mem32(DEVID, BHT_A429_INTR_CHANNEL_VECTOR, &value, 1)))
-	{
-		printf("%s read channel vector failed, error info: %s ,result = %d\n", \
-			__FUNCTION__, bht_L1_error_to_string(result), result);
-		goto test_error;
-	}
-*/
-//    printf("channel interrupt status 0x%08x\n", value);
 
 	/* device deault initialize */
 	if(BHT_SUCCESS == (result = bht_L1_a429_default_init(DEVID)))
@@ -235,9 +230,10 @@ int main (void)
 	}
 
     /* transmit channel 1-16 and receive channel 1-16 loopback test */
-    for(chan_num = A429_CUR_TEST_CHAN_NUM; chan_num <= A429_CUR_TEST_CHAN_NUM; chan_num++)
+    for(idx = 0; idx < A429_TEST_TOTAL_CHAN_NUM; idx++)
     {
-		//chan_num = A429_CUR_TEST_CHAN_NUM;
+		chan_num = A429_TEST_FIRST_CHAN_NUM + idx;
+        
         //common param config
     	comm_param.work_mode = BHT_L1_A429_CHAN_WORK_MODE_ENABLE;
     	comm_param.baud = BAUD;
@@ -249,24 +245,7 @@ int main (void)
     			bht_L1_error_to_string(result), result);
     		goto test_error;
     	}
-
-//        if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_comm_param(DEVID, chan_num, &inject_param, BHT_L1_PARAM_OPT_GET)))
-//    	{
-//    		printf("tx_chan_comm_param set failed, error info: %s, result = %d\n", \
-//    			bht_L1_error_to_string(result), result);
-//    		goto test_error;
-//    	}
-#if 0
-        inject_param.tb_bits = BHT_L1_A429_WORD_BIT32;
-        inject_param.tb_gap = BHT_L1_A429_GAP_4BIT;
-        inject_param.tb_par_en = BHT_L1_ENABLE;
-        if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_inject_param(DEVID, chan_num, &inject_param, BHT_L1_PARAM_OPT_SET)))
-    	{
-    		printf("tx_chan_inject_param set failed, error info: %s, result = %d\n", \
-    			bht_L1_error_to_string(result), result);
-    		goto test_error;
-    	}
-#endif   
+ 
     	//the same common param with receive channel
     	if(BHT_SUCCESS != (result = bht_L1_a429_rx_chan_comm_param(DEVID, chan_num, &comm_param, BHT_L1_PARAM_OPT_SET)))
     	{
@@ -302,24 +281,22 @@ int main (void)
     	}
     }
 
-#ifdef WINDOWS_OPS		
-	for(idx = 1; idx <= A429_TEST_CHAN_NUM; idx++)
+#ifdef WINDOWS_OPS0
+	for(idx = 0; idx < A429_TEST_TOTAL_CHAN_NUM; idx++)
     {   
 		//create send thread
-		arg_tx[idx-1].dev_id = DEVID;
-        arg_tx[idx-1].chan_num = idx;
-		arg_tx[idx-1].chan_num = A429_CUR_TEST_CHAN_NUM;
-    	if(NULL == (hThread[2*(idx - 1)] = CreateThread(NULL, 20000* 1024, (LPTHREAD_START_ROUTINE)a429_channel_send_thread, (LPVOID)&arg_tx[idx-1], 0, NULL)))
+		arg_tx[idx].dev_id = DEVID;
+		arg_tx[idx].chan_num = A429_TEST_FIRST_CHAN_NUM + idx;
+    	if(NULL == (hThread[2 * idx] = CreateThread(NULL, 20000* 1024, (LPTHREAD_START_ROUTINE)a429_channel_send_thread, (LPVOID)&arg_tx[idx], 0, NULL)))
     	{
     		printf("CreateThread failed\n");
     		goto test_error;
     	}
 
-        arg_rx[idx-1].dev_id = DEVID;
-        arg_rx[idx-1].chan_num = idx;
-		arg_rx[idx-1].chan_num = A429_CUR_TEST_CHAN_NUM;
+        arg_rx[idx].dev_id = DEVID;
+        arg_rx[idx].chan_num = idx + A429_TEST_FIRST_CHAN_NUM;
     	//create receive thread
-        if(NULL == (hThread[2*(idx - 1) + 1] = CreateThread(NULL, 20000* 1024, (LPTHREAD_START_ROUTINE)a429_channel_recv_thread, (LPVOID)&arg_rx[idx-1], 0, NULL)))
+        if(NULL == (hThread[2 * idx + 1] = CreateThread(NULL, 20000* 1024, (LPTHREAD_START_ROUTINE)a429_channel_recv_thread, (LPVOID)&arg_rx[idx], 0, NULL)))
     	{
     		printf("CreateThread failed\n");
     		goto test_error;
@@ -327,16 +304,45 @@ int main (void)
     }
 
 	//Wait until all threads have terminated.
-	WaitForMultipleObjects(2 * A429_TEST_CHAN_NUM, hThread, TRUE, INFINITE);
+	WaitForMultipleObjects(2 * A429_TEST_TOTAL_CHAN_NUM, hThread, TRUE, INFINITE);
 
     //Close all thread handle supon completion.
-    for(idx = 0; idx < (2*A429_TEST_CHAN_NUM); idx++)
-        CloseHandle(hThread[idx]);
+//    for(idx = 0; idx < (2*A429_TEST_TOTAL_CHAN_NUM); idx++)
+//        CloseHandle(hThread[idx]);
+#else
+#if 1
+	{
+		bht_L0_u32 num;
+		bht_L1_a429_rxp_t rxp;
 
+		if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_send(DEVID, A429_TEST_FIRST_CHAN_NUM, BHT_L1_A429_OPT_RANDOM_SEND, 0x1234)))
+		{
+			printf("tx_chan_send failed[idx = %d], error info : %s, result = %d\n", \
+				idx, bht_L1_error_to_string(result), result);
+		}
+
+		if(BHT_SUCCESS != bht_L1_a429_rx_chan_recv(DEVID, A429_TEST_FIRST_CHAN_NUM, &rxp, 1, &num, 1000))
+		{
+			printf("rx channel[%d] recv err\n", A429_TEST_FIRST_CHAN_NUM);
+		}
+	}
+#endif
 #endif
 
 test_error:
-#if 0
+#if 1
+    if(BHT_SUCCESS != (result = bht_L0_read_setupmem32(DEVID, PLX9056_INTCSR, &value, 1)))
+        return result;
+	printf("value = %08x\n", value);
+    
+	value = 0;
+	if(BHT_SUCCESS != (result = bht_L0_write_setupmem32(DEVID, PLX9056_INTCSR, &value, 1)))
+        return result;
+	
+	if(BHT_SUCCESS != (result = bht_L0_read_setupmem32(DEVID, PLX9056_INTCSR, &value, 1)))
+        return result;
+	printf("value = %08x\n", value);
+
     if(BHT_SUCCESS != bht_L0_detach_inthandler(DEVID))
         printf("detach_inthandler fail\n");
 	if(BHT_SUCCESS == (result = bht_L1_device_remove(DEVID)))
