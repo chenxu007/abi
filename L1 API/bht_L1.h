@@ -263,6 +263,25 @@ bht_L1_a429_tx_chan_inject_param(bht_L0_u32 dev_id,
         bht_L1_a429_tx_chan_inject_param_t *inject_param, 
         bht_L1_param_opt_e param_opt);
 
+/* bht_L1_a429_tx_chan_period_param ,the a429 transmit channel 
+ * send period config, if the period is > 0, when you use bht_L1_a429_tx_chan_send to send on the 
+ * channel, you should use the option BHT_L1_A429_OPT_PERIOD_SEND_UPDATE to update the data which will
+ * be send on the channel periodically, then you can use the option BHT_L1_A429_OPT_PERIOD_SEND_START
+ * and BHT_L1_A429_OPT_PERIOD_SEND_STOP to start/stop the period send 
+ * @param dev_id
+ * @param chan_num, 1 <= chan_num <= 16
+ * @param period, if you use this option BHT_L1_PARAM_OPT_SET, this pointer should store 
+    the period param, if you use option  BHT_L1_PARAM_OPT_GET, the period param will be return in 
+    this pointer
+ * @param param_opt, param_opt can be BHT_L1_PARAM_OPT_GET or BHT_L1_PARAM_OPT_SET
+ * return BHT_SUCCESS or other error number.
+ */
+__declspec(dllexport) bht_L0_u32
+bht_L1_a429_tx_chan_period_param(bht_L0_u32 dev_id,
+        bht_L0_u32 chan_num,
+        bht_L0_u32 * period,
+        bht_L1_param_opt_e param_opt);
+
 /* bht_L1_a429_tx_chan_loop ,the a429 transmit channel 
  * loopback config function
  * @param dev_id
