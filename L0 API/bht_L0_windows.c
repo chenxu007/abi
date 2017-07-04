@@ -20,7 +20,7 @@ modification history
 
 #include <bht_L0.h>
 
-#define LICENSE_10_2 "6C3CC2CFE89E7AD0424A070D434A6F6DC4950E1D.BibHong-tech"
+#define LICENSE_10_2 "6C3CC2CFE89E7AD0424A070D434A6F6DC4950E31.hwacreate"
 
 /* windows pci device control block */
 typedef struct
@@ -471,8 +471,8 @@ bht_L0_u32 bht_L0_attach_inthandler(bht_L0_u32 dev_id, bht_L0_u32 chan_regoffset
                 (pTrans+2)->cmdTrans = WM_DWORD;
                 (pTrans+2)->Data.Dword = BIT0;
      
-				if(WD_STATUS_SUCCESS != WDC_IntEnable(pci_device_cb->wd_handle, pTrans, 3, 0, \
-                    (INT_HANDLER)isr, (PVOID)arg, FALSE))
+				if(WD_STATUS_SUCCESS != WDC_IntEnable(pci_device_cb->wd_handle, pTrans, 3, INTERRUPT_CMD_COPY, \
+                    (INT_HANDLER)isr, (PVOID)arg, WDC_IS_KP(pci_device_cb->wd_handle)))
                     result = BHT_ERR_DRIVER_INT_ATTACH_FAIL;
             }
             else

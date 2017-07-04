@@ -17,7 +17,7 @@ modification history
 #include <bht_L0.h>
 #include <bht_L1.h>
 #include <bht_L1_a429.h>
-#include <bht_L1_plx9056.h>
+#include <bht_L0_plx9056.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <assert.h>
@@ -26,7 +26,7 @@ modification history
 #ifdef WINDOWS_BIT64
 #define FPGA_UPDATE_FILE_PATH           "c:\\Windows\\SysWOW64\\"
 #else
-#define FPGA_UPDATE_FILE_PATH           "W:\\"
+//#define FPGA_UPDATE_FILE_PATH           "W:\\"
 #define FPGA_UPDATE_FILE_PATH           "C:\\WINDOWS\\system32\\"
 #endif
 #else

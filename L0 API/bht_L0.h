@@ -306,7 +306,8 @@ bht_L0_write_setupmem16(bht_L0_u32 dev_id,
 extern bht_L0_u32 
 bht_L0_attach_inthandler(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_regoffset, 
-        BHT_L0_USER_ISRFUNC, void * arg);
+        BHT_L0_USER_ISRFUNC isr, 
+        void * arg);
 
 extern bht_L0_u32 
 bht_L0_detach_inthandler(bht_L0_u32 dev_id);

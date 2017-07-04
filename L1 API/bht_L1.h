@@ -212,10 +212,7 @@ typedef struct
 
 typedef struct
 {
-    bht_L0_u32 timestamp;                   /* it is a relative time, bits[31:26] - minute, 
-                                                                      bits[25:20] - second, 
-                                                                      bits[19:10] - millisecond, 
-                                                                      bits[ 9: 0] - microsecond*/
+    bht_L0_u32 timestamp;                   /* the unit of timestamp is 0.1 millisecond*/
     bht_L0_u32 data;
 }bht_L1_a429_rxp_t;
 
