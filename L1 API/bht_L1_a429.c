@@ -159,6 +159,8 @@ a429_isr(void *arg)
 				goto isr_end;
 			}
             a429_chan_data[board_num][idx - 16].recv_data_count++;
+
+            WDC_Trace("%s[%d] recv one \n", "RX",idx);
         }
         else
 		{
@@ -195,6 +197,7 @@ a429_isr(void *arg)
     					goto isr_end;
     				}
                     a429_chan_data[board_num][idx - 16].recv_data_count++;
+                    WDC_Trace("%s[%d] recv one \n", "RX",idx);
                 }
             }
             else
@@ -410,6 +413,11 @@ a429_chan_comm_param(bht_L0_u32 dev_id,
 
     memcpy(old_comm_param, comm_param, sizeof(bht_L1_a429_chan_comm_param_t));
 
+    if(BHT_SUCCESS == result)
+        WDC_Trace("dev[%08x] %s %s[%d] success\n", dev_id, __FUNCTION__, (chan_type == BHT_L1_CHAN_TYPE_RX) ? "RX" : "TX",  chan_num);
+    else
+        WDC_Trace("dev[%08x] %s %s[%d] fail\n", dev_id, __FUNCTION__, (chan_type == BHT_L1_CHAN_TYPE_RX) ? "RX" : "TX",  chan_num);
+
     return result;
 }
 
@@ -499,7 +507,11 @@ bht_L1_a429_default_init(bht_L0_u32 dev_id)
     if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_INTR_EN, &value, 1)))
         return result;
 
-
+    if(BHT_SUCCESS == result)
+        WDC_Trace("dev[%08x] %s success\n", dev_id, __FUNCTION__);
+    else
+        WDC_Trace("dev[%08x] %s failed\n", dev_id, __FUNCTION__);
+        
     return result;
 }
 
@@ -698,6 +710,11 @@ bht_L1_a429_tx_chan_loop(bht_L0_u32 dev_id,
 
     a429_tx_chan_param = &device_param->tx_chan_param[chan_num - 1];
     a429_tx_chan_param->loop_enable = opt;
+
+    if(BHT_SUCCESS == result)
+        WDC_Trace("dev[%08x] %s success\n", dev_id, __FUNCTION__, "TX",  chan_num);
+    else
+        WDC_Trace("dev[%08x] %s faild\n", dev_id, __FUNCTION__, "TX",  chan_num);
     
     return result;
 }
@@ -868,6 +885,11 @@ bht_L1_a429_tx_chan_send(bht_L0_u32 dev_id,
             result = BHT_ERR_BAD_INPUT;
     }
 
+    if(BHT_SUCCESS == result)
+        WDC_Trace("dev[%08x] %s %s[%d] success\n", dev_id, __FUNCTION__, "TX",  chan_num);
+    else
+        WDC_Trace("dev[%08x] %s %s[%d] fail\n", dev_id, __FUNCTION__, "TX",  chan_num);
+    
     return result;
 }
 
@@ -931,7 +953,7 @@ bht_L1_a429_rx_chan_gather_param(bht_L0_u32 dev_id,
         return result;
 
     value = a429_cfg_reg_generate(BHT_L1_CHAN_TYPE_RX, comm_param, gather_param, NULL, A429_TX_CHAN_TRANS_MODE_RANDOM);
-	printf("RX, chan[%d], gather param, cfg register = 0x%08x\n", chan_num, value);
+	//printf("RX, chan[%d], gather param, cfg register = 0x%08x\n", chan_num, value);
     if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CHANNEL_CFG, &value, 1)))
         return result;
     
@@ -958,6 +980,11 @@ bht_L1_a429_rx_chan_gather_param(bht_L0_u32 dev_id,
     }
     
     memcpy(old_gather_param, gather_param, sizeof(bht_L1_a429_rx_chan_gather_param_t));
+
+    if(BHT_SUCCESS == result)
+        WDC_Trace("dev[%08x] %s %s[%d] success\n", dev_id, __FUNCTION__, "TX",  chan_num);
+    else
+        WDC_Trace("dev[%08x] %s %s[%d] faild\n", dev_id, __FUNCTION__, "TX",  chan_num);
     
     return result;
 }
@@ -1061,6 +1088,11 @@ bht_L1_a429_rx_chan_recv(bht_L0_u32 dev_id,
     }while(timeout_ms && (cnt < max_rxp));
 
     *rxp_num = cnt;
+
+    if(0 < cnt)
+        WDC_Trace("dev[%08x] %s %s[%d] success\n", dev_id, __FUNCTION__,  "RX",  chan_num);
+    else
+        WDC_Trace("dev[%08x] %s %s[%d] faild\n", dev_id, __FUNCTION__, "RX" ,  chan_num);
 
     return result;
 }

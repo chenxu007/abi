@@ -360,6 +360,11 @@ bht_L0_u32 bht_L1_device_probe(bht_L0_u32 dev_id)
 //        return result;
 //    else
 //        printf("bht_L0_attach_inthandler success\n");
+
+    if(BHT_SUCCESS == result)
+        WDC_Trace("dev[%08x] %s success\n",  dev_id, __FUNCTION__);
+    else
+        WDC_Trace("dev[%08x] %s failed\n", dev_id, __FUNCTION__);
     
     return result;
 }
