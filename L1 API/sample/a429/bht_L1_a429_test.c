@@ -95,43 +95,6 @@ static DWORD WINAPI a429_channel_send_thread(const void * arg)
     bht_L1_a429_chan_dump(dev_id, chan_num, BHT_L1_CHAN_TYPE_TX);
 	bht_L1_a429_chan_dump(dev_id, chan_num, BHT_L1_CHAN_TYPE_RX);
 
-#if 0
-	//bht_L0_msleep(1);
-
-check_vector:	if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_INTR_CHANNEL_VECTOR, &value, 1)))
-	{
-		printf("%s read channel vector failed, error info: %s ,result = %d\n", \
-			__FUNCTION__, bht_L1_error_to_string(result), result);
-		goto isr_end;
-	}
-    if(0 == value)
-        goto check_vector;
-
-	//bht_L0_msleep(1);
-
-	for(idx = 16; idx < 32; idx++)
-	{
-		if(value & (0x01 << idx))
-		{
-			bht_L1_a429_rxp_t rxp;
-            
-			//choose channel idx
-			if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CHANNEL_NUM_RECV, &idx, 1)))
-			{
-				printf("%s write channel choose failed, error info: %s ,result = %d\n", \
-					__FUNCTION__, bht_L1_error_to_string(result), result);
-				goto isr_end;
-			}
-            if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_WORD_RD_CHANNEL_TIMESTAMP, &rxp.timestamp, 1)))
-                goto isr_end;
-            if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_WORD_RD_CHANNEL_FREASH, &rxp.data, 1)))
-                goto isr_end;
-			printf("rx channel[%d], recv data[%x]\n", idx, 0x7fffffff & rxp.data);
-		}
-	}
-
-isr_end:
-#endif
 #ifdef WINDOWS_OPS
 	return 0;
 #endif
@@ -342,6 +305,10 @@ test_error:
 	if(BHT_SUCCESS != (result = bht_L0_read_setupmem32(DEVID, PLX9056_INTCSR, &value, 1)))
         return result;
 	printf("value = %08x\n", value);
+
+	bht_L1_a429_chan_dump(DEVID, A429_TEST_FIRST_CHAN_NUM, BHT_L1_CHAN_TYPE_RX);
+	bht_L1_a429_chan_dump(DEVID, A429_TEST_FIRST_CHAN_NUM, BHT_L1_CHAN_TYPE_TX);
+
 
     if(BHT_SUCCESS != bht_L0_detach_inthandler(DEVID))
         printf("detach_inthandler fail\n");

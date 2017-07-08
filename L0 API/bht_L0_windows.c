@@ -461,6 +461,7 @@ bht_L0_u32 bht_L0_attach_inthandler(bht_L0_u32 dev_id, bht_L0_u32 chan_regoffset
 #ifndef BHT_A429_INTR_STATE
 #define BHT_A429_INTR_STATE					0X0028
 #endif
+#if 1
                 (pTrans)->dwPort = (dev->pAddrDesc+2)->kptAddr + BHT_A429_INTR_STATE;
                 (pTrans)->cmdTrans = RM_DWORD;
                 
@@ -474,6 +475,11 @@ bht_L0_u32 bht_L0_attach_inthandler(bht_L0_u32 dev_id, bht_L0_u32 chan_regoffset
 				if(WD_STATUS_SUCCESS != WDC_IntEnable(pci_device_cb->wd_handle, pTrans, 3, INTERRUPT_CMD_COPY, \
                     (INT_HANDLER)isr, (PVOID)arg, WDC_IS_KP(pci_device_cb->wd_handle)))
                     result = BHT_ERR_DRIVER_INT_ATTACH_FAIL;
+#else
+                if(WD_STATUS_SUCCESS != WDC_IntEnable(pci_device_cb->wd_handle, NULL, 0, 0, \
+                    (INT_HANDLER)isr, (PVOID)arg, WDC_IS_KP(pci_device_cb->wd_handle)))
+                    result = BHT_ERR_DRIVER_INT_ATTACH_FAIL;
+#endif
             }
             else
                 result = BHT_ERR_DEV_NOT_INITED;
@@ -501,6 +507,12 @@ bht_L0_u32 bht_L0_detach_inthandler(bht_L0_u32 dev_id)
             {
                 win_pci_device_cb_t * pci_device_cb = (win_pci_device_cb_t *)\
                     devices_cb[backplane_type >> 28][board_type >> 20][board_num >> 16];
+
+                if(!WDC_IntIsEnabled(pci_device_cb->wd_handle))
+            	{
+            		return BHT_ERR_DRIVER_INT_DETACH_FAIL;
+            	}
+                
 				if(WD_STATUS_SUCCESS != WDC_IntDisable(pci_device_cb->wd_handle))
                     result = BHT_ERR_DRIVER_INT_DETACH_FAIL;
             }

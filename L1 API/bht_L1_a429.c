@@ -95,6 +95,7 @@ static bht_L0_u32 isr_list_err_num = 0;
 static void * 
 a429_isr(void *arg)
 {
+#if 1
     bht_L0_u32 idx;
     bht_L0_u32 result;
     bht_L0_u32 value, value1;
@@ -110,7 +111,7 @@ a429_isr(void *arg)
 
 //    if(BHT_SUCCESS != bht_L0_detach_inthandler(dev_id))
 //        printf("detach_inthandler fail\n");
-#if 0
+
     /* check 429 channel interrupt vector */
     if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_INTR_CHANNEL_VECTOR, &value, 1)))
 	{
