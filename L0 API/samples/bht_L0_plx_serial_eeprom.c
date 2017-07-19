@@ -28,11 +28,11 @@ modification history
 #define EEDI  0x04000000   /* bit 26 RW */
 #define EEDO  0x08000000   /* bit 27 RO */
 #define EEDS  0x80000000   /* bit 31 RW */
-#define DEVID BHT_DEVID_BACKPLANETYPE_PCI | BHT_DEVID_BOARDTYPE_PMCA429 | BHT_DEVID_BOARDNUM_01 
+#define DEVID BHT_DEVID_BACKPLANETYPE_PCI | BHT_DEVID_BOARDTYPE_UNINITIALIZED | BHT_DEVID_BOARDNUM_01 
 #define EEPROM_SIZE 128
-#define ACTION_READ_ALL
+//#define ACTION_READ_ALL
 //#define ACTION_ERASE
-//#define ACTION_INIT_EEPROM
+#define ACTION_INIT_EEPROM
 
 int hatoi(bht_L0_u8* str, bht_L0_u32 length)     
 {     
@@ -850,6 +850,9 @@ int main (void)
     }
 
     close(fd);
+
+	printf("eeprom read succ! data stored in eeprom-value.txt.\n");
+    
 #endif	
 
 #ifdef ACTION_ERASE
@@ -860,6 +863,7 @@ int main (void)
 		bht_L0_plx_eeprom_write(DEVID, addr, &value16, 1);
 	}
     bht_L0_plx_eeprom_write_disable(DEVID);
+	printf("eeprom erased succ!\n");
 #endif
 
 #ifdef ACTION_INIT_EEPROM
@@ -885,6 +889,8 @@ int main (void)
     bht_L0_plx_eeprom_write_disable(DEVID);
 
 	close(fd);
+
+	printf("eeprom inlitialized succ!\n");
 
 #endif
     

@@ -26,8 +26,9 @@ modification history
 #ifdef WINDOWS_BIT64
 #define FPGA_UPDATE_FILE_PATH           "c:\\Windows\\SysWOW64\\"
 #else
-//#define FPGA_UPDATE_FILE_PATH           "W:\\"
-#define FPGA_UPDATE_FILE_PATH           "C:\\WINDOWS\\system32\\"
+#define FPGA_UPDATE_FILE_PATH           "W:\\"
+//#define FPGA_UPDATE_FILE_PATH           "X:\\doc\\fpga_bin\\"
+//#define FPGA_UPDATE_FILE_PATH           "C:\\WINDOWS\\system32\\"
 #endif
 #else
 #define FPGA_UPDATE_FILE_PATH           "/tffs0/"
@@ -240,7 +241,7 @@ static bht_L0_u32 bht_L1_device_load(bht_L0_u32 dev_id)
         for(idx = 0; idx < 8; idx++)
             bht_L0_write_mem32(dev_id, 0x8000, &value, 1);
         /* check version */
-        for(idx = 100; idx > 0; idx--)
+        for(idx = 1000; idx > 0; idx--)
         {
             bht_L0_msleep(1);
             if(board_type == BHT_DEVID_BOARDTYPE_PMCA429)
@@ -286,14 +287,14 @@ bht_L0_u32 bht_L1_device_softreset(bht_L0_u32 dev_id)
         }while(value != 0x00000001);
     }
     else
-        result = BHT_ERR_UNSUPPORTED_BACKPLANE;
+        result = BHT_ERR_UNSUPPORTED_BOARDTYPE;
 
     return result;
 }
     
 bht_L0_u32 bht_L1_device_probe(bht_L0_u32 dev_id)
 {
-    bht_L0_s32 value;
+    bht_L0_u32 value;
     bht_L0_u32 backplane_type, board_type;
     bht_L0_u32 result = BHT_SUCCESS;
 
@@ -335,17 +336,17 @@ bht_L0_u32 bht_L1_device_probe(bht_L0_u32 dev_id)
             return result;
         }
         /* 1.4 command 0xc-read mult line; 0xe- read line; 0x6- read */
-	    value = 0xd767c;
+	    value = 0xc767c;
         if(BHT_SUCCESS != (result = bht_L0_write_setupmem32(dev_id, PLX9056_CNTRL, &value, 1)))
         {
             return result;
         }
         /* 2 load device */
-        if(BHT_SUCCESS != (result = bht_L1_device_load(dev_id)))
-            return result;
+//        if(BHT_SUCCESS != (result = bht_L1_device_load(dev_id)))
+//            return result;
         
         /* 3 soft reset device */
-        result = bht_L1_device_softreset(dev_id);
+//        result = bht_L1_device_softreset(dev_id);
         
     }
     else
@@ -372,5 +373,23 @@ bht_L0_u32 bht_L1_device_probe(bht_L0_u32 dev_id)
 bht_L0_u32 bht_L1_device_remove(bht_L0_u32 dev_id)
 {
     return bht_L0_unmap_memory(dev_id);   
+}
+
+bht_L0_u32 bht_L1_device_version(bht_L0_u32 dev_id, bht_L0_u32 *version)
+{
+    bht_L0_s32 value;
+    bht_L0_u32 board_type;
+    bht_L0_u32 result = BHT_SUCCESS;
+
+	board_type = dev_id & 0x0FF00000;
+
+    if(board_type == BHT_DEVID_BOARDTYPE_PMCA429)
+    {
+        result = bht_L0_read_mem32(dev_id, BHT_A429_DEVICE_VERSION, version, 1);   
+    }
+    else
+        result = BHT_ERR_UNSUPPORTED_BOARDTYPE;
+
+    return result;
 }
 

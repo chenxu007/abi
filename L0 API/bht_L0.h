@@ -24,7 +24,9 @@ extern "C" {
 #define BHT_L0_API_VERSION          0x01000000      /* Version V 1.0.0.0 */
 
 /* PCI Vendor and Device IDs */
-//#define BHT_PCI_VENDOR_ID               0x10B5
+#define BHT_PCI_VENDOR_ORIGIN           0x10B5
+#define BHT_PCI_DEVICE_ORIGIN		    0x9056
+
 #define BHT_PCI_VENDOR_ID               0x8620
 
 #define BHT_PCI_DEVICE_ID_TEST1553		0x0001
@@ -86,6 +88,8 @@ extern "C" {
 #define BHT_DEVID_BOARDTYPE_PCIE1LA429		0x01A00000
 #define BHT_DEVID_BOARDTYPE_MPCIEA429		0x01B00000
 #define BHT_DEVID_BOARDTYPE_PC104PA429LTV	0x01C00000
+
+#define BHT_DEVID_BOARDTYPE_UNINITIALIZED	0x02000000
 
 /* Device ID Constants - Product (backplane | board type)
  * For defining DEVID in user applications.

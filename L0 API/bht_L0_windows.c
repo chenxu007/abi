@@ -115,6 +115,11 @@ bht_L0_u32 bht_L0_map_memory(bht_L0_u32 dev_id, void * arg)
                     pci_device_id = BHT_PCI_DEVICE_ID_PMC1553;
                 else if(board_type == BHT_DEVID_BOARDTYPE_PMCA429)
                     pci_device_id = BHT_PCI_DEVICE_ID_PMCA429;
+                else if(board_type == BHT_DEVID_BOARDTYPE_UNINITIALIZED)
+                {
+                    pci_vendor_id = BHT_PCI_VENDOR_ORIGIN;
+                    pci_device_id = BHT_PCI_DEVICE_ORIGIN;
+                }
                 else
                 {
                     result = BHT_ERR_UNSUPPORTED_BOARDTYPE;
