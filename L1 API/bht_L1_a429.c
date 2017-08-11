@@ -102,10 +102,12 @@ static a429_chan_data_t a429_chan_data[BHT_A429_DEVICE_MAX][BHT_A429_CHANNEL_MAX
 bht_L0_u32 isr_int_total = 0;
 bht_L0_u32 isr_int_valid_count = 0;
 bht_L0_u32 isr_vecter_idle_err_num = 0;
+bht_L0_u32 isr_chan_idle_err_num = 0;
 bht_L0_u32 isr_rdwr_err_num = 0;
 bht_L0_u32 isr_ring_err_num = 0;
 bht_L0_u32 isr_sem_err_num = 0;
 bht_L0_u32 isr_list_err_num = 0;
+bht_L0_u32 isr_enable = 0;
 
 static void * 
 a429_isr(void *arg)
@@ -121,8 +123,34 @@ a429_isr(void *arg)
     struct ring_buf * r = NULL;
     bht_L0_sem semc;
     bht_L1_a429_recv_mod_e recv_mode;
+    static bht_L0_u32 isr_sem = 0;
 
     isr_int_total++;
+    
+    if(isr_sem == 1)
+        return NULL;
+    isr_sem = 1;
+   
+    if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_INTR_STATE, &value, 1)))
+    {
+        isr_sem = 0;
+        return NULL;
+    }
+
+    if(!(value & BIT4))
+    {
+        isr_sem = 0;
+        return NULL;
+    }
+    
+    value = BIT0;
+    if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_INTR_CLR, &value, 1)))
+    {
+        isr_sem = 0;
+        return NULL;
+    }
+    
+    DEVICE_MUTEX_LOCK(board_num);
 
 //    if(BHT_SUCCESS != bht_L0_detach_inthandler(dev_id))
 //        printf("detach_inthandler fail\n");
@@ -146,112 +174,123 @@ a429_isr(void *arg)
 //		isr_rdwr_err_num++;
 //		goto isr_end;
 //	}
-	for(idx = 16; idx < 32; idx++)
-	{
-	    if(0 == (int_vector & (0x01 << idx)))
-            continue;
-        
-        r = &a429_chan_data[board_num][idx - 16].rxp_ring_buf;
-        semc = a429_chan_data[board_num][idx - 16].semc;
-        recv_mode = a429_device_param[board_num].rx_chan_param[idx - 16].gather_param.recv_mode;
-        
-		//choose channel
-		if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CHANNEL_NUM_RECV, &idx, 1)))
-		{
-			isr_rdwr_err_num++;
-			goto isr_end;
-		}
-        
-        if(BHT_L1_A429_RECV_MODE_SAMPLE == recv_mode)
-        {
-            if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_WORD_RD_CHANNEL_TIMESTAMP, &rxp.timestamp, 1)))
-			{
-				isr_rdwr_err_num++;
-                goto isr_end;
-			}
-            if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_WORD_RD_CHANNEL_FREASH, &rxp.data, 1)))
-			{
-				isr_rdwr_err_num++;
-                goto isr_end;
-			}
-            if(NULL == ring_buf_put(r, (unsigned char*)&rxp))
-			{
-				isr_ring_err_num++;
-                goto isr_end;
-			}
+    
+    do
+    {
+    	for(idx = 16; idx < 32; idx++)
+    	{
+    	    if(0 == (int_vector & (0x01 << idx)))
+                continue;
+            
+            r = &a429_chan_data[board_num][idx - 16].rxp_ring_buf;
+            semc = a429_chan_data[board_num][idx - 16].semc;
+            recv_mode = a429_device_param[board_num].rx_chan_param[idx - 16].gather_param.recv_mode;
+            
+    		//choose channel
+    		if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CHANNEL_NUM_RECV, &idx, 1)))
+    		{
+    			isr_rdwr_err_num++;
+    			goto isr_end;
+    		}
+            
+            if(BHT_L1_A429_RECV_MODE_SAMPLE == recv_mode)
+            {
+                if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_WORD_RD_CHANNEL_TIMESTAMP, &rxp.timestamp, 1)))
+    			{
+    				isr_rdwr_err_num++;
+                    goto isr_end;
+    			}
+                if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_WORD_RD_CHANNEL_FREASH, &rxp.data, 1)))
+    			{
+    				isr_rdwr_err_num++;
+                    goto isr_end;
+    			}
 
-            if(BHT_SUCCESS != bht_L0_sem_give(semc))
-			{
-				isr_sem_err_num++;
-				goto isr_end;
-			}
-            a429_chan_data[board_num][idx - 16].recv_data_count++;
-            a429_chan_data[board_num][idx - 16].chk_times++;
-
-//            WDC_Trace("%s[%d] recv one \n", "RX",idx);
-        }
-        else
-		{
-//            if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_STATUS_CHANNEL_RECV, &value, 1)))
-//            {
-//				isr_rdwr_err_num++;
-//                goto isr_end;
-//			}
-            //check the list empty
-//            if((value & 0x01) == 0)
-//            {
-//                bht_L0_u32 count = value >> 16;
+                a429_chan_data[board_num][idx - 16].recv_data_count++;
                 a429_chan_data[board_num][idx - 16].chk_times++;
-                while(1)
+                
+                if(NULL == ring_buf_put(r, (unsigned char*)&rxp))
+    			{
+    				isr_ring_err_num++;
+//                    goto isr_end;
+    			}
+
+                if(BHT_SUCCESS != bht_L0_sem_give(semc))
+    			{
+    				isr_sem_err_num++;
+//    				goto isr_end;
+    			}
+    //            WDC_Trace("%s[%d] recv one \n", "RX",idx);
+            }
+            else
+    		{
+                if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_STATUS_CHANNEL_RECV, &value, 1)))
                 {
-                    if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_STATUS_CHANNEL_RECV, &value, 1)))
-                    {
-        				isr_rdwr_err_num++;
-                        goto isr_end;
-        			}
-                    if(0x01 & value)
-                        break;
+    				isr_rdwr_err_num++;
+                    goto isr_end;
+    			}
+                //check the list empty
+                if((value & 0x01) == 0)
+                {
+                    bht_L0_u32 count = value >> 16;
+                    a429_chan_data[board_num][idx - 16].chk_times++;
                     
-                    if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_WORD_RD_CHANNEL_TIMESTAMP, &rxp.timestamp, 2)))
-                    {
-        				isr_rdwr_err_num++;
-                        goto isr_end;
-        			}
-//                    if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_WORD_RD_CHANNEL_FREASH, &rxp.data, 1)))
-//                    {
-//        				isr_rdwr_err_num++;
-//                        goto isr_end;
-//        			}
-                    if(NULL == ring_buf_put(r, (unsigned char*)&rxp))
-                    {
-        				isr_ring_err_num++;
-                        goto isr_end;
-        			}
-                    if(BHT_SUCCESS != bht_L0_sem_give(semc))
-    				{
-    					isr_sem_err_num++;
-    					goto isr_end;
-    				}
-                    a429_chan_data[board_num][idx - 16].recv_data_count++;
-//                    WDC_Trace("%s[%d] recv one \n", "RX",idx);
+                    while(count)
+                    {   
+                        if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_WORD_RD_CHANNEL_TIMESTAMP, &rxp.timestamp, 2)))
+                        {
+            				isr_rdwr_err_num++;
+                            goto isr_end;
+            			}
+                        
+                        count--;
+
+                        a429_chan_data[board_num][idx - 16].recv_data_count++;
+
+                        if(NULL == ring_buf_put(r, (unsigned char*)&rxp))
+                        {
+            				isr_ring_err_num++;
+//                            goto isr_end;
+            			}
+                        if(BHT_SUCCESS != bht_L0_sem_give(semc))
+        				{
+        					isr_sem_err_num++;
+//        					goto isr_end;
+        				}
+                        
+                    }
                 }
-//            }
-//            else
-//            {
-//                isr_list_err_num++;
-//            }
-		}
-	}
+                else
+                {
+                    isr_chan_idle_err_num++;
+                }
+    		}
+    	}
+
+        if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_INTR_CHANNEL_VECTOR, &int_vector, 1)))
+    	{
+    		isr_rdwr_err_num++;
+    		goto isr_end;
+    	}
+    }while(0 != int_vector);
+
+    
 
 isr_end: 
     /* enable 429 logic pci interrupt */
     value = BIT0;
+//    if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, 0x8000, &value, 1)))
+//    {
+//        isr_rdwr_err_num++;
+//    }
     if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_INTR_EN, &value, 1)))
     {
         isr_rdwr_err_num++;
-        return NULL;
     }
+    isr_enable++;
 #endif
+    DEVICE_MUTEX_UNLOCK(board_num);
+    isr_sem = 0;
 	return NULL;
 }
 
@@ -294,11 +333,20 @@ a429_cfg_reg_generate(bht_L1_chan_type_e chan_type,
 }
 /* a429 general*/
 
-static bht_L0_u32 
+bht_L0_u32 
 a429_mib_clearall(bht_L0_u32 dev_id)
 {
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_u32 value;
+    bht_L0_u32 board_num, chan_num;
+
+    board_num = (dev_id & 0x000F0000) >> 16;
+
+    for(chan_num = 1; chan_num <= 16; chan_num++)
+    {
+        a429_chan_data[board_num][chan_num - 1].chk_times = 0;
+        a429_chan_data[board_num][chan_num - 1].recv_data_count = 0;
+    }
 
     value = 0xFFFFFFFF;
     if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_MIBS_CLR, &value, 1)))
@@ -419,6 +467,10 @@ a429_chan_comm_param(bht_L0_u32 dev_id,
         (void)memcpy(comm_param, old_comm_param, sizeof(bht_L1_a429_chan_comm_param_t));
         return result;
     }
+    else if(0 == comm_param->baud)
+    {
+        return BHT_ERR_BAD_INPUT;
+    }
     
     //compare
     if(0 != memcmp(old_comm_param, comm_param, sizeof(bht_L1_a429_chan_comm_param_t)))
@@ -448,6 +500,7 @@ a429_chan_comm_param(bht_L0_u32 dev_id,
         if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_BAUD_RATE_SET, &value, 1)))
             return result;
     }
+    WDC_Trace("dev[%08x] %s %s[%d] baud[%d] set \n", dev_id, __FUNCTION__, (chan_type == BHT_L1_CHAN_TYPE_RX) ? "RX" : "TX",  chan_num, comm_param->baud);
     value = 0;
     if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CFG_ENABLE, &value, 1)))
         return result;
@@ -509,6 +562,39 @@ bht_L1_a429_irigb_time(bht_L0_u32 dev_id,
     return result;
 }
 
+void 
+bht_L1_a429_param_reset(bht_L0_u32 dev_id)
+{
+    bht_L0_u32 board_num, chan_num;
+    bht_L0_u32 result = BHT_SUCCESS;
+    bht_L0_u32 value;
+
+    board_num = (dev_id & 0x000F0000) >> 16;
+
+    for(chan_num = 0; chan_num < BHT_A429_CHANNEL_MAX; chan_num++)
+    {
+        /* send channel, slope default is 1.5us */        
+        a429_device_param[board_num].tx_chan_param[chan_num].comm_param.work_mode = BHT_L1_A429_CHAN_WORK_MODE_CLOSE_AND_CLEAR;
+        a429_device_param[board_num].rx_chan_param[chan_num].comm_param.work_mode = BHT_L1_A429_CHAN_WORK_MODE_CLOSE_AND_CLEAR;
+        a429_device_param[board_num].tx_chan_param[chan_num].comm_param.baud = BHT_L1_A429_BAUD_12_5K;
+        a429_device_param[board_num].rx_chan_param[chan_num].comm_param.baud = BHT_L1_A429_BAUD_12_5K;
+        a429_device_param[board_num].tx_chan_param[chan_num].comm_param.par = BHT_L1_A429_PARITY_ODD;
+        a429_device_param[board_num].rx_chan_param[chan_num].comm_param.par = BHT_L1_A429_PARITY_ODD;
+
+        a429_device_param[board_num].tx_chan_param[chan_num].loop_enable = BHT_L1_OPT_DISABLE;
+        a429_device_param[board_num].tx_chan_param[chan_num].slope = BHT_L1_A429_SLOPE_1_5_US;
+        a429_device_param[board_num].tx_chan_param[chan_num].period = 0;
+        a429_device_param[board_num].tx_chan_param[chan_num].inject_param.tb_bits = BHT_L1_A429_WORD_BIT32;
+        a429_device_param[board_num].tx_chan_param[chan_num].inject_param.tb_gap = BHT_L1_A429_GAP_4BIT;
+        a429_device_param[board_num].tx_chan_param[chan_num].inject_param.tb_par_en = BHT_L1_DISABLE;
+
+        a429_device_param[board_num].rx_chan_param[chan_num].gather_param.gather_enable = BHT_L1_ENABLE;
+        a429_device_param[board_num].rx_chan_param[chan_num].gather_param.recv_mode = BHT_L1_A429_RECV_MODE_LIST;
+        a429_device_param[board_num].rx_chan_param[chan_num].gather_param.threshold_count = 512;
+        a429_device_param[board_num].rx_chan_param[chan_num].gather_param.threshold_time = 100;
+    }
+}
+
 bht_L0_u32 
 bht_L1_a429_default_init(bht_L0_u32 dev_id)
 {
@@ -518,6 +604,8 @@ bht_L1_a429_default_init(bht_L0_u32 dev_id)
 
     board_num = (dev_id & 0x000F0000) >> 16;
 
+    bht_L1_a429_param_reset(dev_id);
+
     /* clear MIB */
     result = a429_mib_clearall(dev_id);
 
@@ -525,10 +613,6 @@ bht_L1_a429_default_init(bht_L0_u32 dev_id)
     for(chan_num = 0; chan_num < BHT_A429_CHANNEL_MAX; chan_num++)
     {
         bht_L0_sem semc;
-        /* send channel, slope default is 1.5us */
-        a429_device_param[board_num].tx_chan_param[chan_num].slope = BHT_L1_A429_SLOPE_1_5_US;
-        /* default not enable */
-        a429_device_param[board_num].tx_chan_param[chan_num].loop_enable = BHT_L1_OPT_DISABLE;
 
         /* create rx channel data sync semphare */
         if(0 > (semc = bht_L0_semc_create(0, A429_RXP_BUF_MAX)))
@@ -781,7 +865,7 @@ bht_L1_a429_tx_chan_slope_cfg(bht_L0_u32 dev_id,
 
     device_param = &a429_device_param[board_num];
 
-    if(device_param->tx_chan_param[chan_num].slope == slope)
+    if(device_param->tx_chan_param[chan_num - 1].slope == slope)
         return result;
 
     for(idx = 0; idx < BHT_A429_CHANNEL_MAX; idx++)
@@ -799,7 +883,7 @@ bht_L1_a429_tx_chan_slope_cfg(bht_L0_u32 dev_id,
 
     //TODO generate chan common param change event
 
-    a429_tx_chan_param = &device_param->tx_chan_param[chan_num];
+    a429_tx_chan_param = &device_param->tx_chan_param[chan_num - 1];
     a429_tx_chan_param->slope = slope;
     
     return result;
@@ -1046,7 +1130,7 @@ bht_L1_a429_rx_chan_filter_cfg(bht_L0_u32 dev_id,
     const bht_L0_u32 board_num = (dev_id & 0x000F0000) >> 16;
     
     if((chan_num > 16) | (chan_num < 1))
-        return BHT_ERR_INVALID_CHANNEL_NUM;
+        return BHT_ERR_INVALID_CHANNEL_NUM;    
 
     value = 1;
     if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CFG_ENABLE, &value, 1)))
@@ -1056,7 +1140,10 @@ bht_L1_a429_rx_chan_filter_cfg(bht_L0_u32 dev_id,
     if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CHOOSE_CHANNEL_NUM, &value, 1)))
         return result;
 
-    value = (filter->filter_mode << 12) | (filter->flt.reg16 & 0x0fff);
+    value = ((filter->filter_mode & 1) << 12) | (filter->label & 0xff) | ((filter->sdi & 0x3) << 8) | ((filter->ssm & 0x3) << 10);
+	WDC_Trace("addr[%p], mode[%d], label[%d], sdi[%d], ssm[%d], value[0x%08x]\n",
+        filter, filter->filter_mode, filter->label, filter->sdi, filter->ssm, value);
+
     if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_LABLE_FILTER, &value, 1)))
         return result;
 
@@ -1135,10 +1222,17 @@ bht_L1_a429_rx_chan_recv(bht_L0_u32 dev_id,
 
     *rxp_num = cnt;
 
-    if(0 < cnt)
-        WDC_Trace("dev[%08x] %s %s[%d] success\n", dev_id, __FUNCTION__,  "RX",  chan_num);
-    else
-        WDC_Trace("dev[%08x] %s %s[%d] faild\n", dev_id, __FUNCTION__, "RX" ,  chan_num);
+    if(0 == cnt)
+    {
+//        bht_L1_a429_chan_dump(dev_id, chan_num, BHT_L1_CHAN_TYPE_RX);
+        result = BHT_ERR_TIMEOUT;
+    }
+//        WDC_Trace("dev[%08x] %s %s[%d] success\n", dev_id, __FUNCTION__,  "RX",  chan_num);
+//    else
+//    {
+//        WDC_Trace("dev[%08x] %s %s[%d] faild\n", dev_id, __FUNCTION__, "RX" ,  chan_num);
+//        result = BHT_ERR_TIMEOUT;
+//    }
 
     return result;
 }
@@ -1150,6 +1244,7 @@ bht_L1_a429_chan_dump(bht_L0_u32 dev_id,
 {
     bht_L0_u32 loop_r = 0;
     bht_L0_u32 value;
+    bht_L0_u32 result;
     bht_L0_u32 cfg_r;    
     bht_L0_u32 baud_r;
     bht_L0_u32 int_threshold_r;
@@ -1197,6 +1292,7 @@ bht_L1_a429_chan_dump(bht_L0_u32 dev_id,
     
     if(BHT_L1_CHAN_TYPE_RX == type)
     {
+#if 1
         printf("RX chan[%d] dump\n", chan_num);
         printf("loop_en        0x0040 [0x%08x]\n", loop_r);
         printf("channel_cfg    0x1008 [0x%08x]\n", cfg_r);
@@ -1214,6 +1310,25 @@ bht_L1_a429_chan_dump(bht_L0_u32 dev_id,
         bht_L0_write_mem32(dev_id, BHT_A429_CHANNEL_NUM_RECV, &value, 1);
         bht_L0_read_mem32(dev_id, BHT_A429_STATUS_CHANNEL_RECV, &value, 1);
         printf("chan status    0x2104 [0x%08x]\n", value);
+#else
+		WDC_Trace("RX chan[%d] dump\n", chan_num);
+        WDC_Trace("loop_en        0x0040 [0x%08x]\n", loop_r);
+        WDC_Trace("channel_cfg    0x1008 [0x%08x]\n", cfg_r);
+        WDC_Trace("baud           0x100C [0x%08x]\n", baud_r);
+        WDC_Trace("int_threshold  0x1010 [0x%08x]\n", int_threshold_r);
+        WDC_Trace("mib cnt               [0x%08x]\n", mib_data.cnt);
+        WDC_Trace("mib err_cnt           [0x%08x]\n", mib_data.err_cnt);
+        v("recv data count       [0x%08x]\n", chan_data->recv_data_count);
+
+        bht_L0_read_mem32(dev_id, BHT_A429_INTR_STATE, &int_stat, 1);
+        WDC_Trace("pci int stat   0x0028 [0x%08x]\n", int_stat);
+        bht_L0_read_mem32(dev_id, BHT_A429_INTR_CHANNEL_VECTOR, &int_chan_vector, 1);
+        WDC_Trace("chan int vecto 0x002C [0x%08x]\n", int_chan_vector);
+        value = chan_num + 16 - 1;
+        bht_L0_write_mem32(dev_id, BHT_A429_CHANNEL_NUM_RECV, &value, 1);
+        bht_L0_read_mem32(dev_id, BHT_A429_STATUS_CHANNEL_RECV, &value, 1);
+        WDC_Trace("chan status    0x2104 [0x%08x]\n", value);		
+#endif
         
     }
     else
@@ -1225,8 +1340,40 @@ bht_L1_a429_chan_dump(bht_L0_u32 dev_id,
         printf("period        0x1300 [0x%08x]\n", device_param->tx_chan_param[chan_num - 1].period);
         printf("mib cnt              [0x%08x]\n", mib_data.cnt);
         printf("mib err_cnt          [0x%08x]\n", mib_data.err_cnt);
+        value = 0x0F & (chan_num - 1);
+        if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CHANNEL_NUM_SEND, &value, 1)))
+        {
+            printf("chan status read err\n");
+            return BHT_FAILURE;
+        }
+        /* check channel status stat: full or not full */
+        if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_STATUS_CHANNEL_SEND, &value, 1)))
+        {
+            printf("chan status read err\n");
+            return BHT_FAILURE;
+        }
+        printf("channel send status  [0x%08x]\n", value);
     }
 
     return BHT_SUCCESS;
 }
+
+bht_L0_u32
+bht_L1_a429_rx_chan_stat(bht_L0_u32 dev_id, 
+        bht_L0_u32 chan_num,
+        bht_L0_u32 *recv_num)
+{
+    const bht_L0_u32 board_num = (dev_id & 0x000F0000) >> 16;
+    const a429_chan_data_t* chan_data;
+
+    if((chan_num < 1) || (chan_num > 16))
+        return BHT_ERR_BAD_INPUT;
+
+    chan_data = &a429_chan_data[board_num][chan_num - 1];
+
+    *recv_num = chan_data->recv_data_count;
+
+    return BHT_SUCCESS;
+}
+
 

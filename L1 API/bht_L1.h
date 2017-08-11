@@ -132,8 +132,8 @@ typedef enum
 
 typedef enum
 {
-    BHT_L1_A429_IRIGB_MODE_SLAVE = 0,
-    BHT_L1_A429_IRIGB_MODE_MASTER = 1
+    BHT_L1_A429_IRIGB_MODE_SLAVE = 1,
+    BHT_L1_A429_IRIGB_MODE_MASTER = 0
 }bht_L1_a429_irigb_mode_e;
 
 typedef enum
@@ -184,24 +184,16 @@ typedef struct
 {
     bht_L0_u32 gather_enable;               /* 0 - disable, 1 - enable */
     bht_L1_a429_recv_mod_e recv_mode;       /* select list mode or sample mode */
-    bht_L0_u16 threshold_count;              /* 0-1024 */
-    bht_L0_u16 threshold_time;               /* 单位100us */
+    bht_L0_u16 threshold_count;              /* 0-1023 */
+    bht_L0_u16 threshold_time;               /* 单位120us */
 }bht_L1_a429_rx_chan_gather_param_t;
 
 typedef struct
 {
-    bht_L1_a429_filter_mode_e filter_mode;  /* black list mode or white list mode */
-    union
-    {
-        bht_L0_u16 reg16;
-        struct
-        {
-            bht_L0_u8 label;                /* label */ 
-            bht_L0_u8 sdi  : 2;             /* Source/Destination Identifier */ 
-            bht_L0_u8 ssm  : 2;             /* Sign/Status Matrix */
-            bht_L0_u8 revs : 4;             /* reserve bits*/
-        }flt_label;
-    }flt;
+    bht_L0_u32 filter_mode;       /* black list mode or white list mode */
+    bht_L0_u32 label;             /* label */ 
+    bht_L0_u32 sdi;               /* Source/Destination Identifier */ 
+    bht_L0_u32 ssm;               /* Sign/Status Matrix */
 }bht_L1_a429_rx_chan_filter_t;
 
 typedef struct
@@ -489,6 +481,14 @@ __declspec(dllexport) bht_L0_u32
 bht_L1_a429_chan_dump(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num, 
         bht_L1_chan_type_e type);
+
+__declspec(dllexport) bht_L0_u32
+bht_L1_a429_rx_chan_stat(bht_L0_u32 dev_id, 
+        bht_L0_u32 chan_num,
+        bht_L0_u32 *recv_num);
+
+__declspec(dllexport) bht_L0_u32 
+bht_L1_device_load(bht_L0_u32 dev_id);
 
 /* 1553B */
 

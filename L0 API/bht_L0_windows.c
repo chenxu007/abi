@@ -28,6 +28,7 @@ typedef struct
     bht_L0_u32 dev_id;
     WD_PCI_CARD_INFO card_info;
     WDC_DEVICE_HANDLE wd_handle;
+    bht_L0_sem pci_sem;
 }win_pci_device_cb_t;
 
 static bht_L0_u32 devices_cb[16][256][16] = {0}; /* Backplane type, board type, board */
@@ -76,7 +77,8 @@ static bht_L0_u32 wd_lib_init(void)
  */
 void bht_L0_msleep(bht_L0_u32 msdelay)
 {
-    WDC_Sleep(1000 * msdelay, WDC_SLEEP_NON_BUSY);
+//    WDC_Sleep(1000 * msdelay, WDC_SLEEP_BUSY);//此处文档上说低于17000，不起作用
+    Sleep(msdelay);
 }
 
 /* Function : bht_L0_map_memory
@@ -155,7 +157,10 @@ bht_L0_u32 bht_L0_map_memory(bht_L0_u32 dev_id, void * arg)
                         result = BHT_ERR_CANT_OPEN_DEV;
                     }
                     else
+                    {
+                        pci_device_cb->pci_sem = bht_L0_semc_create(1, 1);
                         devices_cb[backplane_type >> 28][board_type >> 20][board_num >> 16] = (bht_L0_u32)pci_device_cb;
+                    }
                 }
             }while(0); 
             break;
@@ -217,6 +222,7 @@ bht_L0_u32 bht_L0_read_mem32(bht_L0_u32 dev_id, bht_L0_u32 offset, bht_L0_u32 *d
                 win_pci_device_cb_t * pci_device_cb = (win_pci_device_cb_t *)devices_cb[backplane_type >> 28][board_type >> 20][board_num >> 16];
 
                 idx = 0;
+                bht_L0_sem_take(pci_device_cb->pci_sem, BHT_WAITFOREVER);
                 while(count != idx)
                 {
                     if(WD_STATUS_SUCCESS != WDC_ReadAddr32(pci_device_cb->wd_handle, 2, (offset + 4 * idx), &data[idx]))
@@ -226,6 +232,7 @@ bht_L0_u32 bht_L0_read_mem32(bht_L0_u32 dev_id, bht_L0_u32 offset, bht_L0_u32 *d
                     }
                     idx++;
                 }
+                bht_L0_sem_give(pci_device_cb->pci_sem);
             }
             else
                 result = BHT_ERR_DEV_NOT_INITED;
@@ -270,6 +277,7 @@ bht_L0_u32 bht_L0_write_mem32(bht_L0_u32 dev_id, bht_L0_u32 offset, bht_L0_u32 *
                 win_pci_device_cb_t * pci_device_cb = (win_pci_device_cb_t *)devices_cb[backplane_type >> 28][board_type >> 20][board_num >> 16];
 
                 idx = 0;
+                bht_L0_sem_take(pci_device_cb->pci_sem, BHT_WAITFOREVER);
                 while(count != idx)
                 {
                     if(WD_STATUS_SUCCESS != WDC_WriteAddr32(pci_device_cb->wd_handle, 2, (offset + 4 * idx), data[idx]))
@@ -279,6 +287,7 @@ bht_L0_u32 bht_L0_write_mem32(bht_L0_u32 dev_id, bht_L0_u32 offset, bht_L0_u32 *
                     }
                     idx++;
                 }
+                bht_L0_sem_give(pci_device_cb->pci_sem);
             }
             else
                 result = BHT_ERR_DEV_NOT_INITED;
@@ -308,6 +317,7 @@ bht_L0_u32 bht_L0_read_setupmem32(bht_L0_u32 dev_id, bht_L0_u32 offset, bht_L0_u
                 win_pci_device_cb_t * pci_device_cb = (win_pci_device_cb_t *)devices_cb[backplane_type >> 28][board_type >> 20][board_num >> 16];
 
                 idx = 0;
+                bht_L0_sem_take(pci_device_cb->pci_sem, BHT_WAITFOREVER);
                 while(count != idx)
                 {
                     if(WD_STATUS_SUCCESS != WDC_ReadAddr32(pci_device_cb->wd_handle, 0, (offset + 4 * idx), &data[idx]))
@@ -317,6 +327,7 @@ bht_L0_u32 bht_L0_read_setupmem32(bht_L0_u32 dev_id, bht_L0_u32 offset, bht_L0_u
                     }
                     idx++;
                 }
+                bht_L0_sem_give(pci_device_cb->pci_sem);
             }
             else
                 result = BHT_ERR_DEV_NOT_INITED;
@@ -346,6 +357,7 @@ bht_L0_u32 bht_L0_write_setupmem32(bht_L0_u32 dev_id, bht_L0_u32 offset, bht_L0_
                 win_pci_device_cb_t * pci_device_cb = (win_pci_device_cb_t *)devices_cb[backplane_type >> 28][board_type >> 20][board_num >> 16];
 
                 idx = 0;
+                bht_L0_sem_take(pci_device_cb->pci_sem, BHT_WAITFOREVER);
                 while(count != idx)
                 {
                     if(WD_STATUS_SUCCESS != WDC_WriteAddr32(pci_device_cb->wd_handle, 0, (offset + 4 * idx), data[idx]))
@@ -355,6 +367,7 @@ bht_L0_u32 bht_L0_write_setupmem32(bht_L0_u32 dev_id, bht_L0_u32 offset, bht_L0_
                     }
                     idx++;
                 }
+                bht_L0_sem_give(pci_device_cb->pci_sem);
             }
             else
                 result = BHT_ERR_DEV_NOT_INITED;
@@ -384,6 +397,7 @@ bht_L0_u32 bht_L0_read_setupmem16(bht_L0_u32 dev_id, bht_L0_u32 offset, bht_L0_u
                 win_pci_device_cb_t * pci_device_cb = (win_pci_device_cb_t *)devices_cb[backplane_type >> 28][board_type >> 20][board_num >> 16];
 
                 idx = 0;
+                bht_L0_sem_take(pci_device_cb->pci_sem, BHT_WAITFOREVER);
                 while(count != idx)
                 {
                     if(WD_STATUS_SUCCESS != WDC_ReadAddr16(pci_device_cb->wd_handle, 0, (offset + 2 * idx), &data[idx]))
@@ -393,6 +407,7 @@ bht_L0_u32 bht_L0_read_setupmem16(bht_L0_u32 dev_id, bht_L0_u32 offset, bht_L0_u
                     }
                     idx++;
                 }
+                bht_L0_sem_give(pci_device_cb->pci_sem);
             }
             else
                 result = BHT_ERR_DEV_NOT_INITED;
@@ -422,6 +437,7 @@ bht_L0_u32 bht_L0_write_setupmem16(bht_L0_u32 dev_id, bht_L0_u32 offset, bht_L0_
                 win_pci_device_cb_t * pci_device_cb = (win_pci_device_cb_t *)devices_cb[backplane_type >> 28][board_type >> 20][board_num >> 16];
 
                 idx = 0;
+                bht_L0_sem_take(pci_device_cb->pci_sem, BHT_WAITFOREVER);
                 while(count != idx)
                 {
                     if(WD_STATUS_SUCCESS != WDC_WriteAddr16(pci_device_cb->wd_handle, 0, (offset + 2 * idx), data[idx]))
@@ -431,6 +447,7 @@ bht_L0_u32 bht_L0_write_setupmem16(bht_L0_u32 dev_id, bht_L0_u32 offset, bht_L0_
                     }
                     idx++;
                 }
+                bht_L0_sem_give(pci_device_cb->pci_sem);
             }
             else
                 result = BHT_ERR_DEV_NOT_INITED;
@@ -468,16 +485,19 @@ bht_L0_u32 bht_L0_attach_inthandler(bht_L0_u32 dev_id, bht_L0_u32 chan_regoffset
 #endif
 #if 1
                 (pTrans)->dwPort = (dev->pAddrDesc+2)->kptAddr + BHT_A429_INTR_STATE;
-                (pTrans)->cmdTrans = RM_DWORD;
+//                (pTrans)->cmdTrans = RM_DWORD;
+                (pTrans)->cmdTrans = WDC_ADDR_IS_MEM(dev->pAddrDesc+2) ? RM_DWORD : RP_DWORD;
                 
                 (pTrans+1)->cmdTrans = CMD_MASK;
                 (pTrans+1)->Data.Dword = BIT4;
                 
                 (pTrans+2)->dwPort = (dev->pAddrDesc+2)->kptAddr + BHT_A429_INTR_CLR;
-                (pTrans+2)->cmdTrans = WM_DWORD;
+//                (pTrans+2)->cmdTrans = WM_DWORD;
+                (pTrans+2)->cmdTrans = WDC_ADDR_IS_MEM(dev->pAddrDesc+2) ? WM_DWORD : WP_DWORD;
+
                 (pTrans+2)->Data.Dword = BIT0;
      
-				if(WD_STATUS_SUCCESS != WDC_IntEnable(pci_device_cb->wd_handle, pTrans, 3, INTERRUPT_CMD_COPY, \
+				if(WD_STATUS_SUCCESS != WDC_IntEnable(pci_device_cb->wd_handle, NULL, 0, INTERRUPT_CMD_COPY, \
                     (INT_HANDLER)isr, (PVOID)arg, WDC_IS_KP(pci_device_cb->wd_handle)))
                     result = BHT_ERR_DRIVER_INT_ATTACH_FAIL;
 #else

@@ -22,11 +22,18 @@ modification history
 #include <fcntl.h>
 #include <assert.h>
 
+#define SLAVE_SERIAL
+#define NEW_BOARD
+
 #ifdef WINDOWS_OPS
 #ifdef WINDOWS_BIT64
 #define FPGA_UPDATE_FILE_PATH           "c:\\Windows\\SysWOW64\\"
 #else
-#define FPGA_UPDATE_FILE_PATH           "W:\\"
+#ifdef NEW_BOARD
+#define FPGA_UPDATE_FILE_PATH           "W:\\ARINC_429_k7_config\\"
+#else
+#define FPGA_UPDATE_FILE_PATH           "W:\\spartan6_config\\"
+#endif
 //#define FPGA_UPDATE_FILE_PATH           "X:\\doc\\fpga_bin\\"
 //#define FPGA_UPDATE_FILE_PATH           "C:\\WINDOWS\\system32\\"
 #endif
@@ -35,6 +42,8 @@ modification history
 #endif
 //#define FPGA_UPDATE_FILE_NAME           "A429_FPGA_1_0.bin"
 #define FPGA_UPDATE_FILE_NAME           "a429_fpga_top.bin"
+//#define FPGA_UPDATE_FILE_NAME           "a429_fpga_top(1553).bin"
+
 
 const char * bht_L1_error_to_string(bht_L0_u32 err_num)
 {
@@ -179,7 +188,101 @@ const char * bht_L1_error_to_string(bht_L0_u32 err_num)
     }
 }
 
-static bht_L0_u32 bht_L1_device_load(bht_L0_u32 dev_id)
+#ifdef SLAVE_SERIAL
+bht_L0_u32 bht_L1_device_load(bht_L0_u32 dev_id)
+{
+    int fd;
+    bht_L0_s32 len, idx, bit8, value;
+    bht_L0_u32 backplane_type, board_type;
+    bht_L0_u32 result = BHT_SUCCESS;
+    char filename[100];
+    bht_L0_u8 buffer[512];
+
+    backplane_type = dev_id & 0xF0000000;
+	board_type     = dev_id & 0x0FF00000;
+
+    if(BHT_DEVID_BACKPLANETYPE_PCI == backplane_type)
+    {
+     
+        if(BHT_SUCCESS != (result = bht_L0_read_setupmem32(dev_id, PLX9056_CNTRL, &value, 1)))
+            return result;
+        /* 2.0 PROGRAM_B set 0 */   
+        value &= (~BIT16);
+        if(BHT_SUCCESS != (result = bht_L0_write_setupmem32(dev_id, PLX9056_CNTRL, &value, 1)))
+            return result;
+        bht_L0_msleep(1);
+        
+        /* 2.1 PROGRAM_B set 1 */   
+        value |= BIT16;
+        if(BHT_SUCCESS != (result = bht_L0_write_setupmem32(dev_id, PLX9056_CNTRL, &value, 1)))
+            return result;
+        bht_L0_msleep(1);
+        
+        /* 2.2 PROGRAM_B set 0 */
+        value &= (~BIT16);
+        if(BHT_SUCCESS != (result = bht_L0_write_setupmem32(dev_id, PLX9056_CNTRL, &value, 1)))
+            return result;
+        bht_L0_msleep(1);
+        
+        /* 2.3 transfer data */
+        sprintf(filename, "%s%s", FPGA_UPDATE_FILE_PATH, FPGA_UPDATE_FILE_NAME);
+        if(0 > (fd = open(filename, O_BINARY | O_RDONLY)))
+            return BHT_ERR_LOAD_FPGA_FAIL;
+        while(0 < (len = read(fd, buffer, sizeof(buffer))))
+        {
+            for(idx = 0; idx < len; idx ++)
+            {
+                for(bit8 = 7; bit8 >= 0; bit8 --)
+                {
+                    value = (buffer[idx] >> bit8) & 0x01;
+					//value = 0x01 & (buffer[idx] >> bit8);
+                    /* write one bit*/
+                    if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, 0xfffc, &value, 1)))
+                    {
+                        close(fd);
+                        return result;
+                    }
+                }
+            }
+        }
+
+        close(fd);
+        
+        /* wait 1ms*/
+        bht_L0_msleep(1);
+        /* output 8 cycles */
+		value = 0;
+        for(idx = 0; idx < 8; idx++)
+            bht_L0_write_mem32(dev_id, 0, &value, 1);
+        /* check version */
+        for(idx = 1000; idx > 0; idx--)
+        {
+            bht_L0_msleep(1);
+            if(board_type == BHT_DEVID_BOARDTYPE_PMCA429)
+                bht_L0_read_mem32(dev_id, BHT_A429_DEVICE_VERSION, &value, 1);
+            else
+            {
+                result = BHT_ERR_UNSUPPORTED_BACKPLANE;
+                break;
+            }
+            if(0 != value)
+        	{
+        	    printf("version 0x%08x\n", value);
+                break;
+        	}
+        }
+        if(idx <= 0)
+            return BHT_ERR_LOAD_FPGA_FAIL;
+    }
+    else
+        result = BHT_ERR_UNSUPPORTED_BACKPLANE;
+
+    return result;
+    
+}
+
+#else
+bht_L0_u32 bht_L1_device_load(bht_L0_u32 dev_id)
 {
     int fd;
     bht_L0_s32 len, idx, value;
@@ -193,17 +296,27 @@ static bht_L0_u32 bht_L1_device_load(bht_L0_u32 dev_id)
 
     if(BHT_DEVID_BACKPLANETYPE_PCI == backplane_type)
     {
-     /* 2.1 PROGRAM_B set 1 */
+     
         if(BHT_SUCCESS != (result = bht_L0_read_setupmem32(dev_id, PLX9056_CNTRL, &value, 1)))
             return result;
+        /* 2.0 PROGRAM_B set 0 */   
+        value &= (~BIT16);
+        if(BHT_SUCCESS != (result = bht_L0_write_setupmem32(dev_id, PLX9056_CNTRL, &value, 1)))
+            return result;
+        bht_L0_msleep(1);
+        
+        /* 2.1 PROGRAM_B set 1 */   
         value |= BIT16;
         if(BHT_SUCCESS != (result = bht_L0_write_setupmem32(dev_id, PLX9056_CNTRL, &value, 1)))
             return result;
+        bht_L0_msleep(1);
+        
         /* 2.2 PROGRAM_B set 0 */
         value &= (~BIT16);
         if(BHT_SUCCESS != (result = bht_L0_write_setupmem32(dev_id, PLX9056_CNTRL, &value, 1)))
             return result;
         bht_L0_msleep(1);
+        
         /* 2.3 transfer data */
         sprintf(filename, "%s%s", FPGA_UPDATE_FILE_PATH, FPGA_UPDATE_FILE_NAME);
         if(0 > (fd = open(filename, O_BINARY | O_RDONLY)))
@@ -266,6 +379,7 @@ static bht_L0_u32 bht_L1_device_load(bht_L0_u32 dev_id)
     return result;
     
 }
+#endif
 
 bht_L0_u32 bht_L1_device_softreset(bht_L0_u32 dev_id)
 {
@@ -285,6 +399,9 @@ bht_L0_u32 bht_L1_device_softreset(bht_L0_u32 dev_id)
             bht_L0_msleep(1);
             bht_L0_read_mem32(dev_id, BHT_A429_DEVICE_STATE, &value, 1);
         }while(value != 0x00000001);
+
+        a429_mib_clearall(dev_id);
+        bht_L1_a429_param_reset(dev_id);
     }
     else
         result = BHT_ERR_UNSUPPORTED_BOARDTYPE;
@@ -342,11 +459,11 @@ bht_L0_u32 bht_L1_device_probe(bht_L0_u32 dev_id)
             return result;
         }
         /* 2 load device */
-//        if(BHT_SUCCESS != (result = bht_L1_device_load(dev_id)))
-//            return result;
-        
+        if(BHT_SUCCESS != (result = bht_L1_device_load(dev_id)))
+            return result;
+
         /* 3 soft reset device */
-//        result = bht_L1_device_softreset(dev_id);
+        result = bht_L1_device_softreset(dev_id);
         
     }
     else
