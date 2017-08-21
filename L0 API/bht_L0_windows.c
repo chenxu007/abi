@@ -33,6 +33,49 @@ typedef struct
 
 static bht_L0_u32 devices_cb[16][256][16] = {0}; /* Backplane type, board type, board */
 
+static void pci_card_info_dump(WD_PCI_CARD_INFO * card_info)
+{
+    bht_L0_u32 index;
+    
+    if(NULL == card_info)
+        return;
+    
+    printf("dwBus      : %d\n",card_info->pciSlot.dwBus);
+    printf("dwSlot     : %d\n",card_info->pciSlot.dwSlot);
+    printf("dwFunction : %d\n",card_info->pciSlot.dwFunction);
+    printf("dwItems : %d\n",card_info->Card.dwItems);
+    
+    for(index = 0; index < card_info->Card.dwItems; index++)
+    {
+        printf("item type    : %d\n",card_info->Card.Item[index].item);
+        printf("fNotSharable : %d\n",card_info->Card.Item[index].fNotSharable);
+        printf("dwOptions    : 0x%08x\n",card_info->Card.Item[index].dwOptions);
+        switch(card_info->Card.Item[index].item)
+        {
+            case ITEM_MEMORY:
+                printf("dwPhysicalAddr : 0x%08x\n", card_info->Card.Item[index].I.Mem.dwPhysicalAddr);
+                printf("dwBytes : 0x%08x\n", card_info->Card.Item[index].I.Mem.dwBytes);
+                printf("dwUserDirectAddr : 0x%08x\n", card_info->Card.Item[index].I.Mem.dwUserDirectAddr);
+                printf("dwCpuPhysicalAddr : 0x%08x\n", card_info->Card.Item[index].I.Mem.dwCpuPhysicalAddr);
+                printf("dwBar : 0x%08x\n", card_info->Card.Item[index].I.Mem.dwBar);
+                break;
+            case ITEM_IO:
+                printf("dwAddr : 0x%08x\n", card_info->Card.Item[index].I.IO.dwAddr);
+                printf("dwBytes : 0x%08x\n", card_info->Card.Item[index].I.IO.dwBytes);
+                printf("dwBar : 0x%08x\n", card_info->Card.Item[index].I.IO.dwBar);
+                break;
+            case ITEM_INTERRUPT:
+                printf("dwInterrupt : 0x%08x\n", card_info->Card.Item[index].I.Int.dwInterrupt);
+                printf("dwOptions : 0x%08x\n", card_info->Card.Item[index].I.Int.dwOptions);
+                printf("hInterrupt : 0x%08x\n", card_info->Card.Item[index].I.Int.hInterrupt);
+                break;
+            default:
+                printf("UNKNOWN ITEM TYPE -> %d\n", card_info->Card.Item[index].item);
+                break;
+        }
+    }
+}
+
 static bht_L0_u32 wd_lib_init(void)
 {
     static bht_L0_u32 is_wd_lib_inited = 0;
@@ -158,6 +201,7 @@ bht_L0_u32 bht_L0_map_memory(bht_L0_u32 dev_id, void * arg)
                     }
                     else
                     {
+//                        pci_card_info_dump(&pci_device_cb->card_info);
                         pci_device_cb->pci_sem = bht_L0_semc_create(1, 1);
                         devices_cb[backplane_type >> 28][board_type >> 20][board_num >> 16] = (bht_L0_u32)pci_device_cb;
                     }
@@ -463,6 +507,7 @@ bht_L0_u32 bht_L0_attach_inthandler(bht_L0_u32 dev_id, bht_L0_u32 chan_regoffset
 {
     bht_L0_u32 result = BHT_SUCCESS;	
     bht_L0_u32 backplane_type, board_type, board_num;
+    DWORD ret;
     
     backplane_type = dev_id & 0xF0000000;
 	board_type     = dev_id & 0x0FF00000;
@@ -497,9 +542,12 @@ bht_L0_u32 bht_L0_attach_inthandler(bht_L0_u32 dev_id, bht_L0_u32 chan_regoffset
 
                 (pTrans+2)->Data.Dword = BIT0;
      
-				if(WD_STATUS_SUCCESS != WDC_IntEnable(pci_device_cb->wd_handle, NULL, 0, INTERRUPT_CMD_COPY, \
-                    (INT_HANDLER)isr, (PVOID)arg, WDC_IS_KP(pci_device_cb->wd_handle)))
+				if(WD_STATUS_SUCCESS != (ret = WDC_IntEnable(pci_device_cb->wd_handle, NULL, 0, INTERRUPT_CMD_COPY, \
+                    (INT_HANDLER)isr, (PVOID)arg, WDC_IS_KP(pci_device_cb->wd_handle))))
+                {
+                    printf("func[%s] line[%d] ret = %d\n", __FUNCTION__, __LINE__, ret);
                     result = BHT_ERR_DRIVER_INT_ATTACH_FAIL;
+                }
 #else
                 if(WD_STATUS_SUCCESS != WDC_IntEnable(pci_device_cb->wd_handle, NULL, 0, 0, \
                     (INT_HANDLER)isr, (PVOID)arg, WDC_IS_KP(pci_device_cb->wd_handle)))

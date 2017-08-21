@@ -581,8 +581,8 @@ bht_L1_a429_param_reset(bht_L0_u32 dev_id)
         a429_device_param[board_num].tx_chan_param[chan_num].comm_param.par = BHT_L1_A429_PARITY_ODD;
         a429_device_param[board_num].rx_chan_param[chan_num].comm_param.par = BHT_L1_A429_PARITY_ODD;
 
-        a429_device_param[board_num].tx_chan_param[chan_num].loop_enable = BHT_L1_OPT_DISABLE;
-        a429_device_param[board_num].tx_chan_param[chan_num].slope = BHT_L1_A429_SLOPE_1_5_US;
+        a429_device_param[board_num].tx_chan_param[chan_num].loop_enable = BHT_L1_DISABLE;
+        a429_device_param[board_num].tx_chan_param[chan_num].slope = BHT_L1_A429_SLOPE_10_US;
         a429_device_param[board_num].tx_chan_param[chan_num].period = 0;
         a429_device_param[board_num].tx_chan_param[chan_num].inject_param.tb_bits = BHT_L1_A429_WORD_BIT32;
         a429_device_param[board_num].tx_chan_param[chan_num].inject_param.tb_gap = BHT_L1_A429_GAP_4BIT;
@@ -798,7 +798,7 @@ bht_L1_a429_tx_chan_period_param(bht_L0_u32 dev_id,
 bht_L0_u32 
 bht_L1_a429_tx_chan_loop(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num, 
-        bht_L0_u32 opt)
+        bht_L1_able_e able)
 {
     bht_L0_u32 value = 0, idx;
     bht_L0_u32 result = BHT_SUCCESS;
@@ -812,21 +812,21 @@ bht_L1_a429_tx_chan_loop(bht_L0_u32 dev_id,
 //    if(board_num >= 16)
 //        return BHT_ERR_INVALID_BOARD_NUM;
 
-    if((BHT_L1_OPT_DISABLE != opt) && (BHT_L1_OPT_ENABLE != opt))
+    if((BHT_L1_DISABLE != able) && (BHT_L1_ENABLE != able))
         return BHT_ERR_BAD_INPUT;
 
     device_param = &a429_device_param[board_num];
 
-    if(device_param->tx_chan_param[chan_num - 1].loop_enable == opt)
+    if(device_param->tx_chan_param[chan_num - 1].loop_enable == able)
         return result;
 
     for(idx = 0; idx < BHT_A429_CHANNEL_MAX; idx++)
     {
-        if(device_param->tx_chan_param[idx].loop_enable == BHT_L1_OPT_ENABLE)
+        if(device_param->tx_chan_param[idx].loop_enable == BHT_L1_ENABLE)
             value |= (0x01 << idx);
     }
     
-    if(BHT_L1_OPT_ENABLE == opt)
+    if(BHT_L1_ENABLE == able)
         value |= (0x01 << (chan_num - 1));
     else
         value &= (~(0x01 << (chan_num - 1)));
@@ -838,7 +838,7 @@ bht_L1_a429_tx_chan_loop(bht_L0_u32 dev_id,
     //TODO generate chan common param change event
 
     a429_tx_chan_param = &device_param->tx_chan_param[chan_num - 1];
-    a429_tx_chan_param->loop_enable = opt;
+    a429_tx_chan_param->loop_enable = able;
 
     if(BHT_SUCCESS == result)
         WDC_Trace("dev[%08x] %s success\n", dev_id, __FUNCTION__, "TX",  chan_num);
@@ -875,9 +875,9 @@ bht_L1_a429_tx_chan_slope_cfg(bht_L0_u32 dev_id,
     }
     
     if(BHT_L1_A429_SLOPE_1_5_US == slope)
-        value |= (0x01 << chan_num);
+        value |= (0x01 << (chan_num - 1));
     else
-        value &= (~(0x01 << chan_num));
+        value &= (~(0x01 << (chan_num - 1)));
 
     result = bht_L0_write_mem32(dev_id, BHT_A429_SLOPE_CTRL, &value, 1);
 
@@ -1280,7 +1280,7 @@ bht_L1_a429_chan_dump(bht_L0_u32 dev_id,
 
     for(idx = 0; idx < BHT_A429_CHANNEL_MAX; idx++)
     {
-        if(device_param->tx_chan_param[idx].loop_enable == BHT_L1_OPT_ENABLE)
+        if(device_param->tx_chan_param[idx].loop_enable == BHT_L1_ENABLE)
             loop_r |= (0x01 << idx);
     }
 

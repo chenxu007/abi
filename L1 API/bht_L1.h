@@ -27,30 +27,11 @@ extern "C" {
 
 /********* Layer 1 Error Codes (1000 to 1999) *********/
 #define BHT_ERR_BAD_INPUT			1000		/*!< \brief Bad input parameters. */
-#define BHT_ERR_MEM_TEST_FAIL		1001		/*!< \brief Failed memory test. */
-#define BHT_ERR_MEM_MGT_NO_INIT		1002		/*!< \brief Memory Management not initialized for the device ID */
-#define BHT_ERR_MEM_MGT_INIT		1003		/*!< \brief Memory Management already initialized for the device ID */
-#define BHT_ERR_MEM_MGT_NO_MEM		1004		/*!< \brief Not enough memory available */
-#define BHT_ERR_BAD_DEV_TYPE		1005		/*!< \brief Bad device type in device ID */
-#define BHT_ERR_RT_FT_UNDEF			1006		/*!< \brief RT Filter Table not defined */
-#define BHT_ERR_RT_SA_UNDEF			1007		/*!< \brief RT Subaddress not defined */
-#define BHT_ERR_RT_SA_CDP_UNDEF		1008		/*!< \brief RT SA CDP not defined */
-#define BHT_ERR_IQ_NO_NEW_ENTRY		1009		/*!< \brief No new entry in interrupt queue */
-#define BHT_ERR_NO_BCCB_TABLE		1010		/*!< \brief BCCB Table Pointer is zero */
-#define BHT_ERR_BCCB_ALREADY_ALLOCATED 1011		/*!< \brief BCCB already allocated */
-#define BHT_ERR_BCCB_NOT_ALLOCATED	1012		/*!< \brief BCCB has not been allocated */
-#define BHT_ERR_BUFFER_FULL			1013		/*!< \brief 1553-ARINC PB (CDP/PCB or RXP/PXP) buffer is full */
-#define BHT_ERR_TIMEOUT				1014		/*!< \brief Timeout error. */
-#define BHT_ERR_BAD_CHAN_NUM		1015		/*!< \brief Bad channel number or channel does not exist on this board */
-#define BHT_ERR_BITFAIL				1016		/*!< \brief Built-In Test failure */
-#define BHT_ERR_DEVICEINUSE			1017		/*!< \brief Device in use already */
-#define BHT_ERR_NO_TXCB_TABLE		1018		/*!< \brief TXCB Table Pointer is zero */
-#define BHT_ERR_TXCB_ALREADY_ALLOCATED 1019		/*!< \brief TXCB already allocated */
-#define BHT_ERR_TXCB_NOT_ALLOCATED	1020		/*!< \brief TXCB has not been allocated */
-#define BHT_ERR_PBCB_TOOMANYPXPS	1021		/*!< \brief PBCB Too Many PXPs For PCBC Allocation */
-#define BHT_ERR_NORXCHCVT_ALLOCATED 1022		/*!< \brief RX CH - No CVT Option Defined at Init */
-#define BHT_ERR_NO_DATA_AVAILABLE   1023		/*!< \brief No Data Available */
-#define BHT_ERR_LOAD_FPGA_FAIL      1024        /* load fpga fail */
+#define BHT_ERR_BUFFER_FULL			1001		/*!< \brief 1553-ARINC PB (CDP/PCB or RXP/PXP) buffer is full */
+#define BHT_ERR_TIMEOUT				1002		/*!< \brief Timeout error. */
+#define BHT_ERR_DEVICEINUSE			1003		/*!< \brief Device in use already */
+#define BHT_ERR_NO_DATA_AVAILABLE   1004		/*!< \brief No Data Available */
+#define BHT_ERR_LOAD_FPGA_FAIL      1005        /* load fpga fail */
 
 typedef enum
 {
@@ -60,15 +41,9 @@ typedef enum
 
 typedef enum
 {
-    BHT_L1_OPT_DISABLE = 0, 
-    BHT_L1_OPT_ENABLE = 1
-};
-
-typedef enum
-{
     BHT_L1_DISABLE = 0, 
     BHT_L1_ENABLE = 1
-};
+}bht_L1_able_e;
 
 typedef enum
 {
@@ -90,21 +65,22 @@ typedef enum
 
 typedef enum
 {
-    BHT_L1_A429_FILTER_MODE_BLACKLIST = 0,
-    BHT_L1_A429_FILTER_MODE_WHITELIST = 1
-}bht_L1_a429_filter_mode_e;
+    BHT_L1_A429_LIST_TYPE_BLACKLIST = 0,
+    BHT_L1_A429_LIST_TYPE_WHITELIST = 1
+}bht_L1_a429_list_type_e;
 
 typedef enum
 {
-    BHT_L1_A429_CHAN_WORK_MODE_ENABLE = 3,
-    BHT_L1_A429_CHAN_WORK_MODE_STOP = 2,
-    BHT_L1_A429_CHAN_WORK_MODE_STOP_AND_CLEAR = 1,
-    BHT_L1_A429_CHAN_WORK_MODE_CLOSE_AND_CLEAR = 0,
+    BHT_L1_A429_CHAN_WORK_MODE_OPEN = 3,
+    BHT_L1_A429_CHAN_WORK_MODE_CLOSE = 2,
+    BHT_L1_A429_CHAN_WORK_MODE_CLOSE_AND_CLEAR = 1,
+    BHT_L1_A429_CHAN_WORK_MODE_CLOSE_AND_CLEAR_ALL = 0,
 }bht_L1_a429_chan_work_mode_e;
 
 typedef enum {
     BHT_L1_A429_BAUD_5K = 5000, 
     BHT_L1_A429_BAUD_12_5K = 12500,
+    BHT_L1_A429_BAUD_50K = 50000,
     BHT_L1_A429_BAUD_100K = 100000,
 	BHT_L1_A429_BAUD_150K = 150000,
     BHT_L1_A429_BAUD_200K = 200000

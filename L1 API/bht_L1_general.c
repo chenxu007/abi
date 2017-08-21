@@ -112,6 +112,7 @@ const char * bht_L1_error_to_string(bht_L0_u32 err_num)
     case BHT_ERR_BAD_INPUT:
        return("Layer 1 - Bad input parameter");
        break;
+#if 0
     case BHT_ERR_MEM_TEST_FAIL:
        return("Layer 1 - Failed memory test");
        break;
@@ -148,36 +149,37 @@ const char * bht_L1_error_to_string(bht_L0_u32 err_num)
     case BHT_ERR_BCCB_NOT_ALLOCATED:
        return("Layer 1 - BCCB has not been allocated");
        break;
+#endif
     case BHT_ERR_BUFFER_FULL:
        return("Layer 1 - 1553-ARINC PB (CDP/PCB or RXP/PXP) buffer is full");
        break;
     case BHT_ERR_TIMEOUT:
        return("Layer 1 - Timeout error");
        break;
-    case BHT_ERR_BAD_CHAN_NUM:
-       return("Layer 1 - Bad channel number, channel does not exist on this board or is not initialized");
-       break;
-    case BHT_ERR_BITFAIL:
-       return("Layer 1 - Built-In Test failure");
-       break;
+//    case BHT_ERR_BAD_CHAN_NUM:
+//       return("Layer 1 - Bad channel number, channel does not exist on this board or is not initialized");
+//       break;
+//    case BHT_ERR_BITFAIL:
+//       return("Layer 1 - Built-In Test failure");
+//       break;
     case BHT_ERR_DEVICEINUSE:
        return("Layer 1 - Device in use already, or not properly closed");
        break;
-    case BHT_ERR_NO_TXCB_TABLE:
-       return("Layer 1 - TXCB Table Pointer is zero");
-       break;
-    case BHT_ERR_TXCB_ALREADY_ALLOCATED:
-       return("Layer 1 - TXCB already allocated");
-       break;
-    case BHT_ERR_TXCB_NOT_ALLOCATED:
-       return("Layer 1 - TXCB has not been allocated");
-       break;
-    case BHT_ERR_PBCB_TOOMANYPXPS:
-       return("Layer 1 - PBCB Too Many PXPs For PBCB Allocation");
-       break;
-    case BHT_ERR_NORXCHCVT_ALLOCATED:
-       return("Layer 1 - RX CH - No CVT Option Defined at Init");
-       break;
+//    case BHT_ERR_NO_TXCB_TABLE:
+//       return("Layer 1 - TXCB Table Pointer is zero");
+//       break;
+//    case BHT_ERR_TXCB_ALREADY_ALLOCATED:
+//       return("Layer 1 - TXCB already allocated");
+//       break;
+//    case BHT_ERR_TXCB_NOT_ALLOCATED:
+//       return("Layer 1 - TXCB has not been allocated");
+//       break;
+//    case BHT_ERR_PBCB_TOOMANYPXPS:
+//       return("Layer 1 - PBCB Too Many PXPs For PBCB Allocation");
+//       break;
+//    case BHT_ERR_NORXCHCVT_ALLOCATED:
+//       return("Layer 1 - RX CH - No CVT Option Defined at Init");
+//       break;
     case BHT_ERR_NO_DATA_AVAILABLE:
        return("Layer 1 - No Data Available");
        break;

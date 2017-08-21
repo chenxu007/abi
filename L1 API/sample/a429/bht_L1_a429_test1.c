@@ -24,9 +24,9 @@
 #define A429_TEST_TOTAL_CHAN_NUM		(1)
 
 #define TX_PARITY BHT_L1_A429_PARITY_ODD
-#define RX_PARITY BHT_L1_A429_PARITY_NONE
+#define RX_PARITY BHT_L1_A429_PARITY_ODD
 
-#define BAUD	BHT_L1_A429_BAUD_100K
+#define BAUD	BHT_L1_A429_BAUD_12_5K
 //#define A429_RECV_MODE_SAMPLE
 #ifndef A429_RECV_MODE_SAMPLE
 #define RECV_MODE   BHT_L1_A429_RECV_MODE_LIST
@@ -110,67 +110,67 @@ typedef enum
 const static a429_tx_chan_param_t a429_test_tx_chan_param[] = 
 {
 #ifdef A429_TX_CHAN1
-{1, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, TX_PARITY}, BHT_L1_ENABLE, 
-    BHT_L1_A429_SLOPE_10_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
+{1, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
+    BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
 #endif
 #ifdef A429_TX_CHAN2
-{2, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, TX_PARITY}, BHT_L1_ENABLE, 
+{2, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
     BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
 #endif
 #ifdef A429_TX_CHAN3
-{3, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, TX_PARITY}, BHT_L1_ENABLE, 
+{3, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
     BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
 #endif
 #ifdef A429_TX_CHAN4
-{4, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, TX_PARITY}, BHT_L1_ENABLE, 
+{4, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
     BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
 #endif
 #ifdef A429_TX_CHAN5
-{5, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, TX_PARITY}, BHT_L1_ENABLE, 
+{5, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
     BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
 #endif
 #ifdef A429_TX_CHAN6
-{6, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, TX_PARITY}, BHT_L1_ENABLE, 
+{6, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
     BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
 #endif
 #ifdef A429_TX_CHAN7
-{7, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, TX_PARITY}, BHT_L1_ENABLE, 
+{7, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
     BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
 #endif
 #ifdef A429_TX_CHAN8
-{8, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, TX_PARITY}, BHT_L1_ENABLE, 
+{8, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
     BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
 #endif
 #ifdef A429_TX_CHAN9
-{9, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, TX_PARITY}, BHT_L1_ENABLE, 
+{9, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
     BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
 #endif
 #ifdef A429_TX_CHAN10
-{10, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, TX_PARITY}, BHT_L1_ENABLE, 
+{10, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
     BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
 #endif
 #ifdef A429_TX_CHAN11
-{11, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, TX_PARITY}, BHT_L1_ENABLE, 
+{11, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
     BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
 #endif
 #ifdef A429_TX_CHAN12
-{12, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, TX_PARITY}, BHT_L1_ENABLE, 
+{12, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
     BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
 #endif
 #ifdef A429_TX_CHAN13
-{13, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, TX_PARITY}, BHT_L1_ENABLE, 
+{13, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
     BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
 #endif
 #ifdef A429_TX_CHAN14
-{14, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, TX_PARITY}, BHT_L1_ENABLE, 
+{14, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
     BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
 #endif
 #ifdef A429_TX_CHAN15
-{15, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, TX_PARITY}, BHT_L1_ENABLE, 
+{15, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
     BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
 #endif
 #ifdef A429_TX_CHAN16
-{16, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, TX_PARITY}, BHT_L1_ENABLE, 
+{16, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
     BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
 #endif
 };
@@ -178,67 +178,67 @@ const static a429_tx_chan_param_t a429_test_tx_chan_param[] =
 const static a429_rx_chan_param_t a429_test_rx_chan_param[] = 
 {
 #ifdef A429_RX_CHAN1
-{1, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
+{1, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
     RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
 #endif
 #ifdef A429_RX_CHAN2
-{2, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
+{2, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
     RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
 #endif
 #ifdef A429_RX_CHAN3
-{3, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
+{3, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
     RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
 #endif
 #ifdef A429_RX_CHAN4
-{4, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
+{4, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
     RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
 #endif
 #ifdef A429_RX_CHAN5
-{5, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
+{5, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
     RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
 #endif
 #ifdef A429_RX_CHAN6
-{6, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
+{6, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
     RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
 #endif
 #ifdef A429_RX_CHAN7
-{7, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
+{7, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
     RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
 #endif
 #ifdef A429_RX_CHAN8
-{8, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
+{8, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
     RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
 #endif
 #ifdef A429_RX_CHAN9
-{9, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
+{9, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
     RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
 #endif
 #ifdef A429_RX_CHAN10
-{10, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
+{10, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
     RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
 #endif
 #ifdef A429_RX_CHAN11
-{11, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
+{11, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
     RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
 #endif
 #ifdef A429_RX_CHAN12
-{12, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
+{12, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
     RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
 #endif
 #ifdef A429_RX_CHAN13
-{13, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
+{13, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
     RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
 #endif
 #ifdef A429_RX_CHAN14
-{14, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
+{14, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
     RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
 #endif
 #ifdef A429_RX_CHAN15
-{15, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
+{15, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
     RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
 #endif
 #ifdef A429_RX_CHAN16
-{16, {BHT_L1_A429_CHAN_WORK_MODE_ENABLE, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
+{16, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
     RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
 #endif
 };
@@ -453,7 +453,7 @@ static DWORD WINAPI a429_channel_recv_thread(const void * arg)
         test_rx_buf[chan_num - 1][tot_num++] = 0x7FFFFFFF & rxp.data;
 		if(tot_num %1024 == 0)
 			printf("rx channel[%d] recv %d/%d\n", chan_num, tot_num/1024, data_word_num/1024);
-		//printf("rx channel[%d] recv index %d data %08x\n", chan_num, tot_num, test_rx_buf[chan_num - 1][tot_num - 1]);
+		printf("rx channel[%d] recv index %d data %08x\n", chan_num, tot_num, test_rx_buf[chan_num - 1][tot_num - 1]);
 	}
 
     for(idx = 0; idx < tot_num; idx++)
@@ -870,8 +870,10 @@ static void baud_rate(bht_L0_u32 dev_id)
                         if(1 == option1)
                         {
                         printf("1.baud rate 12.5K\n");
-                        printf("2.baud rate 100K\n");
-                        printf("3.baud rate 200K\n");
+                        printf("2.baud rate 50K\n");
+                        printf("3.baud rate 100K\n");
+                        printf("4.baud rate 200K\n");
+                        printf("5.baud rate input\n");
                         }
                         else
                         {
@@ -891,11 +893,18 @@ static void baud_rate(bht_L0_u32 dev_id)
                                 comm_param.baud = BHT_L1_A429_BAUD_12_5K;
                                 break;
                             case 2:
-                                comm_param.baud = BHT_L1_A429_BAUD_100K;
+                                comm_param.baud = BHT_L1_A429_BAUD_50K;
                                 break;
                             case 3:
+                                comm_param.baud = BHT_L1_A429_BAUD_100K;
+                                break;
+                            case 4:
                                 comm_param.baud = BHT_L1_A429_BAUD_200K;
                                 break;
+                            case 5:
+                                comm_param.baud = DIAG_GetNumber("baud rate", INPUT_DATA_FORMAT_DEC, 5000, 500000);
+                                break;
+                            
                             }                            
                         else
                             switch(option2)
@@ -1525,9 +1534,9 @@ static void rx_filter_cfg(bht_L0_u32 dev_id)
             continue;
 
         if(1 == option)
-            filter_param.filter_mode = BHT_L1_A429_FILTER_MODE_WHITELIST;
+            filter_param.filter_mode = BHT_L1_A429_LIST_TYPE_WHITELIST;
         else if(2 == option)
-            filter_param.filter_mode = BHT_L1_A429_FILTER_MODE_BLACKLIST;
+            filter_param.filter_mode = BHT_L1_A429_LIST_TYPE_BLACKLIST;
         break;
     }while(1);
 
@@ -1604,7 +1613,7 @@ static void rw_mem(bht_L0_u32 bar, WDC_DIRECTION direction)
 //    scanf("%x", &dwOffset);
 
     dwOffset = DIAG_GetNumber((WDC_READ == direction) ?
-        "offset to read from : 0x" : "offset to write to : 0x", INPUT_DATA_FORMAT_HEX, 0, 0);
+        "offset to read from" : "offset to write to", INPUT_DATA_FORMAT_HEX, 0, 0);
 //    printf("offset = 0x%08x\n", dwOffset);
 
     if(WDC_READ != direction)
@@ -1612,7 +1621,7 @@ static void rw_mem(bht_L0_u32 bar, WDC_DIRECTION direction)
 //        printf("Enter the value to write : 0x");
 //        scanf("%x", &value);
 
-        value = DIAG_GetNumber("value to write : 0x", INPUT_DATA_FORMAT_DEC, 0, 0);
+        value = DIAG_GetNumber("value to write", INPUT_DATA_FORMAT_HEX, 0, 0);
 //        printf("value = 0x%08x\n", value);
     }
 
