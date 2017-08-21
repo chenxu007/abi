@@ -310,10 +310,10 @@ bht_L1_a429_tx_chan_loop(bht_L0_u32 dev_id,
  *  default value is 1.5us
  * return BHT_SUCCESS or other error number.
  */         
-__declspec(dllexport) bht_L0_u32 
-bht_L1_a429_tx_chan_slope_cfg(bht_L0_u32 dev_id, 
-        bht_L0_u32 chan_num, 
-        bht_L1_a429_slope_e slope);
+//__declspec(dllexport) bht_L0_u32 
+//bht_L1_a429_tx_chan_slope_cfg(bht_L0_u32 dev_id, 
+//        bht_L0_u32 chan_num, 
+//        bht_L1_a429_slope_e slope);
         
 /* bht_L1_a429_tx_chan_mib_clear ,the a429 transmit channel 
  * statistics info clear function, contain total transmit word 

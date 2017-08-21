@@ -109,6 +109,11 @@ bht_L0_u32 isr_sem_err_num = 0;
 bht_L0_u32 isr_list_err_num = 0;
 bht_L0_u32 isr_enable = 0;
 
+static bht_L0_u32 
+bht_L1_a429_tx_chan_slope_cfg(bht_L0_u32 dev_id, 
+        bht_L0_u32 chan_num, 
+        bht_L1_a429_slope_e slope);
+
 static void * 
 a429_isr(void *arg)
 {
@@ -496,6 +501,22 @@ a429_chan_comm_param(bht_L0_u32 dev_id,
 
     if(old_comm_param->baud != comm_param->baud)
     {
+        /* HI-8596 slope control */
+        if((BHT_L1_CHAN_TYPE_TX == chan_type)
+            && (comm_param->baud <= BHT_L1_A429_BAUD_12_5K)
+            && (device_param->tx_chan_param[chan_num - 1].slope != BHT_L1_A429_SLOPE_10_US))
+        {
+            if(BHT_SUCCESS != bht_L1_a429_tx_chan_slope_cfg(dev_id, chan_num, BHT_L1_A429_SLOPE_10_US))
+                assert(0);
+        }
+        else if((BHT_L1_CHAN_TYPE_TX == chan_type)
+            && (comm_param->baud > BHT_L1_A429_BAUD_12_5K)
+            && (device_param->tx_chan_param[chan_num - 1].slope != BHT_L1_A429_SLOPE_1_5_US))
+        {
+            if(BHT_SUCCESS != bht_L1_a429_tx_chan_slope_cfg(dev_id, chan_num, BHT_L1_A429_SLOPE_1_5_US))
+                assert(0);
+        }
+            
         value = 100 * 1000000 / comm_param->baud;
         if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_BAUD_RATE_SET, &value, 1)))
             return result;
@@ -848,7 +869,7 @@ bht_L1_a429_tx_chan_loop(bht_L0_u32 dev_id,
     return result;
 }
 
-bht_L0_u32 
+static bht_L0_u32 
 bht_L1_a429_tx_chan_slope_cfg(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num, 
         bht_L1_a429_slope_e slope)
