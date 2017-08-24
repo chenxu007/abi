@@ -458,13 +458,45 @@ bht_L1_a429_chan_dump(bht_L0_u32 dev_id,
         bht_L0_u32 chan_num, 
         bht_L1_chan_type_e type);
 
+/* bht_L1_a429_rx_chan_stat ,statistics of recieve channel, how many 429 words recieved  
+ * @param dev_id
+ * @param chan_num, 1 <= chan_num <= 16
+ * @param *recv_num, the number of 429 word whitch recieved by driver will return to recv_num
+ * return BHT_SUCCESS or other error number.
+ */
 __declspec(dllexport) bht_L0_u32
 bht_L1_a429_rx_chan_stat(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num,
         bht_L0_u32 *recv_num);
 
+/* bht_L1_device_load ,pci load fpga  
+ * @param dev_id
+ * return BHT_SUCCESS or other error number.
+ */
 __declspec(dllexport) bht_L0_u32 
 bht_L1_device_load(bht_L0_u32 dev_id);
+
+/* bht_L1_bd_fpga_eeprom_read ,read form fpga eeprom 
+ * @param dev_id
+ * @param addr,the address wthere you want to read
+ * @param *data, the eeprom data will return to this pointer space
+ * return BHT_SUCCESS or other error number.
+ */
+__declspec(dllexport) bht_L0_u32
+bht_L1_bd_fpga_eeprom_read(bht_L0_u32 dev_id,
+        bht_L0_u16 addr,
+        bht_L0_u8 *data);
+
+/* bht_L1_bd_fpga_eeprom_write ,write to fpga eeprom 
+ * @param dev_id
+ * @param addr,the address wthere you want to write
+ * @param data, the value you want to write to eeprom
+ * return BHT_SUCCESS or other error number.
+ */
+__declspec(dllexport) bht_L0_u32
+bht_L1_bd_fpga_eeprom_write(bht_L0_u32 dev_id,
+        bht_L0_u16 addr,
+        bht_L0_u8 data);
 
 /* 1553B */
 

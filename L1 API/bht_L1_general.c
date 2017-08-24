@@ -261,15 +261,15 @@ bht_L0_u32 bht_L1_device_load(bht_L0_u32 dev_id)
         {
             bht_L0_msleep(1);
             if(board_type == BHT_DEVID_BOARDTYPE_PMCA429)
-                bht_L0_read_mem32(dev_id, BHT_A429_DEVICE_VERSION, &value, 1);
+                bht_L0_read_mem32(dev_id, BHT_A429_DEVICE_STATE, &value, 1);
             else
             {
                 result = BHT_ERR_UNSUPPORTED_BACKPLANE;
                 break;
             }
-            if(0 != value)
+            if(BIT0 & value)
         	{
-        	    printf("version 0x%08x\n", value);
+        	    printf("device_state 0x%08x\n", value);
                 break;
         	}
         }
