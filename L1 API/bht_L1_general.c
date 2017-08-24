@@ -461,8 +461,8 @@ bht_L0_u32 bht_L1_device_probe(bht_L0_u32 dev_id)
             return result;
         }
         /* 2 load device */
-        if(BHT_SUCCESS != (result = bht_L1_device_load(dev_id)))
-            return result;
+        //if(BHT_SUCCESS != (result = bht_L1_device_load(dev_id)))
+        //    return result;
 
         /* 3 soft reset device */
         //result = bht_L1_device_softreset(dev_id);

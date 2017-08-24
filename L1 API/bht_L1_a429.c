@@ -22,6 +22,7 @@ modification history
 #include <assert.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stdio.h>
 
 #define BHT_A429_DEVICE_MAX      16
 #define BHT_A429_CHANNEL_MAX     16
@@ -1397,6 +1398,7 @@ bht_L1_a429_rx_chan_stat(bht_L0_u32 dev_id,
     return BHT_SUCCESS;
 }
 
+
 #ifdef SUPPORT_CONFIG_FROM_XML
 #include <mxml.h>
 #define STRING_DEVTYPE_A429 "ARINC429"
@@ -1449,10 +1451,10 @@ bht_L1_a429_config_from_xml(bht_L0_u32 dev_id,
     Device = tree;
     while(NULL != (Device = mxmlFindElement(Device, tree, "Device", "DevType", STRING_DEVTYPE_A429, MXML_DESCEND)))
     {
-        attr = mxmlElementGetAttr(node, "DevID");
+        attr = mxmlElementGetAttr(Device, "DevID");
         DevID = atoi(attr);
         
-        attr = mxmlElementGetAttr(node, "ChannelCount");
+        attr = mxmlElementGetAttr(Device, "ChannelCount");
         ChannelCount = atoi(attr);
 
         Channel = Device;
@@ -1536,7 +1538,9 @@ bht_L1_a429_config_from_xml(bht_L0_u32 dev_id,
 					goto config_failed;
 	            if(!strcmp(attr,"Yes"))
             	{
-            	    if(0 == (Period = mxmlGetInteger(node->child)))
+					if(NULL == (node = mxmlFindElement(node, node, "Period", NULL, NULL, MXML_DESCEND)))
+				        goto config_failed;
+					if(!(Period = atoi(mxmlGetText(node, NULL))))
 						goto config_failed;
             	}
 	            else if(!strcmp(attr,"No"))
@@ -1545,7 +1549,7 @@ bht_L1_a429_config_from_xml(bht_L0_u32 dev_id,
 	                goto config_failed;
 
 				if(BHT_SUCCESS != bht_L1_a429_tx_chan_period_param(dev_id, ChanID + 1, &Period, BHT_L1_PARAM_OPT_SET))
-						goto config_failed;
+					goto config_failed;
 
 				if(NULL == (ErrInject = mxmlFindElement(Param, Param, "ErrInject", NULL, NULL, MXML_DESCEND)))
 	                goto config_failed;
@@ -1611,12 +1615,12 @@ bht_L1_a429_config_from_xml(bht_L0_u32 dev_id,
 
 					if(NULL == (node = mxmlFindElement(ReceiveMode, ReceiveMode, "ListDepthThreshold", NULL, NULL, MXML_DESCEND)))
 		                goto config_failed;
-            	    if(0 == (gather_param.threshold_count = mxmlGetInteger(node)))
+            	    if(0 == (gather_param.threshold_count = atoi(mxmlGetText(node, NULL))))
 						goto config_failed;
 
 					if(NULL == (node = mxmlFindElement(ReceiveMode, ReceiveMode, "ListTimeThreshold", NULL, NULL, MXML_DESCEND)))
 		                goto config_failed;
-            	    if(0 == (gather_param.threshold_time = mxmlGetInteger(node)))
+            	    if(0 == (gather_param.threshold_time = atoi(mxmlGetText(node, NULL))))
 						goto config_failed;
             	}
 	            else if(!strcmp(attr,"Sample"))

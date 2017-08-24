@@ -23,6 +23,8 @@ extern "C" {
 
 #include <bht_L0.h>
 
+#define SUPPORT_CONFIG_FROM_XML
+
 #define BHT_L1_API_VERSION          0x01000000      /* Version V 1.0.0.0 */
 
 /********* Layer 1 Error Codes (1000 to 1999) *********/

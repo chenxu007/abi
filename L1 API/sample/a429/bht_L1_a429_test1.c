@@ -1900,6 +1900,7 @@ enum
     OPTION_PCI_LOAD_FPGA,
     OPTION_GENERATE_TX_DATA,
     OPTION_CHIPSCOPE_FREQ_DIV,
+    OPTION_CONFIG_FROM_XML,
     OPTION_EXIT = DIAG_EXIT_MENU
 };
 
@@ -1935,7 +1936,8 @@ static void menu(bht_L0_u32 dev_id)
         printf("%d. Param default config\n", OPTION_PARAM_DEFAULT_CONFIG);
         printf("%d. Pci load fpga\n", OPTION_PCI_LOAD_FPGA);    
         printf("%d. Generate Tx Data\n", OPTION_GENERATE_TX_DATA);    
-        printf("%d. ChipsCope frequency divisor\n", OPTION_CHIPSCOPE_FREQ_DIV);    
+        printf("%d. ChipsCope frequency divisor\n", OPTION_CHIPSCOPE_FREQ_DIV);  
+        printf("%d. Config from xml file\n", OPTION_CONFIG_FROM_XML);  
         
         printf("%d. EXIT\n", OPTION_EXIT);
         
@@ -2014,12 +2016,22 @@ static void menu(bht_L0_u32 dev_id)
         case OPTION_PCI_LOAD_FPGA:
             if(BHT_SUCCESS != (result = bht_L1_device_load(dev_id)))
                 printf("%s err, message : %s [result = %d]\n", __FUNCTION__, bht_L1_error_to_string(result), result);
+            else
+                printf("Pci load fpga success\n", __FUNCTION__, bht_L1_error_to_string(result), result);
             break;
         case OPTION_GENERATE_TX_DATA:
             generate_tx_data();
             break;
         case OPTION_CHIPSCOPE_FREQ_DIV:
             chips_cope_freq_div(dev_id);
+            break;
+        case OPTION_CONFIG_FROM_XML:
+#ifdef SUPPORT_CONFIG_FROM_XML
+            if(BHT_SUCCESS != bht_L1_a429_config_from_xml(dev_id, "I:/work/chenxu/proj/ABI/src/proj/A429WinDrv/Debug/config.xml"))
+                printf("config from xml failed\n");
+            else
+                printf("config from xml succ\n");
+#endif
             break;
         
         }
