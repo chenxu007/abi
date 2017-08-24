@@ -256,22 +256,20 @@ bht_L0_u32 bht_L1_device_load(bht_L0_u32 dev_id)
 		value = 0;
         for(idx = 0; idx < 8; idx++)
             bht_L0_write_mem32(dev_id, 0, &value, 1);
-        /* check version */
+        /* check done */
         for(idx = 1000; idx > 0; idx--)
         {
             bht_L0_msleep(1);
+
             if(board_type == BHT_DEVID_BOARDTYPE_PMCA429)
-                bht_L0_read_mem32(dev_id, BHT_A429_DEVICE_STATE, &value, 1);
-            else
             {
-                result = BHT_ERR_UNSUPPORTED_BACKPLANE;
-                break;
+                value = 0;
+                bht_L0_read_mem32(dev_id, PLX9056_CNTRL, &value, 1);
+                if(!(BIT17 & value))
+                    break;
             }
-            if(BIT0 & value)
-        	{
-        	    printf("device_state 0x%08x\n", value);
-                break;
-        	}
+            else
+                return BHT_ERR_UNSUPPORTED_BOARDTYPE;                
         }
         if(idx <= 0)
             return BHT_ERR_LOAD_FPGA_FAIL;
@@ -461,8 +459,8 @@ bht_L0_u32 bht_L1_device_probe(bht_L0_u32 dev_id)
             return result;
         }
         /* 2 load device */
-        if(BHT_SUCCESS != (result = bht_L1_device_load(dev_id)))
-            return result;
+        //if(BHT_SUCCESS != (result = bht_L1_device_load(dev_id)))
+        //    return result;
 
         /* 3 soft reset device */
         //result = bht_L1_device_softreset(dev_id);

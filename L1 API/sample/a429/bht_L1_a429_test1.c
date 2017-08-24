@@ -2014,6 +2014,8 @@ static void menu(bht_L0_u32 dev_id)
         case OPTION_PCI_LOAD_FPGA:
             if(BHT_SUCCESS != (result = bht_L1_device_load(dev_id)))
                 printf("%s err, message : %s [result = %d]\n", __FUNCTION__, bht_L1_error_to_string(result), result);
+            else
+                printf("Pci load fpga success\n", __FUNCTION__, bht_L1_error_to_string(result), result);
             break;
         case OPTION_GENERATE_TX_DATA:
             generate_tx_data();
