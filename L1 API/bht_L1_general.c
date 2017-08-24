@@ -465,7 +465,7 @@ bht_L0_u32 bht_L1_device_probe(bht_L0_u32 dev_id)
             return result;
 
         /* 3 soft reset device */
-        result = bht_L1_device_softreset(dev_id);
+        //result = bht_L1_device_softreset(dev_id);
         
     }
     else
