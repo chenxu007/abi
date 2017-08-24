@@ -1083,6 +1083,7 @@ static void loop_cfg(void)
 
 static void tx_slope_cfg(void)
 {
+#if 0
     DWORD option;
     bht_L0_u32 result;
     bht_L0_u32 chan_num;
@@ -1107,6 +1108,7 @@ static void tx_slope_cfg(void)
 
     if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_slope_cfg(DEVID, chan_num, slope)))
         printf("%s err, message : %s [result = %d]\n", __FUNCTION__, bht_L1_error_to_string(result), result);
+#endif
 }
 
 static void tx_trouble_cfg(void)
@@ -1777,11 +1779,11 @@ static void param_default_config(bht_L0_u32 dev_id)
             printf("default param set : tx chan[%d] loop param set failed\n", tp->chan_num);
             break;
         }
-        if(BHT_SUCCESS != (bht_L1_a429_tx_chan_slope_cfg(DEVID, tp->chan_num, tp->slope)))
-        {
-            printf("default param set : tx chan[%d] slope param set failed\n", tp->chan_num);
-            break;
-        }
+//        if(BHT_SUCCESS != (bht_L1_a429_tx_chan_slope_cfg(DEVID, tp->chan_num, tp->slope)))
+//        {
+//            printf("default param set : tx chan[%d] slope param set failed\n", tp->chan_num);
+//            break;
+//        }
         if(BHT_SUCCESS != (bht_L1_a429_tx_chan_period_param(DEVID, tp->chan_num, &tp->period, BHT_L1_PARAM_OPT_SET)))
         {
             printf("default param set : tx chan[%d] period param set failed\n", tp->chan_num);
