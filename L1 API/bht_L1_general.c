@@ -225,6 +225,11 @@ bht_L0_u32 bht_L1_device_load(bht_L0_u32 dev_id)
         if(BHT_SUCCESS != (result = bht_L0_write_setupmem32(dev_id, PLX9056_CNTRL, &value, 1)))
             return result;
         bht_L0_msleep(1);
+
+		/* check done */
+		bht_L0_read_setupmem32(dev_id, PLX9056_CNTRL, &value, 1);
+        if(!(BIT17 & value))
+            assert(0);
         
         /* 2.3 transfer data */
         sprintf(filename, "%s%s", FPGA_UPDATE_FILE_PATH, FPGA_UPDATE_FILE_NAME);
@@ -264,7 +269,7 @@ bht_L0_u32 bht_L1_device_load(bht_L0_u32 dev_id)
             if(board_type == BHT_DEVID_BOARDTYPE_PMCA429)
             {
                 value = 0;
-                bht_L0_read_mem32(dev_id, PLX9056_CNTRL, &value, 1);
+                bht_L0_read_setupmem32(dev_id, PLX9056_CNTRL, &value, 1);
                 if(!(BIT17 & value))
                     break;
             }
