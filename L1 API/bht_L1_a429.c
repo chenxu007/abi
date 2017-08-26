@@ -1416,7 +1416,6 @@ bht_L1_a429_rx_chan_stat(bht_L0_u32 dev_id,
 #define STRING_WORKMODE_CLOSE "Close"
 #define STRING_WORKMODE_CLOSEANDCLEARFIFO "CloseAndClearFIFO"
 
-
 bht_L0_u32
 bht_L1_a429_config_from_xml(bht_L0_u32 dev_id, 
         const char *filename)

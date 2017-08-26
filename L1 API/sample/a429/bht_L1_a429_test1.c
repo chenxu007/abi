@@ -2027,7 +2027,7 @@ static void menu(bht_L0_u32 dev_id)
             break;
         case OPTION_CONFIG_FROM_XML:
 #ifdef SUPPORT_CONFIG_FROM_XML
-            if(BHT_SUCCESS != bht_L1_a429_config_from_xml(dev_id, "I:/work/chenxu/proj/ABI/src/proj/A429WinDrv/Debug/config.xml"))
+            if(BHT_SUCCESS != bht_L1_a429_config_from_xml(dev_id, "./config.xml"))
                 printf("config from xml failed\n");
             else
                 printf("config from xml succ\n");
