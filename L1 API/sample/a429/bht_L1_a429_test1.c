@@ -2057,7 +2057,7 @@ void main(void)
 	    bht_L1_device_remove(DEVID);
 		printf("device probe failed, error info: %s, result = %d\n", \
 			bht_L1_error_to_string(result), result);
-		goto test_error;
+		//goto test_error;
 	}
 
 	bht_L0_msleep(10);
@@ -2070,7 +2070,7 @@ void main(void)
 	    bht_L1_device_remove(DEVID);
 		printf("device default initialized failed, error info: %s, result = %d\n", \
 			bht_L1_error_to_string(result), result);
-		goto test_error;
+		//goto test_error;
 	}
     
     menu(DEVID);

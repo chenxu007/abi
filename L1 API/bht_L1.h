@@ -213,6 +213,12 @@ bht_L1_device_probe(bht_L0_u32 dev_id);
 __declspec(dllexport) bht_L0_u32 
 bht_L1_device_remove(bht_L0_u32 dev_id);
 
+__declspec(dllexport) bht_L0_u32 
+bht_L1_device_softreset(bht_L0_u32 dev_id);
+
+__declspec(dllexport) bht_L0_u32 
+bht_L1_device_version(bht_L0_u32 dev_id, bht_L0_u32 *version);
+
 /**************************a429 general*************************/
 /* bht_L1_a429_default_init ,the a429 device will be softreset,
  * and clear the mib info
@@ -500,6 +506,12 @@ bht_L1_bd_fpga_eeprom_write(bht_L0_u32 dev_id,
         bht_L0_u16 addr,
         bht_L0_u8 data);
 
+__declspec(dllexport) bht_L0_u32
+bht_L1_a429_config_from_xml(bht_L0_u32 dev_id, 
+        const char *filename);
+
+__declspec(dllexport) bht_L0_u32
+bht_L1_bd_fpga_eeprom_test(bht_L0_u32 dev_id);
 /* 1553B */
 
 #ifdef __cplusplus

@@ -23,7 +23,8 @@ modification history
 #include <assert.h>
 
 #define SLAVE_SERIAL
-#define NEW_BOARD
+//#define NEW_BOARD
+#define DEBUG
 
 #ifdef WINDOWS_OPS
 #ifdef WINDOWS_BIT64
@@ -234,7 +235,10 @@ bht_L0_u32 bht_L1_device_load(bht_L0_u32 dev_id)
         /* 2.3 transfer data */
         sprintf(filename, "%s%s", FPGA_UPDATE_FILE_PATH, FPGA_UPDATE_FILE_NAME);
         if(0 > (fd = open(filename, O_BINARY | O_RDONLY)))
+        {
+            printf("%s %d\n", __FILE__, __LINE__);
             return BHT_ERR_LOAD_FPGA_FAIL;
+        }
         while(0 < (len = read(fd, buffer, sizeof(buffer))))
         {
             for(idx = 0; idx < len; idx ++)
@@ -277,7 +281,10 @@ bht_L0_u32 bht_L1_device_load(bht_L0_u32 dev_id)
                 return BHT_ERR_UNSUPPORTED_BOARDTYPE;                
         }
         if(idx <= 0)
+        {
+            printf("%s %d\n", __FILE__, __LINE__);            
             return BHT_ERR_LOAD_FPGA_FAIL;
+        }
     }
     else
         result = BHT_ERR_UNSUPPORTED_BACKPLANE;
@@ -463,13 +470,14 @@ bht_L0_u32 bht_L1_device_probe(bht_L0_u32 dev_id)
         {
             return result;
         }
-        /* 2 load device */
-        //if(BHT_SUCCESS != (result = bht_L1_device_load(dev_id)))
-        //    return result;
+#ifndef DEBUG 
+		/* 2 load device */
+        if(BHT_SUCCESS != (result = bht_L1_device_load(dev_id)))
+            return result;
 
         /* 3 soft reset device */
-        //result = bht_L1_device_softreset(dev_id);
-        
+        result = bht_L1_device_softreset(dev_id);
+#endif
     }
     else
         result = BHT_ERR_UNSUPPORTED_BACKPLANE;
