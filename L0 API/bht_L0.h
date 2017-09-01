@@ -243,86 +243,86 @@ enum
 };
 #endif
 
-extern void 
+__declspec(dllexport)  void 
 bht_L0_msleep(bht_L0_u32 msdelay);
 
-extern bht_L0_u32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_map_memory(bht_L0_u32 dev_id, 
         void * arg);
 
-extern bht_L0_u32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_unmap_memory(bht_L0_u32 dev_id);
 
-extern bht_L0_u32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_read_mem32(bht_L0_u32 dev_id, 
         bht_L0_u32 offset, 
         bht_L0_u32 *data, 
         bht_L0_u32 count);
         
-extern bht_L0_u32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_read_mem32_dma(bht_L0_u32 dev_id, 
         bht_L0_u32 offset, 
         bht_L0_u32 *data, 
         bht_L0_u32 count);
         
-extern bht_L0_u32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_write_mem32(bht_L0_u32 dev_id, 
         bht_L0_u32 offset, 
         bht_L0_u32 *data, 
         bht_L0_u32 count);
         
-extern bht_L0_u32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_read_mem16(bht_L0_u32 dev_id, 
         bht_L0_u32 offset, 
         bht_L0_u16 *data, 
         bht_L0_u32 count);
         
-extern bht_L0_u32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_write_mem16(bht_L0_u32 dev_id, 
         bht_L0_u32 offset, 
         bht_L0_u16 *data, 
         bht_L0_u32 count);
         
-extern bht_L0_u32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_read_setupmem32(bht_L0_u32 dev_id, 
         bht_L0_u32 offset, 
         bht_L0_u32 *data, 
         bht_L0_u32 count);
         
-extern bht_L0_u32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_write_setupmem32(bht_L0_u32 dev_id, 
         bht_L0_u32 offset, 
         bht_L0_u32 *data, 
         bht_L0_u32 count);
 
-extern bht_L0_u32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_read_setupmem16(bht_L0_u32 dev_id, 
         bht_L0_u32 offset, 
         bht_L0_u16 *data, 
         bht_L0_u32 count);
 
-extern bht_L0_u32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_write_setupmem16(bht_L0_u32 dev_id, 
         bht_L0_u32 offset, 
         bht_L0_u16 *data, 
         bht_L0_u32 count);
         
-extern bht_L0_u32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_attach_inthandler(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_regoffset, 
         BHT_L0_USER_ISRFUNC isr, 
         void * arg);
 
-extern bht_L0_u32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_detach_inthandler(bht_L0_u32 dev_id);
 
-extern bht_L0_sem
+__declspec(dllexport)  bht_L0_sem
 bht_L0_semc_create(bht_L0_u32 initial_cnt, bht_L0_u32 max_cnt);
 
-extern bht_L0_u32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_sem_take(bht_L0_sem sem, bht_L0_s32 timeout_ms);
 
-extern bht_L0_u32
+__declspec(dllexport)  bht_L0_u32
 bht_L0_sem_give(bht_L0_sem sem);
 
 

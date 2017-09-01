@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<DeviceArray>
+    <Device DevType="ARINC429" DevID="0" ChannelCount="2">
+        <Channel ChanType="TX" ChanID="0" Baud="100000" Verify="EVEN">
+            <Param>
+                <WorkMode>Open</WorkMode>
+                <LoopEnable>Enable</LoopEnable>
+                <PeriodAttr IsPeriodChannel="Yes"><!-- 如果为周期通道，则在子节点中获取周期 -->
+                    <Period>10</Period>
+                </PeriodAttr>
+                <ErrInject>
+                    <WordBits>32bit</WordBits>
+                    <GapBits>4bit</GapBits>
+                    <VerifyErrEnable>Disable</VerifyErrEnable>
+                </ErrInject>
+            </Param>
+        </Channel>
+        <Channel ChanType="RX" ChanID="0" Baud="100000" Verify="EVEN">
+            <Param>
+                <WorkMode>Open</WorkMode>
+                <FilterEnable>Disable</FilterEnable>
+                <ReceiveMode Mode="List"><!-- 如果为队列模式，则从子节点中获取队列深度阀值和时间阀值 -->
+                    <ListDepthThreshold>512</ListDepthThreshold>
+                    <ListTimeThreshold>50</ListTimeThreshold>
+                </ReceiveMode>
+            </Param>
+        </Channel>
+    </Device>
+</DeviceArray>
+<!-- 
+说明：
+DevType,设备类型,取值范围ARINC429和MIL-STD-1553B；
+DevID，设备编号，0-15
+ChannelCount，通道数量，在子节点中只取ChannelCount个通道参数，多余的通道参数忽略
+Verify,校验方式，ODD(奇校验)，EVEN（偶校验），NONE（无校验）
+WorkMode，工作模式，Open,Close,CloseAndClearFIFO
+WordBits,429数据字bit位数，31bit,32bit,33bit，协议规定位数为32bit
+GapBits,429数据字字间间隙，2bit,4bit
+FilterEnable，过滤使能，同“采集模式使能”意义相反，去除“采集模式使能”概念，因为其从字面上不能和接收通道的过滤标签对应
+ReceiveMode,接收模式，List - 队列模式，Sample - 采样模式（采样模式不关注队列深度阀值和队列时间阀值）-->
+
+

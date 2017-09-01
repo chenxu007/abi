@@ -22,6 +22,7 @@ modification history
 #include <assert.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stdio.h>
 
 #define BHT_A429_DEVICE_MAX      16
 #define BHT_A429_CHANNEL_MAX     16
@@ -108,6 +109,11 @@ bht_L0_u32 isr_ring_err_num = 0;
 bht_L0_u32 isr_sem_err_num = 0;
 bht_L0_u32 isr_list_err_num = 0;
 bht_L0_u32 isr_enable = 0;
+
+static bht_L0_u32 
+bht_L1_a429_tx_chan_slope_cfg(bht_L0_u32 dev_id, 
+        bht_L0_u32 chan_num, 
+        bht_L1_a429_slope_e slope);
 
 static void * 
 a429_isr(void *arg)
@@ -496,6 +502,22 @@ a429_chan_comm_param(bht_L0_u32 dev_id,
 
     if(old_comm_param->baud != comm_param->baud)
     {
+        /* HI-8596 slope control */
+        if((BHT_L1_CHAN_TYPE_TX == chan_type)
+            && (comm_param->baud <= BHT_L1_A429_BAUD_12_5K)
+            && (device_param->tx_chan_param[chan_num - 1].slope != BHT_L1_A429_SLOPE_10_US))
+        {
+            if(BHT_SUCCESS != bht_L1_a429_tx_chan_slope_cfg(dev_id, chan_num, BHT_L1_A429_SLOPE_10_US))
+                assert(0);
+        }
+        else if((BHT_L1_CHAN_TYPE_TX == chan_type)
+            && (comm_param->baud > BHT_L1_A429_BAUD_12_5K)
+            && (device_param->tx_chan_param[chan_num - 1].slope != BHT_L1_A429_SLOPE_1_5_US))
+        {
+            if(BHT_SUCCESS != bht_L1_a429_tx_chan_slope_cfg(dev_id, chan_num, BHT_L1_A429_SLOPE_1_5_US))
+                assert(0);
+        }
+            
         value = 100 * 1000000 / comm_param->baud;
         if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_BAUD_RATE_SET, &value, 1)))
             return result;
@@ -848,7 +870,7 @@ bht_L1_a429_tx_chan_loop(bht_L0_u32 dev_id,
     return result;
 }
 
-bht_L0_u32 
+static bht_L0_u32 
 bht_L1_a429_tx_chan_slope_cfg(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num, 
         bht_L1_a429_slope_e slope)
@@ -1377,3 +1399,250 @@ bht_L1_a429_rx_chan_stat(bht_L0_u32 dev_id,
 }
 
 
+#ifdef SUPPORT_CONFIG_FROM_XML
+#include <mxml.h>
+#define STRING_DEVTYPE_A429 "ARINC429"
+#define STRING_DEVTYPE_1553 "MIL-STD-1553B"
+#define STRING_CHANTYPE_RX "RX"
+#define STRING_CHANTYPE_TX "TX"
+#define STRING_ENABLE "Enable"
+#define STRING_DISABLE "Disable"
+#define STRING_VERIFY_ODD "ODD"
+#define STRING_VERIFY_EVEN "EVEN"
+#define STRING_VERIFY_NONE "NONE"
+#define STRING_RECVMODE_LIST "List"
+#define STRING_RECVMODE_Sample "Sample"
+#define STRING_WORKMODE_OPEN "Open"
+#define STRING_WORKMODE_CLOSE "Close"
+#define STRING_WORKMODE_CLOSEANDCLEARFIFO "CloseAndClearFIFO"
+
+bht_L0_u32
+bht_L1_a429_config_from_xml(bht_L0_u32 dev_id, 
+        const char *filename)
+{
+    FILE * fp = NULL;
+    bht_L0_u32 result = BHT_SUCCESS;
+    bht_L0_u32 backplane_type, board_type, board_num;
+    bht_L0_u32 ChannelCount, DevID;
+    mxml_node_t	*tree, *node;
+	mxml_node_t *Device, *Channel, *Param, *ErrInject, *ReceiveMode;
+    char * attr;    
+    
+    backplane_type = dev_id & 0xF0000000;
+	board_type     = dev_id & 0x0FF00000;
+	board_num      = dev_id & 0x000F0000;
+    
+    //dev_id check
+    
+    //file check
+    if ((NULL == filename) || ((fp = fopen(filename, "rb")) == NULL))
+        return BHT_FAILURE;
+    
+    //load tree from xml
+    tree = mxmlLoadFile(NULL, fp, MXML_NO_CALLBACK);    
+
+    fclose(fp);
+
+    if(!tree)
+        return BHT_FAILURE;
+    
+    //phase tree and config the device
+    Device = tree;
+    while(NULL != (Device = mxmlFindElement(Device, tree, "Device", "DevType", STRING_DEVTYPE_A429, MXML_DESCEND)))
+    {
+        attr = mxmlElementGetAttr(Device, "DevID");
+        DevID = atoi(attr);
+        
+        attr = mxmlElementGetAttr(Device, "ChannelCount");
+        ChannelCount = atoi(attr);
+
+        Channel = Device;
+        while(ChannelCount--)
+        {
+            bht_L0_u32 ChanID;
+			bht_L0_u32 Period = 0;
+            bht_L1_chan_type_e ChanType;
+			bht_L1_able_e LoopEnable;
+            bht_L1_a429_chan_comm_param_t comm_param;
+            bht_L1_a429_rx_chan_gather_param_t gather_param;
+            bht_L1_a429_tx_chan_inject_param_t inject_param;
+
+            if(NULL == (Channel = mxmlFindElement(Channel, Device, "Channel", NULL, NULL, MXML_DESCEND)))
+                goto config_failed;
+
+            attr = mxmlElementGetAttr(Channel, "ChanType");
+            if(!strcmp(attr,STRING_CHANTYPE_RX))
+                ChanType = BHT_L1_CHAN_TYPE_RX;
+            else if(!strcmp(attr,STRING_CHANTYPE_TX))
+                ChanType = BHT_L1_CHAN_TYPE_TX;
+            else
+                goto config_failed;
+
+            attr = mxmlElementGetAttr(Channel, "ChanID");
+            ChanID = atoi(attr);
+			if(ChanID > 15)
+				goto config_failed;
+
+            attr = mxmlElementGetAttr(Channel, "Baud");
+            comm_param.baud = atoi(attr);
+
+            attr = mxmlElementGetAttr(Channel, "Verify");
+            if(!strcmp(attr,STRING_VERIFY_ODD))
+                comm_param.par = BHT_L1_A429_PARITY_ODD;
+            else if(!strcmp(attr,STRING_VERIFY_EVEN))
+                comm_param.par = BHT_L1_A429_PARITY_EVEN;
+            else if(!strcmp(attr,STRING_VERIFY_NONE))
+                comm_param.par = BHT_L1_A429_PARITY_NONE;
+            else
+                goto config_failed;
+
+			if(NULL == (Param = mxmlFindElement(Channel, Channel, "Param", NULL, NULL, MXML_DESCEND)))
+                goto config_failed;
+
+			if(NULL == (node = mxmlFindElement(Param, Param, "WorkMode", NULL, NULL, MXML_DESCEND)))
+                goto config_failed;
+			if(NULL == (attr = mxmlGetText(node, NULL)))
+				goto config_failed;
+			if(!strcmp(attr,STRING_WORKMODE_OPEN))
+                comm_param.work_mode = BHT_L1_A429_CHAN_WORK_MODE_OPEN;
+            else if(!strcmp(attr,STRING_WORKMODE_CLOSE))
+                comm_param.par = BHT_L1_A429_CHAN_WORK_MODE_CLOSE;
+            else if(!strcmp(attr,STRING_WORKMODE_CLOSEANDCLEARFIFO))
+                comm_param.par = BHT_L1_A429_CHAN_WORK_MODE_CLOSE_AND_CLEAR;
+            else
+                goto config_failed;
+
+			if(BHT_SUCCESS != a429_chan_comm_param(dev_id, ChanID + 1, ChanType, &comm_param, BHT_L1_PARAM_OPT_SET))
+				goto config_failed;
+
+			if(BHT_L1_CHAN_TYPE_TX == ChanType)
+			{
+			    if(NULL == (node = mxmlFindElement(Param, Param, "LoopEnable", NULL, NULL, MXML_DESCEND)))
+	                goto config_failed;
+				if(NULL == (attr = mxmlGetText(node, NULL)))
+					goto config_failed;
+				if(!strcmp(attr,STRING_ENABLE))
+	                LoopEnable = BHT_L1_ENABLE;
+	            else if(!strcmp(attr,STRING_DISABLE))
+	                LoopEnable = BHT_L1_DISABLE;
+	            else
+	                goto config_failed;
+
+				if(BHT_SUCCESS != bht_L1_a429_tx_chan_loop(dev_id, ChanID + 1, LoopEnable))
+					goto config_failed;
+
+                if(NULL == (node = mxmlFindElement(Param, Param, "PeriodAttr", NULL, NULL, MXML_DESCEND)))
+	                goto config_failed;
+				if(NULL == (attr = mxmlElementGetAttr(node, "IsPeriodChannel")))
+					goto config_failed;
+	            if(!strcmp(attr,"Yes"))
+            	{
+					if(NULL == (node = mxmlFindElement(node, node, "Period", NULL, NULL, MXML_DESCEND)))
+				        goto config_failed;
+					if(!(Period = atoi(mxmlGetText(node, NULL))))
+						goto config_failed;
+            	}
+	            else if(!strcmp(attr,"No"))
+	                Period = 0;
+	            else
+	                goto config_failed;
+
+				if(BHT_SUCCESS != bht_L1_a429_tx_chan_period_param(dev_id, ChanID + 1, &Period, BHT_L1_PARAM_OPT_SET))
+					goto config_failed;
+
+				if(NULL == (ErrInject = mxmlFindElement(Param, Param, "ErrInject", NULL, NULL, MXML_DESCEND)))
+	                goto config_failed;
+
+				if(NULL == (node = mxmlFindElement(ErrInject, ErrInject, "WordBits", NULL, NULL, MXML_DESCEND)))
+	                goto config_failed;				
+				if(NULL == (attr = mxmlGetText(node, NULL)))
+					goto config_failed;
+				if(!strcmp(attr,"31bit"))
+	                inject_param.tb_bits = BHT_L1_A429_WORD_BIT31;
+				else if(!strcmp(attr,"32bit"))
+	                inject_param.tb_bits = BHT_L1_A429_WORD_BIT32;
+				else if(!strcmp(attr,"33bit"))
+	                inject_param.tb_bits = BHT_L1_A429_WORD_BIT33;
+	            else
+	                goto config_failed;
+
+				if(NULL == (node = mxmlFindElement(ErrInject, ErrInject, "GapBits", NULL, NULL, MXML_DESCEND)))
+	                goto config_failed;				
+				if(NULL == (attr = mxmlGetText(node, NULL)))
+					goto config_failed;
+				if(!strcmp(attr,"2bit"))
+	                inject_param.tb_gap = BHT_L1_A429_GAP_2BIT;
+				else if(!strcmp(attr,"4bit"))
+	                inject_param.tb_bits = BHT_L1_A429_GAP_4BIT;
+	            else
+	                goto config_failed;
+
+				if(NULL == (node = mxmlFindElement(ErrInject, ErrInject, "VerifyErrEnable", NULL, NULL, MXML_DESCEND)))
+	                goto config_failed;				
+				if(NULL == (attr = mxmlGetText(node, NULL)))
+					goto config_failed;
+				if(!strcmp(attr,STRING_ENABLE))
+	                inject_param.tb_par_en = BHT_L1_ENABLE;
+				else if(!strcmp(attr,STRING_DISABLE))
+	                inject_param.tb_par_en = BHT_L1_DISABLE;
+	            else
+	                goto config_failed;
+
+				if(BHT_SUCCESS != bht_L1_a429_tx_chan_inject_param(dev_id, ChanID + 1, &inject_param, BHT_L1_PARAM_OPT_SET))
+					goto config_failed;
+			}
+			else
+			{
+			    if(NULL == (node = mxmlFindElement(Param, Param, "FilterEnable", NULL, NULL, MXML_DESCEND)))
+	                goto config_failed;
+				if(NULL == (attr = mxmlGetText(node, NULL)))
+					goto config_failed;
+				if(!strcmp(attr,STRING_ENABLE))
+	                gather_param.gather_enable = BHT_L1_DISABLE;
+	            else if(!strcmp(attr,STRING_DISABLE))
+	                gather_param.gather_enable = BHT_L1_ENABLE;
+	            else
+	                goto config_failed;
+
+				if(NULL == (ReceiveMode = mxmlFindElement(Param, Param, "ReceiveMode", NULL, NULL, MXML_DESCEND)))
+	                goto config_failed;
+                if(NULL == (attr = mxmlElementGetAttr(ReceiveMode, "Mode")))
+					goto config_failed;
+	            if(!strcmp(attr,"List"))
+            	{
+            	    gather_param.recv_mode = BHT_L1_A429_RECV_MODE_LIST;
+
+					if(NULL == (node = mxmlFindElement(ReceiveMode, ReceiveMode, "ListDepthThreshold", NULL, NULL, MXML_DESCEND)))
+		                goto config_failed;
+            	    if(0 == (gather_param.threshold_count = atoi(mxmlGetText(node, NULL))))
+						goto config_failed;
+
+					if(NULL == (node = mxmlFindElement(ReceiveMode, ReceiveMode, "ListTimeThreshold", NULL, NULL, MXML_DESCEND)))
+		                goto config_failed;
+            	    if(0 == (gather_param.threshold_time = atoi(mxmlGetText(node, NULL))))
+						goto config_failed;
+            	}
+	            else if(!strcmp(attr,"Sample"))
+            	{
+	                gather_param.recv_mode = BHT_L1_A429_RECV_MODE_SAMPLE;
+					gather_param.threshold_count = 512;
+					gather_param.threshold_time = 50;
+            	}
+	            else
+	                goto config_failed;
+
+				if(BHT_SUCCESS != bht_L1_a429_rx_chan_gather_param(dev_id, ChanID + 1, &gather_param, BHT_L1_PARAM_OPT_SET))
+					goto config_failed;
+			}
+        }
+        
+    }
+
+    mxmlDelete(tree);
+    return BHT_SUCCESS;
+    
+config_failed:
+    mxmlDelete(tree);
+    return BHT_FAILURE;
+}
+#endif

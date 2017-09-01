@@ -23,6 +23,8 @@ extern "C" {
 
 #include <bht_L0.h>
 
+#define SUPPORT_CONFIG_FROM_XML
+
 #define BHT_L1_API_VERSION          0x01000000      /* Version V 1.0.0.0 */
 
 /********* Layer 1 Error Codes (1000 to 1999) *********/
@@ -211,6 +213,12 @@ bht_L1_device_probe(bht_L0_u32 dev_id);
 __declspec(dllexport) bht_L0_u32 
 bht_L1_device_remove(bht_L0_u32 dev_id);
 
+__declspec(dllexport) bht_L0_u32 
+bht_L1_device_softreset(bht_L0_u32 dev_id);
+
+__declspec(dllexport) bht_L0_u32 
+bht_L1_device_version(bht_L0_u32 dev_id, bht_L0_u32 *version);
+
 /**************************a429 general*************************/
 /* bht_L1_a429_default_init ,the a429 device will be softreset,
  * and clear the mib info
@@ -310,10 +318,10 @@ bht_L1_a429_tx_chan_loop(bht_L0_u32 dev_id,
  *  default value is 1.5us
  * return BHT_SUCCESS or other error number.
  */         
-__declspec(dllexport) bht_L0_u32 
-bht_L1_a429_tx_chan_slope_cfg(bht_L0_u32 dev_id, 
-        bht_L0_u32 chan_num, 
-        bht_L1_a429_slope_e slope);
+//__declspec(dllexport) bht_L0_u32 
+//bht_L1_a429_tx_chan_slope_cfg(bht_L0_u32 dev_id, 
+//        bht_L0_u32 chan_num, 
+//        bht_L1_a429_slope_e slope);
         
 /* bht_L1_a429_tx_chan_mib_clear ,the a429 transmit channel 
  * statistics info clear function, contain total transmit word 
@@ -458,14 +466,52 @@ bht_L1_a429_chan_dump(bht_L0_u32 dev_id,
         bht_L0_u32 chan_num, 
         bht_L1_chan_type_e type);
 
+/* bht_L1_a429_rx_chan_stat ,statistics of recieve channel, how many 429 words recieved  
+ * @param dev_id
+ * @param chan_num, 1 <= chan_num <= 16
+ * @param *recv_num, the number of 429 word whitch recieved by driver will return to recv_num
+ * return BHT_SUCCESS or other error number.
+ */
 __declspec(dllexport) bht_L0_u32
 bht_L1_a429_rx_chan_stat(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num,
         bht_L0_u32 *recv_num);
 
+/* bht_L1_device_load ,pci load fpga  
+ * @param dev_id
+ * return BHT_SUCCESS or other error number.
+ */
 __declspec(dllexport) bht_L0_u32 
 bht_L1_device_load(bht_L0_u32 dev_id);
 
+/* bht_L1_bd_fpga_eeprom_read ,read form fpga eeprom 
+ * @param dev_id
+ * @param addr,the address wthere you want to read
+ * @param *data, the eeprom data will return to this pointer space
+ * return BHT_SUCCESS or other error number.
+ */
+__declspec(dllexport) bht_L0_u32
+bht_L1_bd_fpga_eeprom_read(bht_L0_u32 dev_id,
+        bht_L0_u16 addr,
+        bht_L0_u8 *data);
+
+/* bht_L1_bd_fpga_eeprom_write ,write to fpga eeprom 
+ * @param dev_id
+ * @param addr,the address wthere you want to write
+ * @param data, the value you want to write to eeprom
+ * return BHT_SUCCESS or other error number.
+ */
+__declspec(dllexport) bht_L0_u32
+bht_L1_bd_fpga_eeprom_write(bht_L0_u32 dev_id,
+        bht_L0_u16 addr,
+        bht_L0_u8 data);
+
+__declspec(dllexport) bht_L0_u32
+bht_L1_a429_config_from_xml(bht_L0_u32 dev_id, 
+        const char *filename);
+
+__declspec(dllexport) bht_L0_u32
+bht_L1_bd_fpga_eeprom_test(bht_L0_u32 dev_id);
 /* 1553B */
 
 #ifdef __cplusplus

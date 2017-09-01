@@ -1083,6 +1083,7 @@ static void loop_cfg(void)
 
 static void tx_slope_cfg(void)
 {
+#if 0
     DWORD option;
     bht_L0_u32 result;
     bht_L0_u32 chan_num;
@@ -1107,6 +1108,7 @@ static void tx_slope_cfg(void)
 
     if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_slope_cfg(DEVID, chan_num, slope)))
         printf("%s err, message : %s [result = %d]\n", __FUNCTION__, bht_L1_error_to_string(result), result);
+#endif
 }
 
 static void tx_trouble_cfg(void)
@@ -1777,11 +1779,11 @@ static void param_default_config(bht_L0_u32 dev_id)
             printf("default param set : tx chan[%d] loop param set failed\n", tp->chan_num);
             break;
         }
-        if(BHT_SUCCESS != (bht_L1_a429_tx_chan_slope_cfg(DEVID, tp->chan_num, tp->slope)))
-        {
-            printf("default param set : tx chan[%d] slope param set failed\n", tp->chan_num);
-            break;
-        }
+//        if(BHT_SUCCESS != (bht_L1_a429_tx_chan_slope_cfg(DEVID, tp->chan_num, tp->slope)))
+//        {
+//            printf("default param set : tx chan[%d] slope param set failed\n", tp->chan_num);
+//            break;
+//        }
         if(BHT_SUCCESS != (bht_L1_a429_tx_chan_period_param(DEVID, tp->chan_num, &tp->period, BHT_L1_PARAM_OPT_SET)))
         {
             printf("default param set : tx chan[%d] period param set failed\n", tp->chan_num);
@@ -1898,6 +1900,7 @@ enum
     OPTION_PCI_LOAD_FPGA,
     OPTION_GENERATE_TX_DATA,
     OPTION_CHIPSCOPE_FREQ_DIV,
+    OPTION_CONFIG_FROM_XML,
     OPTION_EXIT = DIAG_EXIT_MENU
 };
 
@@ -1933,7 +1936,8 @@ static void menu(bht_L0_u32 dev_id)
         printf("%d. Param default config\n", OPTION_PARAM_DEFAULT_CONFIG);
         printf("%d. Pci load fpga\n", OPTION_PCI_LOAD_FPGA);    
         printf("%d. Generate Tx Data\n", OPTION_GENERATE_TX_DATA);    
-        printf("%d. ChipsCope frequency divisor\n", OPTION_CHIPSCOPE_FREQ_DIV);    
+        printf("%d. ChipsCope frequency divisor\n", OPTION_CHIPSCOPE_FREQ_DIV);  
+        printf("%d. Config from xml file\n", OPTION_CONFIG_FROM_XML);  
         
         printf("%d. EXIT\n", OPTION_EXIT);
         
@@ -2012,12 +2016,22 @@ static void menu(bht_L0_u32 dev_id)
         case OPTION_PCI_LOAD_FPGA:
             if(BHT_SUCCESS != (result = bht_L1_device_load(dev_id)))
                 printf("%s err, message : %s [result = %d]\n", __FUNCTION__, bht_L1_error_to_string(result), result);
+            else
+                printf("Pci load fpga success\n", __FUNCTION__, bht_L1_error_to_string(result), result);
             break;
         case OPTION_GENERATE_TX_DATA:
             generate_tx_data();
             break;
         case OPTION_CHIPSCOPE_FREQ_DIV:
             chips_cope_freq_div(dev_id);
+            break;
+        case OPTION_CONFIG_FROM_XML:
+#ifdef SUPPORT_CONFIG_FROM_XML
+            if(BHT_SUCCESS != bht_L1_a429_config_from_xml(dev_id, "./config.xml"))
+                printf("config from xml failed\n");
+            else
+                printf("config from xml succ\n");
+#endif
             break;
         
         }
@@ -2043,7 +2057,7 @@ void main(void)
 	    bht_L1_device_remove(DEVID);
 		printf("device probe failed, error info: %s, result = %d\n", \
 			bht_L1_error_to_string(result), result);
-		goto test_error;
+		//goto test_error;
 	}
 
 	bht_L0_msleep(10);
@@ -2056,7 +2070,7 @@ void main(void)
 	    bht_L1_device_remove(DEVID);
 		printf("device default initialized failed, error info: %s, result = %d\n", \
 			bht_L1_error_to_string(result), result);
-		goto test_error;
+		//goto test_error;
 	}
     
     menu(DEVID);
