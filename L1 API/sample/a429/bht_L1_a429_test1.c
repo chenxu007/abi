@@ -1518,6 +1518,7 @@ static void rx_filter_cfg(bht_L0_u32 dev_id)
     DWORD option, option1;
     bht_L0_u32 result;
     bht_L0_u32 chan_num;
+    bht_L0_u32 rdwr = 0;
     bht_L0_u32 start = 1, end = 16;
     bht_L1_a429_rx_chan_filter_t filter_param;
     
@@ -1526,29 +1527,52 @@ static void rx_filter_cfg(bht_L0_u32 dev_id)
     printf("--------------\n");
 
     chan_num = input_channel_num(BHT_L1_CHAN_TYPE_RX);
-    
+
     do
     {
-        printf("1. White list mode\n");
-        printf("2. Black list mode\n");
+        printf("1. Read\n");
+        printf("2. Write\n");
 
-        if (DIAG_INPUT_FAIL == DIAG_GetMenuOption(&option, 2))
+        if (DIAG_INPUT_FAIL == DIAG_GetMenuOption(&rdwr, 2))
             continue;
 
-        if(1 == option)
-            filter_param.filter_mode = BHT_L1_A429_LIST_TYPE_WHITELIST;
-        else if(2 == option)
-            filter_param.filter_mode = BHT_L1_A429_LIST_TYPE_BLACKLIST;
         break;
-    }while(1);
+    }while(1);       
 
     filter_param.label = DIAG_GetNumber("label", INPUT_DATA_FORMAT_DEC, 0, 255);
     filter_param.sdi = DIAG_GetNumber("sdi", INPUT_DATA_FORMAT_DEC, 0, 3);
     filter_param.ssm = DIAG_GetNumber("ssm", INPUT_DATA_FORMAT_DEC, 0, 3);
 
-    if(BHT_SUCCESS != (bht_L1_a429_rx_chan_filter_cfg(dev_id, chan_num, &filter_param)))
+    if(2 == rdwr)
     {
-        printf("rx chan[%d] filter param set failed\n", chan_num);
+        do
+        {
+            printf("1. White list mode\n");
+            printf("2. Black list mode\n");
+
+            if (DIAG_INPUT_FAIL == DIAG_GetMenuOption(&option, 2))
+                continue;
+
+            if(1 == option)
+                filter_param.filter_mode = BHT_L1_A429_LIST_TYPE_WHITELIST;
+            else if(2 == option)
+                filter_param.filter_mode = BHT_L1_A429_LIST_TYPE_BLACKLIST;
+            break;
+        }while(1);
+        
+        if(BHT_SUCCESS != (bht_L1_a429_rx_chan_filter_cfg(dev_id, chan_num, &filter_param, BHT_L1_PARAM_OPT_SET)))
+        {
+            printf("rx chan[%d] filter param set failed\n", chan_num);
+        }
+    }
+    else
+    {
+        if(BHT_SUCCESS != (bht_L1_a429_rx_chan_filter_cfg(dev_id, chan_num, &filter_param, BHT_L1_PARAM_OPT_GET)))
+        {
+            printf("rx chan[%d] filter param set failed\n", chan_num);
+        }
+        else
+            printf("%s\n", filter_param.filter_mode ? "Wthite" : "Black");
     }
 }
 
@@ -1901,6 +1925,7 @@ enum
     OPTION_GENERATE_TX_DATA,
     OPTION_CHIPSCOPE_FREQ_DIV,
     OPTION_CONFIG_FROM_XML,
+    OPTION_SAVE_DEFAULT_PARAM,
     OPTION_EXIT = DIAG_EXIT_MENU
 };
 
@@ -1938,6 +1963,7 @@ static void menu(bht_L0_u32 dev_id)
         printf("%d. Generate Tx Data\n", OPTION_GENERATE_TX_DATA);    
         printf("%d. ChipsCope frequency divisor\n", OPTION_CHIPSCOPE_FREQ_DIV);  
         printf("%d. Config from xml file\n", OPTION_CONFIG_FROM_XML);  
+        printf("%d. Save default param\n", OPTION_SAVE_DEFAULT_PARAM); 
         
         printf("%d. EXIT\n", OPTION_EXIT);
         
@@ -2033,6 +2059,15 @@ static void menu(bht_L0_u32 dev_id)
                 printf("config from xml succ\n");
 #endif
             break;
+		case OPTION_SAVE_DEFAULT_PARAM:
+#ifdef SUPPORT_DEFAULT_PARAM_SAVE
+            if(BHT_SUCCESS != bht_L1_a429_default_param_save(dev_id))
+                printf("save default param failed\n");
+            else
+                printf("save default param succ\n");
+#endif
+            break;
+
         
         }
     } while (OPTION_EXIT != option);

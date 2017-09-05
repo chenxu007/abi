@@ -23,7 +23,7 @@ modification history
 #include <assert.h>
 
 #define SLAVE_SERIAL
-//#define NEW_BOARD
+#define NEW_BOARD
 #define DEBUG
 
 #ifdef WINDOWS_OPS

@@ -117,6 +117,14 @@ extern "C" {
 #define BHT_A429_TX_CHAN_SEND_PERIOD_CTRL   0X1304
 
 #define BHT_A429_DEBUG_CHIPSCOPE_FREQ_DIV   0X5004
+
+/* default parameter */
+#define BHT_A429_SAVE_DEFAULT_PARAM_CTRL   0x6000
+#define BHT_A429_SAVE_DEFAULT_PARAM_STATUS 0x6004
+
+#define BHT_A429_FILTER_READ               0x6008
+#define BHT_A429_FILTER_DATA               0x600C
+
                                
 
 #ifdef __cplusplus
