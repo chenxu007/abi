@@ -217,6 +217,9 @@ typedef unsigned int     bht_L0_u32;
 typedef signed int       bht_L0_s32;
 typedef unsigned long    bht_L0_u64;
 typedef signed int       bht_L0_sem;
+typedef signed int       bht_L0_b_sem;
+typedef signed int       bht_L0_m_sem;
+typedef signed int       bht_L0_c_sem;
 
 typedef enum
 {
