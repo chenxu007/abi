@@ -1145,7 +1145,8 @@ bht_L1_a429_rx_chan_gather_param(bht_L0_device_t *device,
 bht_L0_u32 
 bht_L1_a429_rx_chan_filter_cfg(bht_L0_device_t *device, 
         bht_L0_u32 chan_num, 
-        bht_L1_a429_rx_chan_filter_t *filter)
+        bht_L1_a429_rx_chan_filter_t *filter,
+        bht_L1_param_opt_e param_opt)
 {
     bht_L0_u32 value = 0;
     bht_L0_u32 result = BHT_SUCCESS;
@@ -1154,24 +1155,41 @@ bht_L1_a429_rx_chan_filter_cfg(bht_L0_device_t *device,
     if((chan_num > 16) | (chan_num < 1))
         return BHT_ERR_INVALID_CHANNEL_NUM;    
 
-    value = 1;
-    if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CFG_ENABLE, &value, 1)))
-        return result;
+    if(BHT_L1_PARAM_OPT_SET == param_opt)
+    {
+        value = 1;
+        if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CFG_ENABLE, &value, 1)))
+            return result;
 
-    value = 16 + chan_num - 1;
-    if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CHOOSE_CHANNEL_NUM, &value, 1)))
-        return result;
+        value = 16 + chan_num - 1;
+        if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CHOOSE_CHANNEL_NUM, &value, 1)))
+            return result;
 
-    value = ((filter->filter_mode & 1) << 12) | (filter->label & 0xff) | ((filter->sdi & 0x3) << 8) | ((filter->ssm & 0x3) << 10);
-	WDC_Trace("addr[%p], mode[%d], label[%d], sdi[%d], ssm[%d], value[0x%08x]\n",
-        filter, filter->filter_mode, filter->label, filter->sdi, filter->ssm, value);
+        value = ((filter->filter_mode & 1) << 12) | (filter->label & 0xff) | ((filter->sdi & 0x3) << 8) | ((filter->ssm & 0x3) << 10);
+    	WDC_Trace("addr[%p], mode[%d], label[%d], sdi[%d], ssm[%d], value[0x%08x]\n",
+            filter, filter->filter_mode, filter->label, filter->sdi, filter->ssm, value);
 
-    if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_LABLE_FILTER, &value, 1)))
-        return result;
+        if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_LABLE_FILTER, &value, 1)))
+            return result;
 
-    value = 0;
-    if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CFG_ENABLE, &value, 1)))
-        return result;
+        value = 0;
+        if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_CFG_ENABLE, &value, 1)))
+            return result;
+    }
+    else
+    {
+        value = ((((chan_num - 1) & 0xf) << 12) | \
+            ((filter->ssm & 0x03) << 10) | \
+            ((filter->sdi & 0x03) << 8) | (filter->label &0xff));
+        
+        if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_FILTER_READ, &value, 1)))
+            return result;
+
+        if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_FILTER_DATA, &value, 1)))
+            return result;
+
+        filter->filter_mode = value;
+    }
 
     //TODO generate filter cfg change event
     
@@ -1644,5 +1662,36 @@ bht_L1_a429_config_from_xml(bht_L0_device_t *device,
 config_failed:
     mxmlDelete(tree);
     return BHT_FAILURE;
+}
+#endif
+
+#ifdef SUPPORT_DEFAULT_PARAM_SAVE
+bht_L0_u32
+bht_L1_a429_default_param_save(bht_L0_u32 dev_id)
+{
+    bht_L0_u32 result;
+    bht_L0_u32 value;
+    bht_L0_u32 count = 0;
+    
+    value = BIT0;
+    if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_SAVE_DEFAULT_PARAM_CTRL, &value, 1)))
+    {
+        printf("write SAVE_DEFAULT_PARAM_CTRL failed\n");
+        return result;
+    }
+
+    printf("saving...\n\ntime escape %3d senconds", ++count);
+    do
+    {
+        bht_L0_msleep(1000);
+        printf("\b\b\b\b\b\b\b\b\b\b\b\b%3d senconds", ++count);
+        if(BHT_SUCCESS != (result = bht_L0_read_mem32(dev_id, BHT_A429_SAVE_DEFAULT_PARAM_STATUS, &value, 1)))
+        {
+            printf("read SAVE_DEFAULT_PARAM_STATUS failed\n");
+            return result;
+        }
+    }while(0 != value);
+
+    return result;
 }
 #endif

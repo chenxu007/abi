@@ -24,6 +24,7 @@ extern "C" {
 #include <bht_L0.h>
 
 #define SUPPORT_CONFIG_FROM_XML
+#define SUPPORT_DEFAULT_PARAM_SAVE
 
 #define BHT_L1_API_VERSION          0x01000000      /* Version V 1.0.0.0 */
 
@@ -434,7 +435,8 @@ bht_L1_a429_rx_chan_gather_param(bht_L0_device_t *device,
 __declspec(dllexport) bht_L0_u32 
 bht_L1_a429_rx_chan_filter_cfg(bht_L0_device_t *device, 
         bht_L0_u32 chan_num, 
-        bht_L1_a429_rx_chan_filter_t *filter);
+        bht_L1_a429_rx_chan_filter_t *filter,
+        bht_L1_param_opt_e param_opt);
         
 /* bht_L1_a429_rx_chan_mib_clear ,the a429 receive channel 
  * statistics info clear function, contain total receive word 
@@ -537,6 +539,9 @@ bht_L1_a429_config_from_xml(bht_L0_device_t *device,
 
 __declspec(dllexport) bht_L0_u32
 bht_L1_bd_fpga_eeprom_test(bht_L0_device_t *device);
+
+__declspec(dllexport) bht_L0_u32
+bht_L1_a429_default_param_save(bht_L0_u32 dev_id);
 /* 1553B */
 
 #ifdef __cplusplus

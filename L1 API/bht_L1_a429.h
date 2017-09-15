@@ -118,8 +118,20 @@ extern "C" {
 
 #define BHT_A429_DEBUG_CHIPSCOPE_FREQ_DIV   0X5004
 
+/* default parameter */
+#define BHT_A429_SAVE_DEFAULT_PARAM_CTRL   0x6000
+#define BHT_A429_SAVE_DEFAULT_PARAM_STATUS 0x6004
+
+
+
+#define BHT_A429_FILTER_READ               0x6008
+#define BHT_A429_FILTER_DATA               0x600C
+
 #include <bht_L0.h>
 #include <bht_L1_ring.h>
+
+
+
 
 typedef struct
 {
@@ -147,10 +159,6 @@ bht_L1_a429_private_free(bht_L0_device_t *device);
 
 void
 bht_L1_a429_reset_hook(bht_L0_device_t *device);
-
-
-                               
-
 #ifdef __cplusplus
 }
 #endif
