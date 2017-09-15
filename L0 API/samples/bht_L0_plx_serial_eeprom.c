@@ -61,7 +61,7 @@ int hatoi(bht_L0_u8* str, bht_L0_u32 length)
 }
 
 bht_L0_u32 
-bht_L0_plx_eeprom_read(bht_L0_u32 dev_id,
+bht_L0_plx_eeprom_read(bht_L0_device_t *device,
         bht_L0_u32 addr,
         bht_L0_u16 *buf, 
         bht_L0_u32 count)
@@ -224,7 +224,7 @@ bht_L0_plx_eeprom_read(bht_L0_u32 dev_id,
 }
 
 bht_L0_u32 
-bht_L0_plx_eeprom_write_enable(bht_L0_u32 dev_id)
+bht_L0_plx_eeprom_write_enable(bht_L0_device_t *device)
 {
     bht_L0_u32 copy;  
     bht_L0_u32 i,x;
@@ -319,7 +319,7 @@ bht_L0_plx_eeprom_write_enable(bht_L0_u32 dev_id)
 }
 
 bht_L0_u32 
-bht_L0_plx_eeprom_write_disable(bht_L0_u32 dev_id)
+bht_L0_plx_eeprom_write_disable(bht_L0_device_t *device)
 {
     bht_L0_u32 copy;  
     bht_L0_u32 i,x;
@@ -414,7 +414,7 @@ bht_L0_plx_eeprom_write_disable(bht_L0_u32 dev_id)
 }
 
 bht_L0_u32 
-bht_L0_plx_eeprom_reload(bht_L0_u32 dev_id)
+bht_L0_plx_eeprom_reload(bht_L0_device_t *device)
 {
     bht_L0_u32 copy;  
     bht_L0_u32 i,x;
@@ -446,7 +446,7 @@ bht_L0_plx_eeprom_reload(bht_L0_u32 dev_id)
 
 
 bht_L0_u32 
-bht_L0_plx_eeprom_write(bht_L0_u32 dev_id,
+bht_L0_plx_eeprom_write(bht_L0_device_t *device,
         bht_L0_u32 addr,
         bht_L0_u16 *buf, 
         bht_L0_u32 count)
@@ -622,7 +622,7 @@ bht_L0_plx_eeprom_write(bht_L0_u32 dev_id,
 }
 
 bht_L0_u32 
-bht_L0_plx_eeprom_write_all(bht_L0_u32 dev_id,
+bht_L0_plx_eeprom_write_all(bht_L0_device_t *device,
         bht_L0_u16 value)
 {
     bht_L0_u32 copy;  

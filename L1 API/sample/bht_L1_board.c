@@ -31,7 +31,7 @@ modification history
 #define FPGA_EEPROM_SIZE               0x10000
 
 bht_L0_u32
-bht_L1_bd_fpga_eeprom_read(bht_L0_u32 dev_id,
+bht_L1_bd_fpga_eeprom_read(bht_L0_device_t *device,
         bht_L0_u16 addr,
         bht_L0_u8 *data)
 {
@@ -68,7 +68,7 @@ read_end:
 }
 
 bht_L0_u32
-bht_L1_bd_fpga_eeprom_write(bht_L0_u32 dev_id,
+bht_L1_bd_fpga_eeprom_write(bht_L0_device_t *device,
         bht_L0_u16 addr,
         bht_L0_u8 data)
 {
@@ -100,7 +100,7 @@ read_end:
 }
 
 bht_L0_u32
-bht_L1_bd_fpga_eeprom_test(bht_L0_u32 dev_id)
+bht_L1_bd_fpga_eeprom_test(bht_L0_device_t *device)
 {
     bht_L0_u32 result;
     bht_L0_u8 wdata, rdata, temp;

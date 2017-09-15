@@ -192,7 +192,7 @@ const char * bht_L1_error_to_string(bht_L0_u32 err_num)
 }
 
 #ifdef SLAVE_SERIAL
-bht_L0_u32 bht_L1_device_load(bht_L0_u32 dev_id)
+bht_L0_u32 bht_L1_device_load(bht_L0_device_t *device)
 {
     int fd;
     bht_L0_s32 len, idx, bit8, value;
@@ -294,7 +294,7 @@ bht_L0_u32 bht_L1_device_load(bht_L0_u32 dev_id)
 }
 
 #else
-bht_L0_u32 bht_L1_device_load(bht_L0_u32 dev_id)
+bht_L0_u32 bht_L1_device_load(bht_L0_device_t *device)
 {
     int fd;
     bht_L0_s32 len, idx, value;
@@ -393,7 +393,7 @@ bht_L0_u32 bht_L1_device_load(bht_L0_u32 dev_id)
 }
 #endif
 
-bht_L0_u32 bht_L1_device_softreset(bht_L0_u32 dev_id)
+bht_L0_u32 bht_L1_device_softreset(bht_L0_device_t *device)
 {
     bht_L0_s32 value;
     bht_L0_u32 backplane_type, board_type;
@@ -421,7 +421,7 @@ bht_L0_u32 bht_L1_device_softreset(bht_L0_u32 dev_id)
     return result;
 }
     
-bht_L0_u32 bht_L1_device_probe(bht_L0_u32 dev_id)
+bht_L0_u32 bht_L1_device_probe(bht_L0_device_t *device)
 {
     bht_L0_u32 value;
     bht_L0_u32 backplane_type, board_type;
@@ -500,12 +500,12 @@ bht_L0_u32 bht_L1_device_probe(bht_L0_u32 dev_id)
     return result;
 }
 
-bht_L0_u32 bht_L1_device_remove(bht_L0_u32 dev_id)
+bht_L0_u32 bht_L1_device_remove(bht_L0_device_t *device)
 {
     return bht_L0_unmap_memory(dev_id);   
 }
 
-bht_L0_u32 bht_L1_device_version(bht_L0_u32 dev_id, bht_L0_u32 *version)
+bht_L0_u32 bht_L1_device_version(bht_L0_device_t *device, bht_L0_u32 *version)
 {
     bht_L0_s32 value;
     bht_L0_u32 board_type;

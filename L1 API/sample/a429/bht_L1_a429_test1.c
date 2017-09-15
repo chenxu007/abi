@@ -78,7 +78,7 @@
 
 typedef struct
 {
-	bht_L0_u32 dev_id;
+	bht_L0_device_t *device;
 	bht_L0_u32 chan_num;
 	bht_L0_u32 data_word_num;
 }a429_thread_arg_t;
@@ -391,7 +391,7 @@ static bht_L1_chan_type_e input_chan_type(void)
 
 static DWORD WINAPI a429_channel_send_thread(const void * arg)
 {
-	const bht_L0_u32 dev_id = ((a429_thread_arg_t *)arg)->dev_id;
+	const bht_L0_device_t *device = ((a429_thread_arg_t *)arg)->dev_id;
 	const bht_L0_u32 chan_num = ((a429_thread_arg_t *)arg)->chan_num;
 	const bht_L0_u32 data_word_num = ((a429_thread_arg_t *)arg)->data_word_num;
 	bht_L0_u32 idx = 0;
@@ -428,7 +428,7 @@ static DWORD WINAPI a429_channel_send_thread(const void * arg)
 
 static DWORD WINAPI a429_channel_recv_thread(const void * arg)
 {
-	const bht_L0_u32 dev_id = ((a429_thread_arg_t *)arg)->dev_id;
+	const bht_L0_device_t *device = ((a429_thread_arg_t *)arg)->dev_id;
     const bht_L0_u32 chan_num = ((a429_thread_arg_t *)arg)->chan_num;
     const bht_L0_u32 data_word_num = ((a429_thread_arg_t *)arg)->data_word_num;
 	bht_L0_u32 idx = 0;
@@ -586,7 +586,7 @@ static void rx_thread_creat_all(void)
     
 }
 
-static void irigb_test(bht_L0_u32 dev_id)
+static void irigb_test(bht_L0_device_t *device)
 {
     bht_L0_u32 option, option1;
     bht_L1_a429_irigb_mode_e mode;
@@ -665,7 +665,7 @@ static void irigb_test(bht_L0_u32 dev_id)
     }while(option != DIAG_EXIT_MENU);
 }
 
-static void mib_dump(bht_L0_u32 dev_id)
+static void mib_dump(bht_L0_device_t *device)
 {
     DWORD option;
     bht_L0_u32 chan_num;
@@ -769,7 +769,7 @@ enum
     BAUD_PARITY_CONFIG_ALL,
     BAUD_PARITY_CONFIG_EXIT = DIAG_EXIT_MENU,
 };
-static void baud_rate(bht_L0_u32 dev_id)
+static void baud_rate(bht_L0_device_t *device)
 {
     DWORD option, option1, option2;
     bht_L0_u32 result;
@@ -1513,7 +1513,7 @@ static void rx_gather_param_cfg(void)
     }while(option != RX_GATHER_EXIT);
 }
 
-static void rx_filter_cfg(bht_L0_u32 dev_id)
+static void rx_filter_cfg(bht_L0_device_t *device)
 {
     DWORD option, option1;
     bht_L0_u32 result;
@@ -1723,7 +1723,7 @@ static void rw_mem_diag(void)
     }while (MENU_RW_ADDR_EXIT != option);
 }
 
-static void version_check(bht_L0_u32 dev_id)
+static void version_check(bht_L0_device_t *device)
 {
     bht_L0_u32 result;
     bht_L0_u32 logic_version;
@@ -1738,7 +1738,7 @@ static void version_check(bht_L0_u32 dev_id)
     }
 }
 
-static void param_default_config(bht_L0_u32 dev_id)
+static void param_default_config(bht_L0_device_t *device)
 {
     int result;
 	bht_L0_u32 value, idx, i;
@@ -1842,7 +1842,7 @@ static void generate_tx_data(void)
     }while(option != DIAG_EXIT_MENU);
 }
 
-static void chips_cope_freq_div(bht_L0_u32 dev_id)
+static void chips_cope_freq_div(bht_L0_device_t *device)
 {
     bht_L0_u32 option;
     bht_L0_u32 result;
@@ -1904,7 +1904,7 @@ enum
     OPTION_EXIT = DIAG_EXIT_MENU
 };
 
-static void menu(bht_L0_u32 dev_id)
+static void menu(bht_L0_device_t *device)
 {
     DWORD option;
     bht_L0_u32 result;

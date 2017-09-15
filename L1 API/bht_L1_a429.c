@@ -111,7 +111,7 @@ bht_L0_u32 isr_list_err_num = 0;
 bht_L0_u32 isr_enable = 0;
 
 static bht_L0_u32 
-bht_L1_a429_tx_chan_slope_cfg(bht_L0_u32 dev_id, 
+bht_L1_a429_tx_chan_slope_cfg(bht_L0_device_t *device, 
         bht_L0_u32 chan_num, 
         bht_L1_a429_slope_e slope);
 
@@ -123,7 +123,7 @@ a429_isr(void *arg)
     bht_L0_u32 result;
     bht_L0_u32 value, value1, int_vector;
     bht_L1_a429_rxp_t rxp;
-    const bht_L0_u32 dev_id = (bht_L0_u32) arg;
+    const bht_L0_device_t *device = (bht_L0_u32) arg;
     const bht_L0_u32 board_num = (dev_id & 0x000F0000) >> 16;    
 	bht_L0_u32 int_clear_flag = 0;
     struct ring_buf * r = NULL;
@@ -340,7 +340,7 @@ a429_cfg_reg_generate(bht_L1_chan_type_e chan_type,
 /* a429 general*/
 
 bht_L0_u32 
-a429_mib_clearall(bht_L0_u32 dev_id)
+a429_mib_clearall(bht_L0_device_t *device)
 {
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_u32 value;
@@ -370,7 +370,7 @@ a429_mib_clearall(bht_L0_u32 dev_id)
  * @param chan_num 1 - 16
  */
 static bht_L0_u32 
-a429_mib_clear(bht_L0_u32 dev_id, 
+a429_mib_clear(bht_L0_device_t *device, 
         bht_L0_u32 chan_num, 
         bht_L1_chan_type_e chan_type)
 {
@@ -409,7 +409,7 @@ a429_mib_clear(bht_L0_u32 dev_id,
  * @param chan_num 1 - 16
  */
 static bht_L0_u32 
-a429_mib_get(bht_L0_u32 dev_id, 
+a429_mib_get(bht_L0_device_t *device, 
         bht_L0_u32 chan_num, 
         bht_L1_chan_type_e chan_type, 
         bht_L1_a429_mib_data_t *mib_data)
@@ -433,7 +433,7 @@ a429_mib_get(bht_L0_u32 dev_id,
 }
 
 static bht_L0_u32 
-a429_chan_comm_param(bht_L0_u32 dev_id, 
+a429_chan_comm_param(bht_L0_device_t *device, 
         bht_L0_u32 chan_num,
         bht_L1_chan_type_e chan_type,
         bht_L1_a429_chan_comm_param_t *comm_param, 
@@ -559,7 +559,7 @@ a429_chan_comm_param(bht_L0_u32 dev_id,
 //}
 
 bht_L0_u32 
-bht_L1_a429_irigb_mode_cfg(bht_L0_u32 dev_id, 
+bht_L1_a429_irigb_mode_cfg(bht_L0_device_t *device, 
         bht_L1_a429_irigb_mode_e mode)
 {
     bht_L0_u32 result = BHT_SUCCESS;
@@ -569,7 +569,7 @@ bht_L1_a429_irigb_mode_cfg(bht_L0_u32 dev_id,
 }
 
 bht_L0_u32 
-bht_L1_a429_irigb_time(bht_L0_u32 dev_id, 
+bht_L1_a429_irigb_time(bht_L0_device_t *device, 
         bht_L1_a429_irigb_time_t *ti, 
         bht_L1_param_opt_e param_opt)
 {
@@ -585,7 +585,7 @@ bht_L1_a429_irigb_time(bht_L0_u32 dev_id,
 }
 
 void 
-bht_L1_a429_param_reset(bht_L0_u32 dev_id)
+bht_L1_a429_param_reset(bht_L0_device_t *device)
 {
     bht_L0_u32 board_num, chan_num;
     bht_L0_u32 result = BHT_SUCCESS;
@@ -618,7 +618,7 @@ bht_L1_a429_param_reset(bht_L0_u32 dev_id)
 }
 
 bht_L0_u32 
-bht_L1_a429_default_init(bht_L0_u32 dev_id)
+bht_L1_a429_default_init(bht_L0_device_t *device)
 {
     bht_L0_u32 board_num, chan_num;
     bht_L0_u32 result = BHT_SUCCESS;
@@ -666,7 +666,7 @@ bht_L1_a429_default_init(bht_L0_u32 dev_id)
     return result;
 }
 
-bht_L0_u32 bht_L1_a429_tx_chan_comm_param(bht_L0_u32 dev_id, 
+bht_L0_u32 bht_L1_a429_tx_chan_comm_param(bht_L0_device_t *device, 
         bht_L0_u32 chan_num,
         bht_L1_a429_chan_comm_param_t *comm_param, 
         bht_L1_param_opt_e param_opt)
@@ -676,7 +676,7 @@ bht_L0_u32 bht_L1_a429_tx_chan_comm_param(bht_L0_u32 dev_id,
 
 /* a429 tx channel */
 bht_L0_u32 
-bht_L1_a429_tx_chan_inject_param(bht_L0_u32 dev_id, 
+bht_L1_a429_tx_chan_inject_param(bht_L0_device_t *device, 
         bht_L0_u32 chan_num, 
         bht_L1_a429_tx_chan_inject_param_t *inject_param, 
         bht_L1_param_opt_e param_opt)
@@ -741,7 +741,7 @@ bht_L1_a429_tx_chan_inject_param(bht_L0_u32 dev_id,
 }
 
 bht_L0_u32
-bht_L1_a429_tx_chan_period_param(bht_L0_u32 dev_id,
+bht_L1_a429_tx_chan_period_param(bht_L0_device_t *device,
         bht_L0_u32 chan_num,
         bht_L0_u32 * period,
         bht_L1_param_opt_e param_opt)
@@ -818,7 +818,7 @@ bht_L1_a429_tx_chan_period_param(bht_L0_u32 dev_id,
 }
 
 bht_L0_u32 
-bht_L1_a429_tx_chan_loop(bht_L0_u32 dev_id, 
+bht_L1_a429_tx_chan_loop(bht_L0_device_t *device, 
         bht_L0_u32 chan_num, 
         bht_L1_able_e able)
 {
@@ -871,7 +871,7 @@ bht_L1_a429_tx_chan_loop(bht_L0_u32 dev_id,
 }
 
 static bht_L0_u32 
-bht_L1_a429_tx_chan_slope_cfg(bht_L0_u32 dev_id, 
+bht_L1_a429_tx_chan_slope_cfg(bht_L0_device_t *device, 
         bht_L0_u32 chan_num, 
         bht_L1_a429_slope_e slope)
 {
@@ -912,14 +912,14 @@ bht_L1_a429_tx_chan_slope_cfg(bht_L0_u32 dev_id,
 }
 
 bht_L0_u32 
-bht_L1_a429_tx_chan_mib_clear(bht_L0_u32 dev_id, 
+bht_L1_a429_tx_chan_mib_clear(bht_L0_device_t *device, 
         bht_L0_u32 chan_num)
 {
     return a429_mib_clear(dev_id, chan_num, BHT_L1_CHAN_TYPE_TX);
 }
 
 bht_L0_u32 
-bht_L1_a429_tx_chan_mib_get(bht_L0_u32 dev_id, 
+bht_L1_a429_tx_chan_mib_get(bht_L0_device_t *device, 
         bht_L0_u32 chan_num, 
         bht_L1_a429_mib_data_t *mib_data)
 {
@@ -927,7 +927,7 @@ bht_L1_a429_tx_chan_mib_get(bht_L0_u32 dev_id,
 }
 
 bht_L0_u32
-bht_L1_a429_tx_chan_send(bht_L0_u32 dev_id, 
+bht_L1_a429_tx_chan_send(bht_L0_device_t *device, 
         bht_L0_u32 chan_num,
         bht_L1_a429_send_opt_e opt,
         bht_L0_u32 data)
@@ -1048,7 +1048,7 @@ bht_L1_a429_tx_chan_send(bht_L0_u32 dev_id,
 }
 
 bht_L0_u32 
-bht_L1_a429_rx_chan_comm_param(bht_L0_u32 dev_id, 
+bht_L1_a429_rx_chan_comm_param(bht_L0_device_t *device, 
         bht_L0_u32 chan_num,
         bht_L1_a429_chan_comm_param_t *comm_param, 
         bht_L1_param_opt_e param_opt)
@@ -1058,7 +1058,7 @@ bht_L1_a429_rx_chan_comm_param(bht_L0_u32 dev_id,
 
 /* a429 rx channel */
 bht_L0_u32 
-bht_L1_a429_rx_chan_gather_param(bht_L0_u32 dev_id,
+bht_L1_a429_rx_chan_gather_param(bht_L0_device_t *device,
         bht_L0_u32 chan_num,
         bht_L1_a429_rx_chan_gather_param_t *gather_param,
         bht_L1_param_opt_e param_opt)
@@ -1143,7 +1143,7 @@ bht_L1_a429_rx_chan_gather_param(bht_L0_u32 dev_id,
 }
 
 bht_L0_u32 
-bht_L1_a429_rx_chan_filter_cfg(bht_L0_u32 dev_id, 
+bht_L1_a429_rx_chan_filter_cfg(bht_L0_device_t *device, 
         bht_L0_u32 chan_num, 
         bht_L1_a429_rx_chan_filter_t *filter)
 {
@@ -1179,14 +1179,14 @@ bht_L1_a429_rx_chan_filter_cfg(bht_L0_u32 dev_id,
 }
 
 bht_L0_u32 
-bht_L1_a429_rx_chan_mib_clear(bht_L0_u32 dev_id, 
+bht_L1_a429_rx_chan_mib_clear(bht_L0_device_t *device, 
         bht_L0_u32 chan_num)
 {
     return a429_mib_clear(dev_id, chan_num, BHT_L1_CHAN_TYPE_RX);
 }
 
 bht_L0_u32 
-bht_L1_a429_rx_chan_mib_get(bht_L0_u32 dev_id, 
+bht_L1_a429_rx_chan_mib_get(bht_L0_device_t *device, 
         bht_L0_u32 chan_num, 
         bht_L1_a429_mib_data_t *mib_data)
 {
@@ -1194,7 +1194,7 @@ bht_L1_a429_rx_chan_mib_get(bht_L0_u32 dev_id,
 }
 
 bht_L0_u32 
-bht_L1_a429_rx_chan_recv(bht_L0_u32 dev_id, 
+bht_L1_a429_rx_chan_recv(bht_L0_device_t *device, 
         bht_L0_u32 chan_num, 
         bht_L1_a429_rxp_t *rxp_buf, 
         bht_L0_u32 max_rxp, 
@@ -1260,7 +1260,7 @@ bht_L1_a429_rx_chan_recv(bht_L0_u32 dev_id,
 }
 
 bht_L0_u32
-bht_L1_a429_chan_dump(bht_L0_u32 dev_id, 
+bht_L1_a429_chan_dump(bht_L0_device_t *device, 
         bht_L0_u32 chan_num, 
         bht_L1_chan_type_e type)
 {
@@ -1381,7 +1381,7 @@ bht_L1_a429_chan_dump(bht_L0_u32 dev_id,
 }
 
 bht_L0_u32
-bht_L1_a429_rx_chan_stat(bht_L0_u32 dev_id, 
+bht_L1_a429_rx_chan_stat(bht_L0_device_t *device, 
         bht_L0_u32 chan_num,
         bht_L0_u32 *recv_num)
 {
@@ -1417,7 +1417,7 @@ bht_L1_a429_rx_chan_stat(bht_L0_u32 dev_id,
 #define STRING_WORKMODE_CLOSEANDCLEARFIFO "CloseAndClearFIFO"
 
 bht_L0_u32
-bht_L1_a429_config_from_xml(bht_L0_u32 dev_id, 
+bht_L1_a429_config_from_xml(bht_L0_device_t *device, 
         const char *filename)
 {
     FILE * fp = NULL;

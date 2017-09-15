@@ -117,6 +117,38 @@ extern "C" {
 #define BHT_A429_TX_CHAN_SEND_PERIOD_CTRL   0X1304
 
 #define BHT_A429_DEBUG_CHIPSCOPE_FREQ_DIV   0X5004
+
+#include <bht_L0.h>
+#include <bht_L1_ring.h>
+
+typedef struct
+{
+    bht_L0_u32 chan_num;
+    
+    bht_L0_sem semc;
+    
+    bht_L0_u32 chk_times;
+    bht_L0_u32 recv_data_count;
+    struct ring_buf rxp_ring;
+}bht_L1_a429_chan_data_t;
+
+typedef struct
+{
+    bht_L0_u32 tot_chans;                   /* total channels */
+    
+    bht_L1_a429_chan_data_t *chan_data;     /* channel data array */
+}bht_L1_a429_cb_t;
+
+bht_L0_u32
+bht_L1_a429_private_alloc(bht_L0_device_t *device);
+
+bht_L0_u32
+bht_L1_a429_private_free(bht_L0_device_t *device);
+
+void
+bht_L1_a429_reset_hook(bht_L0_device_t *device);
+
+
                                
 
 #ifdef __cplusplus
