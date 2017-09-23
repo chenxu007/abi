@@ -1,11 +1,11 @@
-#ifndef __BHT_L1_A429_H__
+﻿#ifndef __BHT_L1_A429_H__
 #define __BHT_L1_A429_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
+#include <bht_L1.h>
 /*----------------  A429_REG -----------------*/
 
 /***************  通用寄存器******************/
@@ -128,25 +128,98 @@ extern "C" {
 #define BHT_A429_FILTER_DATA               0x600C
 
 #include <bht_L0.h>
+#include <bht_L0_types.h>
 #include <bht_L1_ring.h>
 
+#define BHT_L1_A429_CHAN_MAX               16
+#define BHT_L1_A429_RXP_BUF_MAX            1024
 
-
+#define DEVICE_MUTEX_INIT(board_num) \
+    device_cb[board_num].device_mutex = bht_L0_semc_create(1, 1);
+#define DEVICE_MUTEX_LOCK(board_num) \
+    bht_L0_sem_take(device_cb[board_num].device_mutex, BHT_L1_WAIT_FOREVER);
+#define DEVICE_MUTEX_UNLOCK(board_num) \
+    bht_L0_sem_give(device_cb[board_num].device_mutex);
+    
+#define BHT_L1_A429_CHAN_NUM_CHECK(chan_num)\
+	do\
+	{\
+	    if((chan_num > BHT_L1_A429_CHAN_MAX) || (chan_num < 1))\
+            return BHT_ERR_BAD_INPUT;\
+	}while(0);
+#define BHT_L1_A429_CFG(device, able, result, error_label)\
+	do\
+    {\
+        bht_L0_u32 temp_value = able;\
+		if(BHT_SUCCESS != (result = bht_L0_write_mem32(device, BHT_A429_CFG_ENABLE, &temp_value, 1)))\
+            goto error_label;\
+	}while (0);
 
 typedef struct
 {
-    bht_L0_u32 chan_num;
-    
+    bht_L0_u32 chan_type : 1;
+    bht_L0_u32 chan_stat : 2;
+    bht_L0_u32 bit_count_err : 2;
+    bht_L0_u32 gap_err : 1;
+    bht_L0_u32 parity_err : 1;
+    bht_L0_u32 tx_parity : 1;
+    bht_L0_u32 revs1 : 7;
+    bht_L0_u32 flt_en : 1;
+    bht_L0_u32 recv_mode :1;
+    bht_L0_u32 rx_parity :2;
+    bht_L0_u32 send_mode :1;
+    bht_L0_u32 resv2 : 12;
+}bht_L1_a429_cfg_t;
+
+typedef enum
+{
+    BHT_L1_A429_WORD_BIT32  = 0,
+    BHT_L1_A429_WORD_BIT31  = 1,
+    BHT_L1_A429_WORD_BIT33  = 2,
+}bht_L1_a429_word_bit_e;
+
+typedef enum
+{
+    BHT_L1_A429_GAP_4BIT  = 0,
+    BHT_L1_A429_GAP_2BIT  = 1,
+}bht_L1_a429_gap_e;
+
+typedef enum
+{
+    BHT_L1_A429_SLOPE_10_US = 0, 
+    BHT_L1_A429_SLOPE_1_5_US = 1
+}bht_L1_a429_slope_e;
+
+typedef struct
+{
     bht_L0_sem semc;
-    
+
+    bht_L1_a429_recv_mode_e recv_mode;
     bht_L0_u32 chk_times;
-    bht_L0_u32 recv_data_count;
-    struct ring_buf rxp_ring;
+    bht_L0_u32 recv_data_cnt;
+    bht_L0_u32 lost_data_cnt;
+    bht_L0_u32 semc_err_cnt;
+    bht_L0_u32 chan_idle_err_cnt;
+    struct ring_buf *rxp_ring;
 }bht_L1_a429_chan_data_t;
 
 typedef struct
 {
     bht_L0_u32 tot_chans;                   /* total channels */
+
+    bht_L0_s32 last_err;
+    
+    bht_L0_u32 err_cnt;
+
+    bht_L0_u32 int_cnt;
+
+    bht_L0_u32 int_valid_cnt;
+
+    bht_L0_u32 int_stat_err_cnt;
+
+    bht_L0_u32 int_vector_idle_err_cnt;
+
+    
     
     bht_L1_a429_chan_data_t *chan_data;     /* channel data array */
 }bht_L1_a429_cb_t;

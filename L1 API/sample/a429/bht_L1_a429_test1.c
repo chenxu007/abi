@@ -254,6 +254,20 @@ static a429_thread_arg_t arg_tx[16 + 1] = {0};
 static a429_thread_arg_t arg_rx[16 + 1] = {0};
 
 static bht_L0_u32 recv_err_flag = 0;
+#define BHT_L2_DEVICE_MAX   16
+static const char dtype_string[BHT_L0_DEVICE_TYPE_MAX] = 
+{
+    "PMCA429",
+    "PCIA429",
+    "CPCIA429",
+    "PXIA429",
+    "PMC1553",
+    "UNINITIALIZED"
+};
+static bht_L1_device_handle_t handle_list[BHT_L0_DEVICE_TYPE_MAX][BHT_L2_DEVICE_MAX] = {0};
+static bht_L0_u32 scan_info[BHT_L0_DEVICE_TYPE_MAX] = {0};
+static bht_L0_dtype_e cur_dtype = BHT_L0_DEVICE_TYPE_MAX;
+static bht_L0_u32 cur_device_no = BHT_L2_DEVICE_MAX;
 
 static void testbuf_rand(bht_L0_u32 *testbuf, bht_L0_u32 size)
 {
@@ -391,7 +405,7 @@ static bht_L1_chan_type_e input_chan_type(void)
 
 static DWORD WINAPI a429_channel_send_thread(const void * arg)
 {
-	const bht_L0_device_t *device = ((a429_thread_arg_t *)arg)->dev_id;
+	const bht_L0_device_t *device = ((a429_thread_arg_t *)arg)->device;
 	const bht_L0_u32 chan_num = ((a429_thread_arg_t *)arg)->chan_num;
 	const bht_L0_u32 data_word_num = ((a429_thread_arg_t *)arg)->data_word_num;
 	bht_L0_u32 idx = 0;
@@ -405,7 +419,7 @@ static DWORD WINAPI a429_channel_send_thread(const void * arg)
 
 	while(idx < data_word_num)
 	{
-		if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_send(dev_id, chan_num, BHT_L1_A429_OPT_RANDOM_SEND, test_tx_buf[idx])))
+		if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_send(device, chan_num, BHT_L1_A429_OPT_RANDOM_SEND, test_tx_buf[idx])))
 		{
 //			printf("tx_chan_send failed[idx = %d], error info : %s, result = %d\n", \
 //				idx, bht_L1_error_to_string(result), result);
@@ -428,7 +442,7 @@ static DWORD WINAPI a429_channel_send_thread(const void * arg)
 
 static DWORD WINAPI a429_channel_recv_thread(const void * arg)
 {
-	const bht_L0_device_t *device = ((a429_thread_arg_t *)arg)->dev_id;
+	const bht_L0_device_t *device = ((a429_thread_arg_t *)arg)->device;
     const bht_L0_u32 chan_num = ((a429_thread_arg_t *)arg)->chan_num;
     const bht_L0_u32 data_word_num = ((a429_thread_arg_t *)arg)->data_word_num;
 	bht_L0_u32 idx = 0;
@@ -444,7 +458,7 @@ static DWORD WINAPI a429_channel_recv_thread(const void * arg)
     
 	while(tot_num < data_word_num)
 	{
-	    if(BHT_SUCCESS != bht_L1_a429_rx_chan_recv(dev_id, chan_num, &rxp, 1, &num, BHT_L1_WAIT_FOREVER))
+	    if(BHT_SUCCESS != bht_L1_a429_rx_chan_recv(device, chan_num, &rxp, 1, &num, BHT_L1_WAIT_FOREVER))
         {
             printf("rx channel[%d] recv err\n", chan_num);
             break;
@@ -496,7 +510,7 @@ static void tx_thread_creat(void)
 		break;
     }while(1);
 
-    arg_tx[chan_num].dev_id = DEVID;
+    arg_tx[chan_num].device = DEVID;
     arg_tx[chan_num].chan_num = chan_num;
 
     hThread[thread_count] = CreateThread(NULL, 100 * 1024, (LPTHREAD_START_ROUTINE)a429_channel_send_thread, (LPVOID)&arg_tx[chan_num], 0, NULL);
@@ -520,7 +534,7 @@ static void tx_thread_creat_all(void)
 
     for(idx = 0; idx < 16; idx++)
     {
-        arg_tx[idx].dev_id = DEVID;
+        arg_tx[idx].device = DEVID;
         arg_tx[idx].data_word_num = data_word_num;
         arg_tx[idx].chan_num = idx + 1;
 
@@ -546,7 +560,7 @@ static void rx_thread_creat(void)
 
     arg_rx[chan_num].data_word_num = DIAG_GetNumber("number of 429 words you want to recv", INPUT_DATA_FORMAT_DEC, 0, A429_DATAWORD_TEST_NUM);
 
-    arg_rx[chan_num].dev_id = DEVID;
+    arg_rx[chan_num].device = DEVID;
 
     hThread[thread_count] = CreateThread(NULL, 100 * 1024, (LPTHREAD_START_ROUTINE)a429_channel_recv_thread, (LPVOID)&arg_rx[chan_num], 0, NULL);
 
@@ -569,7 +583,7 @@ static void rx_thread_creat_all(void)
 
     for(idx = 0; idx < 16; idx++)
     {
-        arg_rx[idx].dev_id = DEVID;
+        arg_rx[idx].device = DEVID;
         arg_rx[idx].data_word_num = data_word_num;
         arg_rx[idx].chan_num = idx + 1;
 
@@ -609,21 +623,24 @@ static void irigb_test(bht_L0_device_t *device)
             case 1:
                 do
                 {
-                    printf("1. Slave\n");
-                    printf("2. Master\n");
+                    if(BHT_SUCCESS != bht_L1_a429_irigb_mode(device, &mode, BHT_L1_PARAM_OPT_GET);                   )
+                        goto irigb_test_err;
+                    if(BHT_L1_A429_IRIGB_MODE_MASTER== mode)
+                        printf("1. Slave\n");
+                    else
+                        printf("1. Master\n");
                     printf("%d. EXIT\n", DIAG_EXIT_MENU);
 
-                    if (DIAG_INPUT_FAIL == DIAG_GetMenuOption(&option1,2))
+                    if (DIAG_INPUT_FAIL == DIAG_GetMenuOption(&option1,1))
                         continue;
 
                     if(option1 != DIAG_EXIT_MENU)
                     {
-                        if(1 == option1)
-                            mode = BHT_L1_A429_IRIGB_MODE_SLAVE;
-                        else if(2 == option1)
-                            mode = BHT_L1_A429_IRIGB_MODE_MASTER;
+                        mode = (mode == BHT_L1_A429_IRIGB_MODE_MASTER) ? \
+                            BHT_L1_A429_IRIGB_MODE_SLAVE : BHT_L1_A429_IRIGB_MODE_MASTER;
 
-                        bht_L1_a429_irigb_mode_cfg(dev_id, mode);
+                        if(BHT_SUCCESS != bht_L1_a429_irigb_mode(device, &mode, BHT_L1_PARAM_OPT_SET))
+                            goto irigb_test_err;
                     }
                 }while(option1 != DIAG_EXIT_MENU);
                 
@@ -642,7 +659,7 @@ static void irigb_test(bht_L0_device_t *device)
                     {
                         if(1 == option1)
                         {
-                            bht_L1_a429_irigb_time(dev_id, &irigb_time, BHT_L1_PARAM_OPT_GET);
+                            bht_L1_a429_irigb_time(device, &irigb_time, BHT_L1_PARAM_OPT_GET);
                             printf("day  : %d\nhour : %d\nmin  : %d\nsec  : %d\nms   : %d\nus   : %d\n",
                                 irigb_time.tm.tm_day, irigb_time.tm.tm_hour, irigb_time.tm.tm_min, 
                                 irigb_time.tm.tm_sec, irigb_time.tm.tm_ms, irigb_time.tm.tm_us);
@@ -655,7 +672,7 @@ static void irigb_test(bht_L0_device_t *device)
                             irigb_time.tm.tm_sec = DIAG_GetNumber("sec", INPUT_DATA_FORMAT_DEC, 0, 59);
                             irigb_time.tm.tm_ms = DIAG_GetNumber("ms", INPUT_DATA_FORMAT_DEC, 0, 999);
                             irigb_time.tm.tm_us = DIAG_GetNumber("us", INPUT_DATA_FORMAT_DEC, 0, 999);
-                            bht_L1_a429_irigb_time(dev_id, &irigb_time, BHT_L1_PARAM_OPT_SET);
+                            bht_L1_a429_irigb_time(device, &irigb_time, BHT_L1_PARAM_OPT_SET);
                         }
                     }
                 }while(option1 != DIAG_EXIT_MENU);
@@ -663,9 +680,13 @@ static void irigb_test(bht_L0_device_t *device)
         }
         
     }while(option != DIAG_EXIT_MENU);
+
+    return;
+irigb_test_err:
+    printf("%s err\n", __FUNCTION__);
 }
 
-static void mib_dump(bht_L0_device_t *device)
+static void mib_dump(bht_L1_device_handle_t device)
 {
     DWORD option;
     bht_L0_u32 chan_num;
@@ -708,21 +729,10 @@ static void mib_dump(bht_L0_device_t *device)
                     printf("-------------------------------------------------------------------------------\n");
                 }
                 
-                if(BHT_L1_CHAN_TYPE_RX == type)
+                if(BHT_SUCCESS != (result = bht_L1_a429_chan_get_mib(device, chan_num, type, &mib_data)))
                 {
-                    if(BHT_SUCCESS != (result = bht_L1_a429_rx_chan_mib_get(dev_id, chan_num, &mib_data)))
-                    {
-                        printf("rx mib get failed, %s (result = %d)", bht_L1_error_to_string(result), result);
-                        break;
-                    }
-                }
-                else
-                {
-                    if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_mib_get(dev_id, chan_num, &mib_data)))
-                    {
-                        printf("tx mib get failed, %s (result = %d)", bht_L1_error_to_string(result), result);
-                        break;
-                    }
+                    printf("mib get failed, %s (result = %d)", bht_L1_error_to_string(result), result);
+                    break;
                 }
 
                 printf("|%-4x/%-4x", mib_data.cnt, mib_data.err_cnt);
@@ -743,7 +753,7 @@ static void mib_dump(bht_L0_device_t *device)
                         9,10,11,12,13,14,15,16);
                     printf("------------------------------------------------\n");
                 }
-                if(BHT_SUCCESS != bht_L1_a429_rx_chan_stat(dev_id, chan_num, &recv_num))
+                if(BHT_SUCCESS != bht_L1_a429_rx_chan_stat(device, chan_num, &recv_num))
                     break;
                 
                 printf("| %-4x", recv_num);
@@ -755,7 +765,7 @@ static void mib_dump(bht_L0_device_t *device)
         case 3:
             type = input_chan_type();
             chan_num = input_channel_num(type);
-            bht_L1_a429_chan_dump(dev_id, chan_num, type);
+            bht_L1_a429_chan_dump(device, chan_num, type);
             break;
         }
         
@@ -769,13 +779,14 @@ enum
     BAUD_PARITY_CONFIG_ALL,
     BAUD_PARITY_CONFIG_EXIT = DIAG_EXIT_MENU,
 };
-static void baud_rate(bht_L0_device_t *device)
+static void baud_rate(bht_L1_device_handle_t device)
 {
     DWORD option, option1, option2;
     bht_L0_u32 result;
     bht_L0_u32 chan_num;
     bht_L1_chan_type_e type;
-    bht_L1_a429_chan_comm_param_t comm_param;    
+    bht_L1_a429_baud_rate_e baud;
+    bht_L1_a429_parity_e parity;
 
     printf("Baud rate / parity config menu\n");
     printf("--------------------------------------\n");
@@ -808,26 +819,19 @@ static void baud_rate(bht_L0_device_t *device)
                         9,10,11,12,13,14,15,16);
                     printf("-------------------------------------------------------------------------------\n");
                 }
-                
-                if(BHT_L1_CHAN_TYPE_RX == type)
-                {
-                    if(BHT_SUCCESS != (result = bht_L1_a429_rx_chan_comm_param(dev_id, chan_num, &comm_param, BHT_L1_PARAM_OPT_GET)))
-                    {
-                        printf("rx commom param get failed, %s (result = %d)", bht_L1_error_to_string(result), result);
-                        break;
-                    }
-                }
-                else
-                {
-                    if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_comm_param(dev_id, chan_num, &comm_param, BHT_L1_PARAM_OPT_GET)))
-                    {
-                        printf("tx commom param get failed, %s (result = %d)", bht_L1_error_to_string(result), result);
-                        break;
-                    }
-                }
 
-                printf("|%-0.1fk/%s", comm_param.baud /1000.0, (comm_param.par == BHT_L1_A429_PARITY_ODD) ? "ODD" : \
-                    ((comm_param.par == BHT_L1_A429_PARITY_EVEN) ? "EVEN" : "NONE"));
+                if(BHT_SUCCESS != bht_L1_a429_chan_baud(device, chan_num, type, &baud, BHT_L1_PARAM_OPT_GET))
+                {
+                    printf("baud get failed, %s (result = %d)", bht_L1_error_to_string(result), result);
+                    break;
+                }
+                if(BHT_SUCCESS != bht_L1_a429_chan_parity(device, chan_num, type, &parity, BHT_L1_PARAM_OPT_GET))
+                {
+                    printf("parity get failed, %s (result = %d)", bht_L1_error_to_string(result), result);
+                    break;
+                }
+                printf("|%-0.1fk/%s", baud /1000.0, (parity == BHT_L1_A429_PARITY_ODD) ? "ODD" : \
+                    ((parity == BHT_L1_A429_PARITY_EVEN) ? "EVEN" : "NONE"));
             }
             printf("\n-------------------------------------------------------------------------------\n");
             break;
@@ -844,105 +848,100 @@ static void baud_rate(bht_L0_device_t *device)
                 switch(option1)
                 {
                 case 1:
-                case 2:
                     type = input_chan_type();
                     chan_num = input_channel_num(type);
-                    
-                    if(BHT_L1_CHAN_TYPE_RX == type)
+                    if(BHT_SUCCESS != (result = bht_L1_a429_chan_baud(device, chan_num, type, &baud, BHT_L1_PARAM_OPT_GET)))
                     {
-                        if(BHT_SUCCESS != (result = bht_L1_a429_rx_chan_comm_param(dev_id, chan_num, &comm_param, BHT_L1_PARAM_OPT_GET)))
-                        {
-                            printf("rx commom param get failed, %s (result = %d)", bht_L1_error_to_string(result), result);
-                            break;
-                        }
+                        printf("baud rate get failed, %s (result = %d)", bht_L1_error_to_string(result), result);
+                        break;
                     }
-                    else
-                    {
-                        if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_comm_param(dev_id, chan_num, &comm_param, BHT_L1_PARAM_OPT_GET)))
-                        {
-                            printf("tx commom param get failed, %s (result = %d)", bht_L1_error_to_string(result), result);
-                            break;
-                        }
-                    }
-
+                    printf("%s channel %d current baud rate is : %d\n", (type == BHT_L1_CHAN_TYPE_RX) ? "RX" : "TX", chan_num, baud);
                     do
                     {
-                        if(1 == option1)
-                        {
                         printf("1.baud rate 12.5K\n");
                         printf("2.baud rate 50K\n");
                         printf("3.baud rate 100K\n");
                         printf("4.baud rate 200K\n");
                         printf("5.baud rate input\n");
-                        }
-                        else
+                        printf("%d. EXIT\n", DIAG_EXIT_MENU);
+
+                        if (DIAG_INPUT_FAIL == DIAG_GetMenuOption(&option2, 5))
+                            continue;
+
+                        switch(option2)
                         {
+                        case 1:
+                            baud = BHT_L1_A429_BAUD_12_5K;
+                            break;
+                        case 2:
+                            baud = BHT_L1_A429_BAUD_50K;
+                            break;
+                        case 3:
+                            baud = BHT_L1_A429_BAUD_100K;
+                            break;
+                        case 4:
+                            baud = BHT_L1_A429_BAUD_200K;
+                            break;
+                        case 5:
+                            baud = DIAG_GetNumber("baud rate", INPUT_DATA_FORMAT_DEC, 5000, 500000);
+                            break;
+                        }                            
+                        if(option2 != DIAG_EXIT_MENU)
+                        {
+                            if(BHT_SUCCESS != (result = bht_L1_a429_chan_baud(device, chan_num, type, &baud, BHT_L1_PARAM_OPT_SET)))
+                            {
+                                printf("baud rate set failed, %s (result = %d)", bht_L1_error_to_string(result), result);
+                                break;
+                            }
+                        }
+                    }while(option2 != DIAG_EXIT_MENU);
+                    break;
+                case 2:
+                    type = input_chan_type();
+                    chan_num = input_channel_num(type);
+                    if(BHT_SUCCESS != bht_L1_a429_chan_parity(device, chan_num, type, &parity, BHT_L1_PARAM_OPT_GET))
+                    {
+                        printf("parity get failed, %s (result = %d)", bht_L1_error_to_string(result), result);
+                        break;
+                    }
+                    printf("%s channel %d current parity is : %s\n", (type == BHT_L1_CHAN_TYPE_RX) ? "RX" : "TX", chan_num, \
+                        (parity == BHT_L1_A429_PARITY_ODD) ? "ODD" : ((parity == BHT_L1_A429_PARITY_EVEN) ? "EVEN" : "NONE"));  
+
+                    do
+                    {
                         printf("1.ODD parity\n");
                         printf("2.EVEN parity\n");
                         printf("3.NONE parity\n");
-                        }
                         printf("%d. EXIT\n", DIAG_EXIT_MENU);
 
                         if (DIAG_INPUT_FAIL == DIAG_GetMenuOption(&option2, 3))
                             continue;
-
-                        if(1 == option1)
-                            switch(option2)
-                            {
-                            case 1:
-                                comm_param.baud = BHT_L1_A429_BAUD_12_5K;
-                                break;
-                            case 2:
-                                comm_param.baud = BHT_L1_A429_BAUD_50K;
-                                break;
-                            case 3:
-                                comm_param.baud = BHT_L1_A429_BAUD_100K;
-                                break;
-                            case 4:
-                                comm_param.baud = BHT_L1_A429_BAUD_200K;
-                                break;
-                            case 5:
-                                comm_param.baud = DIAG_GetNumber("baud rate", INPUT_DATA_FORMAT_DEC, 5000, 500000);
-                                break;
-                            
-                            }                            
-                        else
-                            switch(option2)
-                            {
-                            case 1:
-                                comm_param.par = BHT_L1_A429_PARITY_ODD;
-                                break;
-                            case 2:
-                                comm_param.baud = BHT_L1_A429_PARITY_EVEN;
-                                break;
-                            case 3:
-                                comm_param.baud = BHT_L1_A429_PARITY_NONE;
-                                break;
-                            }
+                        
+                        switch(option2)
+                        {
+                        case 1:
+                            parity = BHT_L1_A429_PARITY_ODD;
+                            break;
+                        case 2:
+                            parity = BHT_L1_A429_PARITY_EVEN;
+                            break;
+                        case 3:
+                            parity = BHT_L1_A429_PARITY_NONE;
+                            break;
+                        }
                             
                         if(option2 != DIAG_EXIT_MENU)
                         {
-                            if(BHT_L1_CHAN_TYPE_RX == type)
+                            if(BHT_SUCCESS != bht_L1_a429_chan_parity(device, chan_num, type, &parity, BHT_L1_PARAM_OPT_SET))
                             {
-                                if(BHT_SUCCESS != (result = bht_L1_a429_rx_chan_comm_param(dev_id, chan_num, &comm_param, BHT_L1_PARAM_OPT_SET)))
-                                {
-                                    printf("rx commom param get failed, %s (result = %d)", bht_L1_error_to_string(result), result);
-                                    break;
-                                }
-                            }
-                            else
-                            {
-                                if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_comm_param(dev_id, chan_num, &comm_param, BHT_L1_PARAM_OPT_SET)))
-                                {
-                                    printf("tx commom param get failed, %s (result = %d)", bht_L1_error_to_string(result), result);
-                                    break;
-                                }
+                                printf("parity set failed, %s (result = %d)", bht_L1_error_to_string(result), result);
+                                break;
                             }
                         }
                     }while(option2 != DIAG_EXIT_MENU);
 
                     break;
-                    }
+                }
             }while(option1 != DIAG_EXIT_MENU);
             
             break;
@@ -959,87 +958,82 @@ static void baud_rate(bht_L0_device_t *device)
                 switch(option1)
                 {
                 case 1:
-                case 2:
                     type = input_chan_type();
-                    
-                    if(BHT_L1_CHAN_TYPE_RX == type)
-                    {
-                        if(BHT_SUCCESS != (result = bht_L1_a429_rx_chan_comm_param(dev_id, chan_num, &comm_param, BHT_L1_PARAM_OPT_GET)))
-                        {
-                            printf("rx commom param get failed, %s (result = %d)", bht_L1_error_to_string(result), result);
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_comm_param(dev_id, chan_num, &comm_param, BHT_L1_PARAM_OPT_GET)))
-                        {
-                            printf("tx commom param get failed, %s (result = %d)", bht_L1_error_to_string(result), result);
-                            break;
-                        }
-                    }
-
                     do
                     {
-                        if(1 == option1)
-                        {
                         printf("1.baud rate 12.5K\n");
-                        printf("2.baud rate 100K\n");
-                        printf("3.baud rate 200K\n");
-                        }
-                        else
+                        printf("2.baud rate 50K\n");
+                        printf("3.baud rate 100K\n");
+                        printf("4.baud rate 200K\n");
+                        printf("5.baud rate input\n");
+                        printf("%d. EXIT\n", DIAG_EXIT_MENU);
+
+                        if (DIAG_INPUT_FAIL == DIAG_GetMenuOption(&option2, 5))
+                            continue;
+
+                        switch(option2)
                         {
+                        case 1:
+                            baud = BHT_L1_A429_BAUD_12_5K;
+                            break;
+                        case 2:
+                            baud = BHT_L1_A429_BAUD_50K;
+                            break;
+                        case 3:
+                            baud = BHT_L1_A429_BAUD_100K;
+                            break;
+                        case 4:
+                            baud = BHT_L1_A429_BAUD_200K;
+                            break;
+                        case 5:
+                            baud = DIAG_GetNumber("baud rate", INPUT_DATA_FORMAT_DEC, 5000, 500000);
+                            break;
+                        }                            
+                        if(option2 != DIAG_EXIT_MENU)
+                        {
+                            for(chan_num = 1; chan_num < BHT_L1_A429_CHAN_MAX; chan_num++)
+                            {
+                                if(BHT_SUCCESS != (result = bht_L1_a429_chan_baud(device, chan_num, type, &baud, BHT_L1_PARAM_OPT_SET)))
+                                {
+                                    printf("baud rate set failed, %s (result = %d)", bht_L1_error_to_string(result), result);
+                                    break;
+                                }
+                            }
+                        }
+                    }while(option2 != DIAG_EXIT_MENU);
+                    break;
+                case 2:
+                    type = input_chan_type();
+                    do
+                    {
                         printf("1.ODD parity\n");
                         printf("2.EVEN parity\n");
                         printf("3.NONE parity\n");
-                        }
                         printf("%d. EXIT\n", DIAG_EXIT_MENU);
 
                         if (DIAG_INPUT_FAIL == DIAG_GetMenuOption(&option2, 3))
                             continue;
-
-                        if(1 == option1)
-                            switch(option2)
-                            {
-                            case 1:
-                                comm_param.baud = BHT_L1_A429_BAUD_12_5K;
-                                break;
-                            case 2:
-                                comm_param.baud = BHT_L1_A429_BAUD_100K;
-                                break;
-                            case 3:
-                                comm_param.baud = BHT_L1_A429_BAUD_200K;
-                                break;
-                            }                            
-                        else
-                            switch(option2)
-                            {
-                            case 1:
-                                comm_param.par = BHT_L1_A429_PARITY_ODD;
-                                break;
-                            case 2:
-                                comm_param.baud = BHT_L1_A429_PARITY_EVEN;
-                                break;
-                            case 3:
-                                comm_param.baud = BHT_L1_A429_PARITY_NONE;
-                                break;
-                            }
+                        
+                        switch(option2)
+                        {
+                        case 1:
+                            parity = BHT_L1_A429_PARITY_ODD;
+                            break;
+                        case 2:
+                            parity = BHT_L1_A429_PARITY_EVEN;
+                            break;
+                        case 3:
+                            parity = BHT_L1_A429_PARITY_NONE;
+                            break;
+                        }
                             
                         if(option2 != DIAG_EXIT_MENU)
                         {
-                            if(BHT_L1_CHAN_TYPE_RX == type)
+                            for(chan_num = 1; chan_num < BHT_L1_A429_CHAN_MAX; chan_num++)
                             {
-                                if(BHT_SUCCESS != (result = bht_L1_a429_rx_chan_comm_param(dev_id, chan_num, &comm_param, BHT_L1_PARAM_OPT_SET)))
+                                if(BHT_SUCCESS != bht_L1_a429_chan_parity(device, chan_num, type, &parity, BHT_L1_PARAM_OPT_SET))
                                 {
-                                    printf("rx commom param get failed, %s (result = %d)", bht_L1_error_to_string(result), result);
-                                    break;
-                                }
-                            }
-                            else
-                            {
-                                if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_comm_param(dev_id, chan_num, &comm_param, BHT_L1_PARAM_OPT_SET)))
-                                {
-                                    printf("tx commom param get failed, %s (result = %d)", bht_L1_error_to_string(result), result);
+                                    printf("parity set failed, %s (result = %d)", bht_L1_error_to_string(result), result);
                                     break;
                                 }
                             }
@@ -1047,38 +1041,41 @@ static void baud_rate(bht_L0_device_t *device)
                     }while(option2 != DIAG_EXIT_MENU);
 
                     break;
-                    }
+                }
             }while(option1 != DIAG_EXIT_MENU);
             break;
         }
     }while(BAUD_PARITY_CONFIG_EXIT != option);
 }
 
-static void loop_cfg(void)
+static void loop_cfg(bht_L1_device_handle_t device)
 {
     DWORD option;
     bht_L0_u32 result;
     bht_L0_u32 chan_num;
-    bht_L0_u32 opt = BHT_L1_ENABLE;    
+    bht_L1_able_e able = BHT_L1_ENABLE;    
 
     chan_num = input_channel_num(BHT_L1_CHAN_TYPE_TX);
-
     do
     {
-        printf("1.loop enable\n");
-        printf("2.loop disable\n");
+        if(BHT_SUCCESS != (result = bht_L1_a429_chan_loop(device, chan_num, &able, BHT_L1_PARAM_OPT_GET)))
+            printf("%s err, message : %s [result = %d]\n", __FUNCTION__, bht_L1_error_to_string(result), result);
+
+        printf("1.loop disable%s\n",(able == BHT_L1_DISABLE) ? "(current)" : "");
+        printf("1.loop enable%s\n", (able == BHT_L1_ENABLE) ? "(current)" : "");
+        printf("%d.EXIT\n", DIAG_EXIT_MENU);
+        
         if (DIAG_INPUT_FAIL == DIAG_GetMenuOption(&option, 2))
         {
             continue;
         }
-		if(2 == option)
-            opt = BHT_L1_DISABLE;
-
-        break;
+		if(DIAG_EXIT_MENU != option)
+        {      
+            able = (option == 1) ? BHT_L1_DISABLE : BHT_L1_ENABLE;
+            if(BHT_SUCCESS != (result = bht_L1_a429_chan_loop(device, chan_num, &able, BHT_L1_PARAM_OPT_SET)))
+                printf("%s err, message : %s [result = %d]\n", __FUNCTION__, bht_L1_error_to_string(result), result);
+        }
     }while(1);
-
-    if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_loop(DEVID, chan_num, opt)))
-        printf("%s err, message : %s [result = %d]\n", __FUNCTION__, bht_L1_error_to_string(result), result);
 }
 
 static void tx_slope_cfg(void)
@@ -1111,112 +1108,45 @@ static void tx_slope_cfg(void)
 #endif
 }
 
-static void tx_trouble_cfg(void)
+static void tx_trouble_cfg(bht_L1_device_handle_t device)
 {
     DWORD option, option1;
     bht_L0_u32 result;
     bht_L0_u32 chan_num;
-    bht_L1_a429_tx_chan_inject_param_t inject_param;    
+    bht_L1_a429_err_type_e err_type;    
     
     chan_num = input_channel_num(BHT_L1_CHAN_TYPE_TX);
 
     do
     {
-        if(BHT_SUCCESS != bht_L1_a429_tx_chan_inject_param(DEVID, chan_num, &inject_param, BHT_L1_PARAM_OPT_GET))
+        if(BHT_SUCCESS != bht_L1_a429_tx_chan_err_inject(device, chan_num, &err_type, BHT_L1_PARAM_OPT_GET))
         {
             printf("get inject param failed\n");
             break;
         }
+        printf("current err type %d\n", err_type + 1);
         printf("\n");
-        printf("1.Bits count trouble\n");
-        printf("2.Gap trouble\n");
-        printf("3.Parity trouble enable/disable\n");
+        printf("%d.BHT_L1_A429_ERR_TYPE_NONE\n", BHT_L1_A429_ERR_TYPE_NONE + 1);
+        printf("%d.BHT_L1_A429_ERR_TYPE_31BIT\n", BHT_L1_A429_ERR_TYPE_31BIT + 1);
+        printf("%d.BHT_L1_A429_ERR_TYPE_33BIT\n", BHT_L1_A429_ERR_TYPE_33BIT + 1);
+        printf("%d.BHT_L1_A429_ERR_TYPE_2GAP\n", BHT_L1_A429_ERR_TYPE_2GAP + 1);
+        printf("%d.BHT_L1_A429_ERR_TYPE_PARITY\n", BHT_L1_A429_ERR_TYPE_PARITY + 1); 
         printf("%d.EXIT\n", DIAG_EXIT_MENU);
-        if (DIAG_INPUT_FAIL == DIAG_GetMenuOption(&option, 3))
+        if (DIAG_INPUT_FAIL == DIAG_GetMenuOption(&option, BHT_L1_A429_ERR_TYPE_PARITY + 1))
         {
             continue;
         }
 
-        switch(option)
+        if(DIAG_EXIT_MENU != option)
         {
-        case 1:
-            do
-            {
-            printf("\n");
-            printf("1. 31 bit \n");
-            printf("2. 32 bit \n");
-            printf("3. 33 bit \n");
-            
-            if (DIAG_INPUT_FAIL == DIAG_GetMenuOption(&option1, 3))
-            {
-                continue;
-            }
-
-            if(1 == option1)
-                inject_param.tb_bits = BHT_L1_A429_WORD_BIT31;
-            else if(2 == option1)
-                inject_param.tb_bits = BHT_L1_A429_WORD_BIT32;
-            else if(3 == option1)
-                inject_param.tb_bits = BHT_L1_A429_WORD_BIT32;
-
-            if(option1 != DIAG_EXIT_MENU)
-            {
-                if(BHT_SUCCESS != bht_L1_a429_tx_chan_inject_param(DEVID, chan_num, &inject_param, BHT_L1_PARAM_OPT_SET))
-                {
-                    printf("set inject param failed\n");
-                }
-            }
-            }while(0);
-            break;
-        case 2:
-            do
-            {
-            printf("\n");
-            printf("1. 2 bit gaps \n");
-            printf("2. 4 bit gaps \n");
-            printf("%d.EXIT\n", DIAG_EXIT_MENU);
-            if (DIAG_INPUT_FAIL == DIAG_GetMenuOption(&option1, 2))
-            {
-                continue;
-            }
-
-            if(1 == option1)
-                inject_param.tb_gap = BHT_L1_A429_GAP_2BIT;
-            else if(2 == option1)
-                inject_param.tb_gap = BHT_L1_A429_GAP_4BIT;
-
-            if(option1 != DIAG_EXIT_MENU)
-            {
-                if(BHT_SUCCESS != bht_L1_a429_tx_chan_inject_param(DEVID, chan_num, &inject_param, BHT_L1_PARAM_OPT_SET))
-                {
-                    printf("set inject param failed\n");
-                }
-            }
-            }while(0);
-            break;
-        case 3:
-            do
-            {
-            printf("\n");
-            printf("1. %s parity trouble \n", (inject_param.tb_par_en == BHT_L1_ENABLE) ? "disable" : "enable");            
-            printf("%d.EXIT\n", DIAG_EXIT_MENU);
-            if (DIAG_INPUT_FAIL == DIAG_GetMenuOption(&option1, 1))
-            {
-                continue;
-            }
-
-            if(option1 != DIAG_EXIT_MENU)
-            {
-                inject_param.tb_par_en = ((inject_param.tb_par_en == BHT_L1_ENABLE) ? BHT_L1_DISABLE : BHT_L1_ENABLE);
-                
-                if(BHT_SUCCESS != bht_L1_a429_tx_chan_inject_param(DEVID, chan_num, &inject_param, BHT_L1_PARAM_OPT_SET))
-                {
-                    printf("set inject param failed\n");
-                }
-            }
-            }while(0);
-            break;
+             err_type = option - 1;
+             if(BHT_SUCCESS != bht_L1_a429_tx_chan_err_inject(device, chan_num, &err_type, BHT_L1_PARAM_OPT_SET))
+             {
+                 printf("set inject param failed\n");
+                 break;
+             }
         }
+        
 		
     }while(option != DIAG_EXIT_MENU);
 }
@@ -1234,7 +1164,7 @@ enum
     TX_PERIOD_STOP_ALL,
     TX_PERIOD_EXIT = DIAG_EXIT_MENU
 };
-static void tx_period_test(void)
+static void tx_period_test(bht_L1_device_handle_t device)
 {
     DWORD option;
     bht_L0_u32 result;
@@ -1242,7 +1172,7 @@ static void tx_period_test(void)
     bht_L0_u32 period;
     bht_L0_u32 data = 0;
     bht_L0_u32 index;
-    bht_L1_a429_send_opt_e send_opt;
+    bht_L1_a429_send_mode_e send_mode;
     
     printf("\n");
     printf("Tx channel period test menu\n");
@@ -1282,8 +1212,21 @@ static void tx_period_test(void)
                         9,10,11,12,13,14,15,16);
                     printf("------------------------------------------------\n");
                 }
-                if(BHT_SUCCESS != bht_L1_a429_tx_chan_period_param(DEVID, chan_num, &period, BHT_L1_PARAM_OPT_GET))
+                if(BHT_SUCCESS != bht_L1_a429_tx_chan_send_mode(device, chan_num, &send_mode, BHT_L1_PARAM_OPT_GET))
+                {
+                    printf("bht_L1_a429_tx_chan_send_mode get send mode err\n");
                     break;
+                }
+                else if(BHT_L1_A429_SEND_MODE_NONPERIOD == send_mode)
+                    period = 0;
+                else
+                {
+                    if(BHT_SUCCESS != bht_L1_a429_tx_chan_period(device, chan_num, &period, BHT_L1_PARAM_OPT_GET))
+                    {
+                        printf("bht_L1_a429_tx_chan_period get period err\n");
+                        break;
+                    }
+                }
                 
                 printf("| %-4d", period);
             }
@@ -1294,52 +1237,56 @@ static void tx_period_test(void)
         case TX_PERIOD_CONFIG:
             chan_num = input_channel_num(BHT_L1_CHAN_TYPE_TX);
             period = DIAG_GetNumber("period", INPUT_DATA_FORMAT_DEC, 0, 0);
-            if(BHT_SUCCESS != bht_L1_a429_tx_chan_period_param(DEVID, chan_num, &period, BHT_L1_PARAM_OPT_SET))
+            if(BHT_SUCCESS != bht_L1_a429_tx_chan_period(device, chan_num, &period, BHT_L1_PARAM_OPT_SET))
                 printf("Period set failed, %s\n", bht_L1_error_to_string(result));
             break;
         case TX_PERIOD_CONFIG_ALL:
             period = DIAG_GetNumber("period", INPUT_DATA_FORMAT_DEC, 0, 0);
             for(chan_num = 1; chan_num <= 16; chan_num++)
             {
-                if(BHT_SUCCESS != bht_L1_a429_tx_chan_period_param(DEVID, chan_num, &period, BHT_L1_PARAM_OPT_SET))
+                if(BHT_SUCCESS != bht_L1_a429_tx_chan_period(device, chan_num, &period, BHT_L1_PARAM_OPT_SET))
                     printf("channel %d period set failed, %s\n", chan_num, bht_L1_error_to_string(result));
             }
             break;
-        case TX_PERIOD_UPDATE_DATA:         
+        case TX_PERIOD_UPDATE_DATA:
         case TX_PERIOD_START:
         case TX_PERIOD_STOP:            
             chan_num = input_channel_num(BHT_L1_CHAN_TYPE_TX);
             
             if(TX_PERIOD_UPDATE_DATA == option)
             {
-                send_opt = BHT_L1_A429_OPT_PERIOD_SEND_UPDATE; 
                 data = DIAG_GetNumber("update data", INPUT_DATA_FORMAT_HEX, 0, 0);
+                if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_update_data(device, chan_num, data)))
+                    printf("update failed, %s\n", chan_num, bht_L1_error_to_string(result));
             }
             else if(TX_PERIOD_START == option)
-                send_opt = BHT_L1_A429_OPT_PERIOD_SEND_START;
+                if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_start(device, chan_num)))
+                    printf("start failed, %s\n", chan_num, bht_L1_error_to_string(result));
             else if(TX_PERIOD_STOP == option)
-                send_opt = BHT_L1_A429_OPT_PERIOD_SEND_STOP;
-                        
-            if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_send(DEVID, chan_num, send_opt, data)))
-                printf("chan send failed, %s\n", chan_num, bht_L1_error_to_string(result));
+                if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_stop(device, chan_num)))
+                    printf("stop failed, %s\n", chan_num, bht_L1_error_to_string(result));
             break;
         case TX_PERIOD_UPDATE_DATA_ALL:            
         case TX_PERIOD_START_ALL:
         case TX_PERIOD_STOP_ALL:
             if(TX_PERIOD_UPDATE_DATA_ALL == option)
             {
-                send_opt = BHT_L1_A429_OPT_PERIOD_SEND_UPDATE; 
                 data = DIAG_GetNumber("update data", INPUT_DATA_FORMAT_HEX, 0, 0);
             }
-            else if(TX_PERIOD_START_ALL == option)
-                send_opt = BHT_L1_A429_OPT_PERIOD_SEND_START;
-            else if(TX_PERIOD_STOP_ALL == option)
-                send_opt = BHT_L1_A429_OPT_PERIOD_SEND_STOP;
             
             for(chan_num = 1; chan_num <= 16; chan_num++)
             {
-                if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_send(DEVID, chan_num, send_opt, data)))
-                    printf("chan send failed, %s\n", chan_num, bht_L1_error_to_string(result));
+                if(TX_PERIOD_UPDATE_DATA_ALL == option)
+                {
+                    if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_update_data(device, chan_num, data)))
+                        printf("update failed, %s\n", chan_num, bht_L1_error_to_string(result));
+                }
+                else if(TX_PERIOD_START_ALL == option)
+                    if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_start(device, chan_num)))
+                        printf("start failed, %s\n", chan_num, bht_L1_error_to_string(result));
+                else if(TX_PERIOD_STOP_ALL == option)
+                    if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_stop(device, chan_num)))
+                        printf("stop failed, %s\n", chan_num, bht_L1_error_to_string(result));
             }
             break;
         case TX_PERIOD_EXIT:
@@ -1354,13 +1301,16 @@ enum
     RX_GATHER_PARAM_CFG_ALL,
     RX_GATHER_EXIT = DIAG_EXIT_MENU
 };
-static void rx_gather_param_cfg(void)
+static void rx_gather_param_cfg(bht_L1_device_handle_t device)
 {
     DWORD option, option1;
     bht_L0_u32 result;
     bht_L0_u32 chan_num;
     bht_L0_u32 start = 1, end = 16;
-    bht_L1_a429_rx_chan_gather_param_t gather_param;
+    bht_L1_able_e able;
+    bht_L1_a429_recv_mode_e recv_mode;
+    bht_L0_u32 threshold_count;
+    bht_L0_u32 threshold_time;
     
     printf("\n");
     printf("Rx channel gather param config menu\n");
@@ -1381,15 +1331,10 @@ static void rx_gather_param_cfg(void)
         {
         case RX_GATHER_PARAM_CFG:
             chan_num = input_channel_num(BHT_L1_CHAN_TYPE_RX);
-
-            if(BHT_SUCCESS != (result = bht_L1_a429_rx_chan_gather_param(DEVID, chan_num, &gather_param, BHT_L1_PARAM_OPT_GET)))
-            {
-                printf("Get gather param failed, %s(%d)\n", bht_L1_error_to_string(result), result);
-                break;
-            }
+            
             do
             {
-                printf("1. gather enable/disable\n");
+                printf("1. filter enable/disable\n");
                 printf("2. recieve mode sample/list\n");
                 printf("3. interrupt threshold\n");
                 printf("%d. EXIT\n", DIAG_EXIT_MENU);
@@ -1405,7 +1350,12 @@ static void rx_gather_param_cfg(void)
                 case 1:                    
                     do
                     {
-                        printf("1. %s\n", gather_param.gather_enable ? "disable" : "enable");
+                        if(BHT_SUCCESS != (result = bht_L1_a429_rx_chan_filter(device, chan_num, &able, BHT_L1_PARAM_OPT_GET)))
+                        {
+                            printf("filter get failed, %s(%d)\n", bht_L1_error_to_string(result), result);
+                            break;
+                        }
+                        printf("1. %s\n", able ? "disable" : "enable");
                         printf("%d. EXIT\n", DIAG_EXIT_MENU);
 
 
@@ -1413,14 +1363,24 @@ static void rx_gather_param_cfg(void)
                             continue;
                         if(option2 != DIAG_EXIT_MENU)
                         {
-                            gather_param.gather_enable = (!gather_param.gather_enable);
+                            able = (!able);
+                            if(BHT_SUCCESS != (result = bht_L1_a429_rx_chan_filter(device, chan_num, &able, BHT_L1_PARAM_OPT_SET)))
+                            {
+                                printf("filter set failed, %s(%d)\n", bht_L1_error_to_string(result), result);
+                                break;
+                            }
                         }
                     }while(option2 != DIAG_EXIT_MENU);
                     break;
                 case 2:
                     do
                     {
-                        printf("1. %s\n", (gather_param.recv_mode == BHT_L1_A429_RECV_MODE_LIST) ? "Sample" : "List");
+                        if(BHT_SUCCESS != (result = bht_L1_a429_rx_chan_recv_mode(device, chan_num, &recv_mode, BHT_L1_PARAM_OPT_GET)))
+                        {
+                            printf("recv mode get failed, %s(%d)\n", bht_L1_error_to_string(result), result);
+                            break;
+                        }
+                        printf("1. %s\n", (recv_mode == BHT_L1_A429_RECV_MODE_LIST) ? "Sample" : "List");
                         printf("%d. EXIT\n", DIAG_EXIT_MENU);
 
 
@@ -1428,31 +1388,29 @@ static void rx_gather_param_cfg(void)
                             continue;
                         if(option2 != DIAG_EXIT_MENU)
                         {
-                            gather_param.recv_mode = (gather_param.recv_mode == BHT_L1_A429_RECV_MODE_LIST) ? \
+                            recv_mode = (recv_mode == BHT_L1_A429_RECV_MODE_LIST) ? \
                                     BHT_L1_A429_RECV_MODE_SAMPLE : BHT_L1_A429_RECV_MODE_LIST;
-                        }
+                            if(BHT_SUCCESS != (result = bht_L1_a429_rx_chan_recv_mode(device, chan_num, &recv_mode, BHT_L1_PARAM_OPT_SET)))
+                            {
+                                printf("recv mode set failed, %s(%d)\n", bht_L1_error_to_string(result), result);
+                                break;
+                            }
+                        }                        
                     }while(option2 != DIAG_EXIT_MENU);
                 case 3:
-                    gather_param.threshold_count = DIAG_GetNumber("interrupt threshold of A429 Words count", INPUT_DATA_FORMAT_DEC, 0, 1022);
-                    gather_param.threshold_time = DIAG_GetNumber("interrupt threshold of time", INPUT_DATA_FORMAT_DEC, 0, 0xFFFF);
+                    threshold_count = DIAG_GetNumber("interrupt threshold of A429 Words count", INPUT_DATA_FORMAT_DEC, 0, 1024);
+                    threshold_time = DIAG_GetNumber("interrupt threshold of time", INPUT_DATA_FORMAT_DEC, 0, 0xFFFF);
+                    if(BHT_SUCCESS != bht_L1_a429_rx_chan_int_threshold(device, chan_num, &threshold_count, &threshold_time, BHT_L1_PARAM_OPT_SET))
+                        printf("int threshold set failed, %s(%d)\n", bht_L1_error_to_string(result), result);
                     break;
-                }
-
-                if(DIAG_EXIT_MENU != option1)
-                {
-                    if(BHT_SUCCESS != (result = bht_L1_a429_rx_chan_gather_param(DEVID, chan_num, &gather_param, BHT_L1_PARAM_OPT_SET)))
-                    {
-                        printf("RX channel %d set gather param failed, %s (%d)\n", chan_num, bht_L1_error_to_string(result), result);
-                    }
                 }
             }while(DIAG_EXIT_MENU != option1);
             break;
         case RX_GATHER_PARAM_CFG_ALL:
 
             do
-            {
-                
-                printf("Step 1/3. gather enable/disable menu\n");
+            {                
+                printf("Step 1/3. filter enable/disable menu\n");
                 printf("1. enable\n");
                 printf("2. diable\n");
 
@@ -1461,10 +1419,9 @@ static void rx_gather_param_cfg(void)
                 if(option1 != DIAG_EXIT_MENU)
                 {
                     if(1 == option1)
-                        gather_param.gather_enable = BHT_L1_ENABLE;
+                        able = BHT_L1_ENABLE;
                     else
-                        gather_param.gather_enable = BHT_L1_DISABLE;
-
+                        able = BHT_L1_DISABLE;
                     break; 
                 }                               
             }while(1);
@@ -1481,9 +1438,9 @@ static void rx_gather_param_cfg(void)
                 if(option1 != DIAG_EXIT_MENU)
                 {
                     if(1 == option1)
-                        gather_param.recv_mode = BHT_L1_A429_RECV_MODE_SAMPLE;
+                        recv_mode = BHT_L1_A429_RECV_MODE_SAMPLE;
                     else
-                        gather_param.recv_mode = BHT_L1_A429_RECV_MODE_LIST;
+                        recv_mode = BHT_L1_A429_RECV_MODE_LIST;
                     break;
                 }
             }while(1);
@@ -1493,18 +1450,28 @@ static void rx_gather_param_cfg(void)
                 
                 printf("Step 3/3. interrupt threshold menu\n");
 
-                gather_param.threshold_count = DIAG_GetNumber("interrupt threshold of A429 Words count", INPUT_DATA_FORMAT_DEC, 0, 1022);
-                gather_param.threshold_time = DIAG_GetNumber("interrupt threshold of time", INPUT_DATA_FORMAT_DEC, 0, 0xFFFF);
+                threshold_count = DIAG_GetNumber("interrupt threshold of A429 Words count", INPUT_DATA_FORMAT_DEC, 0, 1022);
+                threshold_time = DIAG_GetNumber("interrupt threshold of time", INPUT_DATA_FORMAT_DEC, 0, 0xFFFF);
             }while(0);
 
             for(chan_num = 1; chan_num <= 16; chan_num++)
             {
-                if(BHT_SUCCESS != (result = bht_L1_a429_rx_chan_gather_param(DEVID, chan_num, &gather_param, BHT_L1_PARAM_OPT_SET)))
+                if(BHT_SUCCESS != (result = bht_L1_a429_rx_chan_filter(device, chan_num, &able, BHT_L1_PARAM_OPT_SET)))
                 {
-                    printf("RX channel %d set gather param failed, %s (%d)\n", chan_num, bht_L1_error_to_string(result), result);
+                    printf("filter set failed, %s(%d)\n", bht_L1_error_to_string(result), result);
+                    break;
                 }
-            }
-            
+                if(BHT_SUCCESS != (result = bht_L1_a429_rx_chan_recv_mode(device, chan_num, &recv_mode, BHT_L1_PARAM_OPT_SET)))
+                {
+                    printf("recv mode set failed, %s(%d)\n", bht_L1_error_to_string(result), result);
+                    break;
+                }
+                if(BHT_SUCCESS != (result = bht_L1_a429_rx_chan_int_threshold(device, chan_num, &threshold_count, &threshold_time, BHT_L1_PARAM_OPT_SET)))
+                {
+                    printf("filter set failed, %s(%d)\n", bht_L1_error_to_string(result), result);
+                    break;
+                }                
+            }            
             break;
         case RX_GATHER_EXIT:
             break;
@@ -1523,7 +1490,7 @@ static void rx_filter_cfg(bht_L0_device_t *device)
     bht_L1_a429_rx_chan_filter_t filter_param;
     
     printf("\n");
-    printf("Rx channel filter param config menu\n");
+    printf("Rx channel label filter param config menu\n");
     printf("--------------\n");
 
     chan_num = input_channel_num(BHT_L1_CHAN_TYPE_RX);
@@ -1560,14 +1527,14 @@ static void rx_filter_cfg(bht_L0_device_t *device)
             break;
         }while(1);
         
-        if(BHT_SUCCESS != (bht_L1_a429_rx_chan_filter_cfg(dev_id, chan_num, &filter_param, BHT_L1_PARAM_OPT_SET)))
+        if(BHT_SUCCESS != (bht_L1_a429_rx_chan_filter_cfg(device, chan_num, &filter_param, BHT_L1_PARAM_OPT_SET)))
         {
             printf("rx chan[%d] filter param set failed\n", chan_num);
         }
     }
     else
     {
-        if(BHT_SUCCESS != (bht_L1_a429_rx_chan_filter_cfg(dev_id, chan_num, &filter_param, BHT_L1_PARAM_OPT_GET)))
+        if(BHT_SUCCESS != (bht_L1_a429_rx_chan_filter_cfg(device, chan_num, &filter_param, BHT_L1_PARAM_OPT_GET)))
         {
             printf("rx chan[%d] filter param set failed\n", chan_num);
         }
@@ -1752,7 +1719,7 @@ static void version_check(bht_L0_device_t *device)
     bht_L0_u32 result;
     bht_L0_u32 logic_version;
 
-    if(BHT_SUCCESS != (result = bht_L1_device_version(dev_id, &logic_version)))
+    if(BHT_SUCCESS != (result = bht_L1_device_version(device, &logic_version)))
     {
         printf("Read device version failed, %s(result = %d)\n", bht_L1_error_to_string(result), result);
     }
@@ -1817,7 +1784,7 @@ static void param_default_config(bht_L0_device_t *device)
 
     //enable fpga pci interrupt 
     value = BIT0;
-    if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_INTR_EN, &value, 1)))
+    if(BHT_SUCCESS != (result = bht_L0_write_mem32(device, BHT_A429_INTR_EN, &value, 1)))
         return result;
 
 }
@@ -1889,7 +1856,7 @@ static void chips_cope_freq_div(bht_L0_device_t *device)
         {
             div = DIAG_GetNumber("divisor", INPUT_DATA_FORMAT_DEC, 0, 0);
 
-            if(BHT_SUCCESS != (result = bht_L0_write_mem32(dev_id, BHT_A429_DEBUG_CHIPSCOPE_FREQ_DIV, &div, 1)))
+            if(BHT_SUCCESS != (result = bht_L0_write_mem32(device, BHT_A429_DEBUG_CHIPSCOPE_FREQ_DIV, &div, 1)))
                 printf("write chips cope divisor failed, %s(result = %d)\n", bht_L1_error_to_string(result), result);
             else
                 divisor = div;
@@ -1899,6 +1866,168 @@ static void chips_cope_freq_div(bht_L0_device_t *device)
     
 }
 
+enum
+{
+    DEVICE_OPERATE_SCAN = 1,
+    DEVICE_OPERATE_OPEN,
+    DEVICE_OPERATE_CLOSE,
+    DEVICE_OPERATE_CHOOSE_CUR,
+    DEVICE_OPERATE_EXIT = DIAG_EXIT_MENU
+};
+
+static void device_operate(void)
+{
+    bht_L0_u32 option;
+    bht_L0_u32 result;
+    bht_L0_dtype_e dtype;
+    bht_L0_u32 device_no;
+    
+    printf("Device operate menu(current device : %s%d)\n", 
+        (BHT_L0_DEVICE_TYPE_PMCA429 == cur_dtype) ? "PMC429" : "UNKNOWN", cur_device_no);
+    printf("------------------------\n");
+    
+
+    do
+    {
+        printf("%d. scan device\n", DEVICE_OPERATE_SCAN);
+        printf("%d. open device\n", DEVICE_OPERATE_OPEN);
+        printf("%d. close device\n", DEVICE_OPERATE_CLOSE);
+        printf("%d. choose the current device\n", DEVICE_OPERATE_CHOOSE_CUR);
+        printf("%d. exit\n", DEVICE_OPERATE_EXIT);
+
+        if (DIAG_INPUT_FAIL == DIAG_GetMenuOption(&option, DEVICE_OPERATE_CHOOSE_CUR))
+        {
+            continue;
+        }
+
+        if(DEVICE_OPERATE_EXIT != option)
+        {
+            switch(option)
+            {
+                case DEVICE_OPERATE_SCAN:
+                    printf("device scan info:\n");
+                    for(dtype = 0; dtype < BHT_L0_DEVICE_TYPE_MAX; dtype++)
+                    {
+                        scan_info[dtype] = bht_L1_device_scan(dtype);
+                        if(scan_info[dtype] > 0)
+                            printf("device %s is find total %d\n", dtype_string[dtype], scan_info[dtype]);
+                    }
+                    break;
+                case DEVICE_OPERATE_OPEN:
+                    printf("以下这些设备可以打开:\n");
+                    for(dtype = 0; dtype < BHT_L0_DEVICE_TYPE_MAX; dtype++)
+                    {
+                        if(scan_info[dtype])
+                            printf("%s \n", dtype_string[dtype]);
+                        for(device_no = 0; device_no < scan_info[dtype]; device_no++)
+                            if(NULL == handle_list[dtype][device_no])
+                                printf("%s%d  ", dtype_string[dtype], device_no);
+                        if(scan_info[dtype])
+                            printf("\n");
+                    }
+                    printf("Device type list:\n");
+                    for(dtype = 0; dtype < BHT_L0_DEVICE_TYPE_MAX; dtype++)
+                        printf("%d. %s\n", dtype, dtype_string[dtype]);
+                    dtype = DIAG_GetNumber("device type",INPUT_DATA_FORMAT_DEC, 0, BHT_L0_DEVICE_TYPE_MAX - 1);
+                    if(0 == scan_info[dtype])
+                        printf("device not found,oen failed\n");
+                    else
+                    {
+                        printf("%s\n", dtype_string[dtype]);
+                        for(device_no = 0; device_no < scan_info[dtype]; device_no++)
+                            if(NULL == handle_list[dtype][device_no])
+                                printf("%s%d  ", dtype_string[dtype], device_no);
+                        printf("\n");
+                        device_no = DIAG_GetNumber("device_no",INPUT_DATA_FORMAT_DEC, 0, scan_info[dtype] - 1);
+
+                        if(BHT_SUCCESS != bht_L1_device_open(dtype, device_no, 
+                            &handle_list[dtype][device_no], "C://Windows/System32//a429_fpga_top.bin"))
+                            printf("open failed\n");
+                        else
+                            printf("open success\n");
+                    }                    
+                    break;
+                case DEVICE_OPERATE_CLOSE:
+                    printf("以下这些设备可以关闭:\n");
+                    for(dtype = 0; dtype < BHT_L0_DEVICE_TYPE_MAX; dtype++)
+                    {
+                        if(scan_info[dtype])
+                            printf("%s \n", dtype_string[dtype]);
+                        for(device_no = 0; device_no < scan_info[dtype]; device_no++)
+                            if(NULL != handle_list[dtype][device_no])
+                                printf("%s%d  ", dtype_string[dtype], device_no);
+                        if(scan_info[dtype])
+                            printf("\n");
+                    }
+                    printf("Device type list:\n");
+                    for(dtype = 0; dtype < BHT_L0_DEVICE_TYPE_MAX; dtype++)
+                        printf("%d. %s\n", dtype, dtype_string[dtype]);
+                    dtype = DIAG_GetNumber("device type",INPUT_DATA_FORMAT_DEC, 0, BHT_L0_DEVICE_TYPE_MAX - 1);
+                    if(0 == scan_info[dtype])
+                        printf("device not found,close failed\n");
+                    else
+                    {
+                        printf("%s\n", dtype_string[dtype]);
+                        for(device_no = 0; device_no < scan_info[dtype]; device_no++)
+                            if(NULL == handle_list[dtype][device_no])
+                                printf("%s%d  ", dtype_string[dtype], device_no);
+                        printf("\n");
+                        device_no = DIAG_GetNumber("device_no",INPUT_DATA_FORMAT_DEC, 0, scan_info[dtype] - 1);
+
+                        if((handle_list[dtype][device_no]) && (BHT_SUCCESS == bht_L1_device_close(handle_list[dtype][device_no])))
+                        {
+                            handle_list[dtype][device_no] = NULL;
+                            printf("close success\n");
+                        }
+                        else
+                        {
+                            printf("close failed\n");
+                        }
+                    }  
+                    break;
+                case DEVICE_OPERATE_CHOOSE_CUR:
+                    printf("以下这些设备可以选择:\n");
+                    for(dtype = 0; dtype < BHT_L0_DEVICE_TYPE_MAX; dtype++)
+                    {
+                        if(scan_info[dtype])
+                            printf("%s \n", dtype_string[dtype]);
+                        for(device_no = 0; device_no < scan_info[dtype]; device_no++)
+                            if(NULL != handle_list[dtype][device_no])
+                                printf("%s%d  ", dtype_string[dtype], device_no);
+                        if(scan_info[dtype])
+                            printf("\n");
+                    }
+                    printf("Device type list:\n");
+                    for(dtype = 0; dtype < BHT_L0_DEVICE_TYPE_MAX; dtype++)
+                        printf("%d. %s\n", dtype, dtype_string[dtype]);
+                    dtype = DIAG_GetNumber("device type",INPUT_DATA_FORMAT_DEC, 0, BHT_L0_DEVICE_TYPE_MAX - 1);
+                    if(0 == scan_info[dtype])
+                        printf("device not found,choose current device failed\n");
+                    else
+                    {
+                        printf("%s\n", dtype_string[dtype]);
+                        for(device_no = 0; device_no < scan_info[dtype]; device_no++)
+                            if(NULL == handle_list[dtype][device_no])
+                                printf("%s%d  ", dtype_string[dtype], device_no);
+                        printf("\n");
+                        device_no = DIAG_GetNumber("device_no",INPUT_DATA_FORMAT_DEC, 0, scan_info[dtype] - 1);
+
+                        if(handle_list[dtype][device_no])
+                        {
+                            handle_list[dtype][device_no] = NULL;
+                            printf("choose success\n");
+                        }
+                        else
+                        {
+                            printf("choose failed\n");
+                        }
+                    }
+                    break;
+            }
+        }
+        
+    }while(option != DEVICE_OPERATE_EXIT);
+}
 enum
 {
     OPTION_BAUD_CFG = 1,
@@ -1926,6 +2055,7 @@ enum
     OPTION_CHIPSCOPE_FREQ_DIV,
     OPTION_CONFIG_FROM_XML,
     OPTION_SAVE_DEFAULT_PARAM,
+    OPTION_DEVICE_OPERATE,
     OPTION_EXIT = DIAG_EXIT_MENU
 };
 
@@ -1964,7 +2094,7 @@ static void menu(bht_L0_device_t *device)
         printf("%d. ChipsCope frequency divisor\n", OPTION_CHIPSCOPE_FREQ_DIV);  
         printf("%d. Config from xml file\n", OPTION_CONFIG_FROM_XML);  
         printf("%d. Save default param\n", OPTION_SAVE_DEFAULT_PARAM); 
-        
+        printf("%d. Device operate\n", OPTION_DEVICE_OPERATE); 
         printf("%d. EXIT\n", OPTION_EXIT);
         
         if (DIAG_INPUT_FAIL == DIAG_GetMenuOption(&option, OPTION_EXIT))
@@ -1977,7 +2107,7 @@ static void menu(bht_L0_device_t *device)
         case OPTION_EXIT: /* Exit menu */
             break;
         case OPTION_BAUD_CFG:
-            baud_rate(dev_id);
+            baud_rate(device);
             break;        
         case OPTION_TX_LOOP_CFG:
             loop_cfg();
@@ -2001,7 +2131,7 @@ static void menu(bht_L0_device_t *device)
             rx_gather_param_cfg();
             break;
         case OPTION_RX_FILTER_CFG:
-            rx_filter_cfg(dev_id);
+            rx_filter_cfg(device);
             break;
         case OPTION_RX_THREAD_CREAT: 
             rx_thread_creat();
@@ -2010,7 +2140,7 @@ static void menu(bht_L0_device_t *device)
             rx_thread_creat_all();
             break;
         case OPTION_IRIGB_TEST:
-            irigb_test(dev_id);
+            irigb_test(device);
             break;
         case OPTION_MIB_DUMP:
             mib_dump(DEVID);
@@ -2031,16 +2161,16 @@ static void menu(bht_L0_device_t *device)
                 printf("Fpga eeprom test succ\n");
             break;
         case OPTION_VERSION:
-            version_check(dev_id);
+            version_check(device);
             break;
         case OPTION_BRAKE:
             option = OPTION_BRAKE;
             break;
         case OPTION_PARAM_DEFAULT_CONFIG:
-            param_default_config(dev_id);
+            param_default_config(device);
             break;
         case OPTION_PCI_LOAD_FPGA:
-            if(BHT_SUCCESS != (result = bht_L1_device_load(dev_id)))
+            if(BHT_SUCCESS != (result = bht_L1_device_load(device)))
                 printf("%s err, message : %s [result = %d]\n", __FUNCTION__, bht_L1_error_to_string(result), result);
             else
                 printf("Pci load fpga success\n", __FUNCTION__, bht_L1_error_to_string(result), result);
@@ -2049,11 +2179,11 @@ static void menu(bht_L0_device_t *device)
             generate_tx_data();
             break;
         case OPTION_CHIPSCOPE_FREQ_DIV:
-            chips_cope_freq_div(dev_id);
+            chips_cope_freq_div(device);
             break;
         case OPTION_CONFIG_FROM_XML:
 #ifdef SUPPORT_CONFIG_FROM_XML
-            if(BHT_SUCCESS != bht_L1_a429_config_from_xml(dev_id, "./config.xml"))
+            if(BHT_SUCCESS != bht_L1_a429_config_from_xml(device, "./config.xml"))
                 printf("config from xml failed\n");
             else
                 printf("config from xml succ\n");
@@ -2061,7 +2191,7 @@ static void menu(bht_L0_device_t *device)
             break;
 		case OPTION_SAVE_DEFAULT_PARAM:
 #ifdef SUPPORT_DEFAULT_PARAM_SAVE
-            if(BHT_SUCCESS != bht_L1_a429_default_param_save(dev_id))
+            if(BHT_SUCCESS != bht_L1_a429_default_param_save(device))
                 printf("save default param failed\n");
             else
                 printf("save default param succ\n");
@@ -2080,33 +2210,16 @@ void main(void)
     bht_L0_u32 chan_num;
     a429_tx_chan_param_t *tp;
     a429_rx_chan_param_t *rp;
+    bht_L1_device_handle_t device;
+    bht_L0_dtype_e dtype;
+    bht_L0_u32 device_num;
     
     /* generate rand number */
     testbuf_rand(test_tx_buf, sizeof(test_tx_buf)/ sizeof(test_tx_buf[0]));
 
-	/* probe device */
-    if(BHT_SUCCESS == (result = bht_L1_device_probe(DEVID)))
-        printf("device initialized succ\n");
-    else
-	{
-	    bht_L1_device_remove(DEVID);
-		printf("device probe failed, error info: %s, result = %d\n", \
-			bht_L1_error_to_string(result), result);
-		//goto test_error;
-	}
+	/* scan device */   
 
 	bht_L0_msleep(10);
-
-	/* device deault initialize */
-	if(BHT_SUCCESS == (result = bht_L1_a429_default_init(DEVID)))
-        printf("device default initialized succ\n");
-    else
-	{
-	    bht_L1_device_remove(DEVID);
-		printf("device default initialized failed, error info: %s, result = %d\n", \
-			bht_L1_error_to_string(result), result);
-		//goto test_error;
-	}
     
     menu(DEVID);
 

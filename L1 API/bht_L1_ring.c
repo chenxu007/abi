@@ -5,10 +5,9 @@
 
 #include <bht_L1_ring.h>
 #include <string.h>
+#include <stdlib.h>
 
-#define NULL ((void*)0)
-
-#if 1
+#if 0
 struct ring_buf * ring_buf_init(struct ring_buf *r, unsigned char *base, unsigned int item_size, unsigned int item_cnt)
 {  
     if((item_cnt & (item_cnt - 1)) != 0)
@@ -66,12 +65,16 @@ unsigned int ring_buf_get(struct ring_buf *r, unsigned char * item)
     return r->item_size;
 }
 #else
-static inline struct ring_buf * ring_buf_init(struct ring_buf *r, unsigned char *base, unsigned int item_size, unsigned int item_cnt)
+struct ring_buf * 
+ring_buf_init(unsigned int item_size, 
+        unsigned int item_cnt)
 {
-//    struct ring_buf * r = (struct ring_buf *)malloc(sizeof(struct ring_buf));
+    struct ring_buf *r; 
     
-    if(item_cnt & (item_cnt - 1) != 0)
+    if((item_cnt & (item_cnt - 1)) != 0)
         return NULL;
+
+    r = (struct ring_buf *)malloc(sizeof(struct ring_buf));
     
     if(NULL != r)
     {
@@ -79,7 +82,6 @@ static inline struct ring_buf * ring_buf_init(struct ring_buf *r, unsigned char 
         r->item_cnt  = item_cnt;
         r->item_in = 0;
         r->item_out = 0;
-        r->base = base;
         r->base = (unsigned char *) malloc(item_cnt * item_size);
         if(NULL == r->base)
         {
@@ -91,7 +93,9 @@ static inline struct ring_buf * ring_buf_init(struct ring_buf *r, unsigned char 
     return r;
 }
 
-static inline unsigned char * ring_buf_put(struct ring_buf *r, unsigned char * item)
+unsigned char *
+ring_buf_put(struct ring_buf *r, 
+        unsigned char * item)
 {
     unsigned int out_temp;
     
@@ -101,17 +105,19 @@ static inline unsigned char * ring_buf_put(struct ring_buf *r, unsigned char * i
     out_temp = r->item_out;
     
     /* not full, then put */
-    if((r->item_in - out_temp) == r->item_cnt))
+    if((r->item_in - out_temp) == r->item_cnt)
         return NULL;
     
-    memcpy((base + r->item_size * (r->item_in & (r->item_cnt - 1))), item, r->item_size);
+    memcpy((r->base + r->item_size * (r->item_in & (r->item_cnt - 1))), item, r->item_size);
     
     r->item_in++;
     
     return item;
 }
 
-static inline unsigned int ring_buf_get(struct ring_buf *r, unsigned char * item)
+unsigned int 
+ring_buf_get(struct ring_buf *r, 
+        unsigned char * item)
 {
     unsigned int in_temp;
     
@@ -121,17 +127,18 @@ static inline unsigned int ring_buf_get(struct ring_buf *r, unsigned char * item
     in_temp = r->item_in;
     
     /* not empty, the get */
-    if(r->item_in == r->item_out)
+    if(in_temp == r->item_out)
         return 0;
     
-    memcpy(item, (base + r->item_size * (r->item_out & (r->item_cnt - 1))), r->item_size);
+    memcpy(item, (r->base + r->item_size * (r->item_out & (r->item_cnt - 1))), r->item_size);
     
     r->item_out++;
     
     return r->item_size;
 }
 
-static inline void ring_buf_free(struct ring_buf * r)
+void 
+ring_buf_free(struct ring_buf * r)
 {
     if(r)
     {

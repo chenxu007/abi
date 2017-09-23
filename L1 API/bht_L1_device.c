@@ -14,14 +14,23 @@ modification history
 01a,17may18,cx_  add file
 */
 
+#include <bht_L0_types.h>
 #include <bht_L0.h>
+#include <bht_L0_config.h>
+#include <bht_L0_plx9056.h>
 #include <bht_L1_a429.h>
+#include <bht_L1.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <assert.h>
+#include <io.h>
 
 #define BHT_L1_DEVICE_MAX       16
 #define BHT_L1_CHANNEL_MAX      16
 
 #define SLAVE_SERIAL
-//#define NEW_BOARD
+#define NEW_BOARD
 #define DEBUG
 
 #ifdef WINDOWS_OPS
@@ -42,6 +51,24 @@ modification history
 //#define FPGA_UPDATE_FILE_NAME           "A429_FPGA_1_0.bin"
 #define FPGA_UPDATE_FILE_NAME           "a429_fpga_top.bin"
 //#define FPGA_UPDATE_FILE_NAME           "a429_fpga_top(1553).bin"
+
+#ifdef SUPPORT_CONFIG_FROM_XML
+#include <mxml.h>
+#define STRING_DEVTYPE_A429 "ARINC429"
+#define STRING_DEVTYPE_1553 "MIL-STD-1553B"
+#define STRING_CHANTYPE_RX "RX"
+#define STRING_CHANTYPE_TX "TX"
+#define STRING_ENABLE "Enable"
+#define STRING_DISABLE "Disable"
+#define STRING_VERIFY_ODD "ODD"
+#define STRING_VERIFY_EVEN "EVEN"
+#define STRING_VERIFY_NONE "NONE"
+#define STRING_RECVMODE_LIST "List"
+#define STRING_RECVMODE_Sample "Sample"
+#define STRING_WORKMODE_OPEN "Open"
+#define STRING_WORKMODE_CLOSE "Close"
+#define STRING_WORKMODE_CLOSEANDCLEARFIFO "CloseAndClearFIFO"
+#endif
 
 typedef struct
 {
@@ -270,7 +297,7 @@ bht_L1_device_scan(bht_L0_dtype_e dtype)
     return bht_L0_device_scan(dtype);
 }
 
-bht_L0_s32
+bht_L0_u32
 bht_L1_device_open(bht_L0_dtype_e dtype,
         bht_L0_u32 device_no,
         bht_L1_device_handle_t *device,
@@ -283,7 +310,7 @@ bht_L1_device_open(bht_L0_dtype_e dtype,
     if(BHT_L0_DEVICE_TYPE_MAX <= dtype)
         return BHT_ERR_BAD_INPUT;
     
-    device0 = calloc(1, sizeof(bht_L0_device_t));
+	device0 = (bht_L0_device_t*)calloc(1, sizeof(bht_L0_device_t));
     if(NULL == device0)
         return BHT_ERR_MEM_ALLOC_FAIL;
 
@@ -307,20 +334,17 @@ bht_L1_device_open(bht_L0_dtype_e dtype,
     /* pci load */
     if(NULL != filename)
     {
-        result = bht_L1_device_load(device, filename);
+        result = bht_L1_device_load(device0, filename);
         if(BHT_SUCCESS != result)
             goto open_err;
     }
-
-    device0->err_count = 0;
-    device0->last_err = BHT_SUCCESS;
 
     if(BHT_L0_LOGIC_TYPE_A429 == device0->ltype)
     {
         result = bht_L1_a429_private_alloc(device0);
         if(BHT_SUCCESS != result)
             goto open_err;
-        device0->reset_hook = bht_L1_a429_reset_hook;
+        device0->reset = bht_L1_a429_reset;
     }
     else
     {
@@ -345,13 +369,7 @@ bht_L1_device_close(bht_L1_device_handle_t device)
     bht_L0_device_t *device0 = (bht_L0_device_t *)device;
 
     if(NULL == device0)
-        return BHT_ERR_BAD_INPUT;    
-    
-    if(BHT_SUCCESS != (result = bht_L0_unmap_memory(device0, NULL)))
-        goto close_err;
-
-    if(BHT_SUCCESS != (result = bht_L0_sem_destroy(device0->mutex_sem)))
-        goto close_err;   
+        return BHT_ERR_BAD_INPUT;           
 
     if(BHT_L0_LOGIC_TYPE_A429 == device0->ltype)
     {
@@ -365,6 +383,12 @@ bht_L1_device_close(bht_L1_device_handle_t device)
         goto close_err;
     }
 
+    if(BHT_SUCCESS != (result = bht_L0_unmap_memory(device0)))
+        goto close_err;
+
+    if(BHT_SUCCESS != (result = bht_L0_sem_destroy(device0->mutex_sem)))
+        goto close_err;   
+
     free(device0);
     
 close_err:
@@ -374,31 +398,15 @@ close_err:
 bht_L0_u32
 bht_L1_device_reset(bht_L1_device_handle_t device)
 {
-    bht_L0_u32 value;
-    bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t *)device;
 
     if(NULL == device0)
-        return BHT_ERR_BAD_INPUT;     
+        return BHT_ERR_DEVICE_NOT_INIT;     
 
-    if(BHT_L0_LOGIC_TYPE_A429 == device0->ltype)
-    {
-        value = 1;
-        bht_L0_write_mem32(device0, BHT_A429_DEVICE_SOFT_RESET, &value, 1);
-        do
-        {
-            bht_L0_msleep(1);
-            bht_L0_read_mem32(device0, BHT_A429_DEVICE_STATE, &value, 1);
-        }while(value != 0x00000001);
-
-        device0->reset_hook(device0);
-    }
+    if(NULL != device0->reset)
+        return device0->reset(device0);
     else
-    {
-        result = BHT_ERR_UNSUPPORTED_DTYPE;
-    }
-    
-    return result;
+        return BHT_ERR_DEVICE_NOT_INIT;
 }
 
 bht_L0_u32
@@ -437,6 +445,7 @@ bht_L1_device_hw_version(bht_L1_device_handle_t device,
     return result;
 }
 
+#ifdef SUPPORT_CONFIG_FROM_XML
 bht_L0_u32
 bht_L1_device_config_from_xml(bht_L1_device_handle_t device,
         const char *filename)
@@ -670,6 +679,7 @@ config_failed:
     mxmlDelete(tree);
     return result;
 }
+#endif
 
 bht_L0_u32
 bht_L1_device_default_param_save(bht_L1_device_handle_t device)

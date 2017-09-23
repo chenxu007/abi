@@ -20,6 +20,9 @@ modification history
 #include <wdc_defs.h>
 
 #include <bht_L0.h>
+#include <bht_L0_device.h>
+#include <bht_L0_config.h>
+#include <stdio.h>
 
 #define LICENSE_10_2 "6C3CC2CFE89E7AD0424A070D434A6F6DC4950E31.hwacreate"
 
@@ -77,7 +80,8 @@ static void pci_card_info_dump(WD_PCI_CARD_INFO * card_info)
     }
 }
 
-static bht_L0_s32 bht_L0_init(void)
+bht_L0_u32 
+bht_L0_init(void)
 {
     static bht_L0_u32 is_wd_lib_inited = 0;
     DWORD dwStatus = WD_STATUS_SUCCESS; 
@@ -125,18 +129,18 @@ void bht_L0_msleep(bht_L0_u32 msdelay)
     Sleep(msdelay);
 }
 
-bht_L0_s32 
+bht_L0_u32 
 bht_L0_device_scan(bht_L0_dtype_e dtype)
 {
-    bht_L0_s32 result = BHT_SUCCESS;
+    bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_itype_e itype;
     bht_L0_u16 device_id;
     WDC_PCI_SCAN_RESULT scan_result;
 
     if(dtype >= BHT_L0_DEVICE_TYPE_MAX)
-        return BHT_ERR_BAD_INPUT;
+		return 0;
 
-    itype = bht_L0_dtypeinfo_items[dtype];
+    itype = bht_L0_dtypeinfo_items[dtype].itype;
     
     switch(itype)
     {
@@ -148,15 +152,15 @@ bht_L0_device_scan(bht_L0_dtype_e dtype)
                 device_id = BHT_PCI_DEVICE_ID_PMC429;
             }
             else
-                return BHT_ERR_UNSUPPORTED_DEVICE_TYPE;
+                return 0;
             /* scan */
             if((WD_STATUS_SUCCESS != WDC_PciScanDevices(BHT_PCI_VENDOR_ID, device_id, &scan_result))
                 || (scan_result.dwNumDevices < 0))
-                return BHT_ERR_LOW_LEVEL_DRIVER_ERR;
+                return 0;
 
             return scan_result.dwNumDevices;
         default:
-            return BHT_ERR_BAD_INPUT;
+			return 0;
     }
 }
 
@@ -171,7 +175,6 @@ bht_L0_map_memory(bht_L0_device_t *device,
         void * arg)
 {
     bht_L0_u32 result = BHT_SUCCESS;
-    bht_L0_u32 pci_device_id;
     const bht_L0_itype_e itype = device->itype;
     const bht_L0_dtype_e dtype = device->dtype;
     const bht_L0_u32 device_no = device->device_no;
@@ -212,7 +215,7 @@ bht_L0_map_memory(bht_L0_device_t *device,
                 if(WD_STATUS_SUCCESS != WDC_PciGetDeviceInfo(&card_info))
                     return BHT_ERR_NO_DEVICE;
                 
-                if(WD_STATUS_SUCCESS != WDC_PciDeviceOpen(&(WDC_DEVICE_HANDLE device->lld_hand), \
+                if(WD_STATUS_SUCCESS != WDC_PciDeviceOpen(&((WDC_DEVICE_HANDLE)device->lld_hand), \
                     &card_info, NULL, NULL, NULL, NULL))
                     return BHT_ERR_CANT_OPEN_DEV;
             }while(0); 
@@ -224,7 +227,7 @@ bht_L0_map_memory(bht_L0_device_t *device,
     return result;
 }
 
-bht_L0_s32 bht_L0_unmap_memory(bht_L0_device_t *device)
+bht_L0_u32 bht_L0_unmap_memory(bht_L0_device_t *device)
 {
     bht_L0_u32 result = BHT_SUCCESS;	
 
@@ -246,7 +249,7 @@ bht_L0_s32 bht_L0_unmap_memory(bht_L0_device_t *device)
     return result;
 }
 
-bht_L0_s32 
+bht_L0_u32 
 bht_L0_read_mem32(bht_L0_device_t *device, 
         bht_L0_u32 offset, 
         bht_L0_u32 *data, 
@@ -285,22 +288,22 @@ bht_L0_read_mem32(bht_L0_device_t *device,
     return result;
 }
 
-bht_L0_s32 bht_L0_read_mem32_dma(bht_L0_device_t *device, bht_L0_u32 offset, bht_L0_u32 *data, bht_L0_u32 count)
+bht_L0_u32 bht_L0_read_mem32_dma(bht_L0_device_t *device, bht_L0_u32 offset, bht_L0_u32 *data, bht_L0_u32 count)
 {
     return BHT_FAILURE;
 }
 
-bht_L0_s32 bht_L0_read_mem16(bht_L0_device_t *device, bht_L0_u32 offset, bht_L0_u16 *data, bht_L0_u32 count)
+bht_L0_u32 bht_L0_read_mem16(bht_L0_device_t *device, bht_L0_u32 offset, bht_L0_u16 *data, bht_L0_u32 count)
 {
     return BHT_FAILURE;
 }
 
-bht_L0_s32 bht_L0_write_mem16(bht_L0_device_t *device, bht_L0_u32 offset, bht_L0_u16 *data, bht_L0_u32 count)
+bht_L0_u32 bht_L0_write_mem16(bht_L0_device_t *device, bht_L0_u32 offset, bht_L0_u16 *data, bht_L0_u32 count)
 {
     return BHT_FAILURE;
 }
 
-bht_L0_s32 
+bht_L0_u32 
 bht_L0_write_mem32(bht_L0_device_t *device, 
         bht_L0_u32 offset, 
         bht_L0_u32 *data, 
@@ -339,7 +342,7 @@ bht_L0_write_mem32(bht_L0_device_t *device,
     return result;
 }
 
-bht_L0_s32 
+bht_L0_u32 
 bht_L0_read_setupmem32(bht_L0_device_t *device, 
         bht_L0_u32 offset, 
         bht_L0_u32 *data, 
@@ -378,7 +381,7 @@ bht_L0_read_setupmem32(bht_L0_device_t *device,
 	return result;
 }
 
-bht_L0_s32 
+bht_L0_u32 
 bht_L0_write_setupmem32(bht_L0_device_t *device, 
         bht_L0_u32 offset, 
         bht_L0_u32 *data, 
@@ -417,7 +420,7 @@ bht_L0_write_setupmem32(bht_L0_device_t *device,
 	return result;
 }
 
-bht_L0_s32 
+bht_L0_u32 
 bht_L0_read_setupmem16(bht_L0_device_t *device, 
         bht_L0_u32 offset, 
         bht_L0_u16 *data, 
@@ -456,7 +459,7 @@ bht_L0_read_setupmem16(bht_L0_device_t *device,
 	return result;
 }
 
-bht_L0_s32 
+bht_L0_u32 
 bht_L0_write_setupmem16(bht_L0_device_t *device, 
         bht_L0_u32 offset, 
         bht_L0_u16 *data, 
@@ -495,7 +498,7 @@ bht_L0_write_setupmem16(bht_L0_device_t *device,
 	return result;
 }
 
-bht_L0_s32 
+bht_L0_u32 
 bht_L0_attach_inthandler(bht_L0_device_t *device, 
         bht_L0_u32 chan_regoffset, 
         BHT_L0_USER_ISRFUNC isr, 
@@ -555,7 +558,7 @@ bht_L0_attach_inthandler(bht_L0_device_t *device,
     return result;
 }
 
-bht_L0_s32 bht_L0_detach_inthandler(bht_L0_device_t *device)
+bht_L0_u32 bht_L0_detach_inthandler(bht_L0_device_t *device)
 {
     bht_L0_u32 result = BHT_SUCCESS;	
     bht_L0_itype_e itype = device->itype;
@@ -603,7 +606,7 @@ bht_L0_semm_create(void)
     return (bht_L0_sem)semm;
 }
 
-bht_L0_s32 
+bht_L0_u32 
 bht_L0_sem_take(bht_L0_sem sem, bht_L0_s32 timeout_ms)
 {
     DWORD ret;
@@ -623,7 +626,7 @@ bht_L0_sem_take(bht_L0_sem sem, bht_L0_s32 timeout_ms)
         return BHT_FAILURE;
 }
 
-bht_L0_s32 
+bht_L0_u32 
 bht_L0_sem_give(bht_L0_sem sem)
 {
     DWORD ret;

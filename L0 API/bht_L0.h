@@ -21,6 +21,9 @@ modification history
 extern "C" {
 #endif
 
+#include <bht_L0_types.h>
+#include <bht_L0_device.h>
+
 #define BHT_L0_API_VERSION          0x01000000      /* Version V 1.0.0.0 */
 
 /* PCI Vendor and Device IDs */
@@ -32,6 +35,7 @@ extern "C" {
 #define BHT_PCI_DEVICE_ID_PMC429        0x0002
 #define BHT_PCI_DEVICE_ID_PMC1553       0x0202
 
+#if 0
 #define BHT_PCI_DEVICE_ID_TEST1553		0x0001
 #define BHT_PCI_DEVICE_ID_PMC1553		0x0010
 #define BHT_PCI_DEVICE_ID_PC104P1553	0x0012
@@ -57,6 +61,7 @@ extern "C" {
 #define BHT_PCI_DEVICE_ID_PCIE1LA429    0x0120
 #define BHT_PCI_DEVICE_ID_MPCIEA429     0x0122
 #define BHT_PCI_DEVICE_ID_PC104PA429LTV 0x0124
+#endif
 
 /* Device ID Constants - Backplane Type (4 bits) -	(DEVID & 0xF0000000) */
 #define BHT_DEVID_BACKPLANETYPE_SIMULATED	0x00000000
@@ -175,190 +180,112 @@ extern "C" {
 #define BHT_SUCCESS						0		/*!< \brief Function call completed without error. */
 #define BHT_FAILURE						1		/*!< \brief Function call completed with error. */
 #define BHT_ERR_UNSUPPORTED_DTYPE       2
-#define BHT_ERR_DRIVER_NO_INITED        25
-#define BHT_ERR_LOW_LEVEL_DRIVER_ERR    23  
-#define BHT_ERR_DRIVER_INT_ATTACH_FAIL  22
-#define BHT_ERR_DRIVER_INT_DETACH_FAIL  23
-#define BHT_ERR_DRIVER_READ_FAIL		15		/*!< \brief Driver read memory failure */
-#define BHT_ERR_DRIVER_WRITE_FAIL		16		/*!< \brief Driver write memory failure */
-#define BHT_ERR_SEM_CREAT_FAIL
-#define BHT_ERR_NO_DEVICE				3		/*!< \brief Device not found */
-#define BHT_ERR_CANT_OPEN_DEV			4		/*!< \brief Can't open device */
-#define BHT_ERR_DEV_NOT_INITED			5		/*!< \brief Device not initialized */
-#define BHT_ERR_DEV_ALREADY_OPEN		6		/*!< \brief Device already open */
-#define BHT_ERR_UNSUPPORTED_BACKPLANE	7		/*!< \brief Unsupported backplane in DevID */
-#define BHT_ERR_UNSUPPORTED_BOARDTYPE	8		/*!< \brief Unsupported board type in DevID */
-#define BHT_ERR_UNSUPPORTED_CHANNELTYPE 9		/*!< \brief Unsupported channel type in DevID */
-#define BHT_ERR_CANT_OPEN_DRIVER		10		/*!< \brief Can't open driver */
-#define BHT_ERR_CANT_SET_DRV_OPTIONS	11		/*!< \brief Can't set driver options */
-#define BHT_ERR_CANT_GET_DEV_INFO		12		/*!< \brief Can't get device info */
-#define BHT_ERR_INVALID_BOARD_NUM		13		/*!< \brief Invalid board number */
-#define BHT_ERR_INVALID_CHANNEL_NUM		14		/*!< \brief Invalid channel number */
+#define BHT_ERR_DRIVER_NO_INITED        3
+#define BHT_ERR_LOW_LEVEL_DRIVER_ERR    4  
+#define BHT_ERR_DRIVER_INT_ATTACH_FAIL  5
+#define BHT_ERR_DRIVER_INT_DETACH_FAIL  6
+#define BHT_ERR_DRIVER_READ_FAIL		7		/*!< \brief Driver read memory failure */
+#define BHT_ERR_DRIVER_WRITE_FAIL		8		/*!< \brief Driver write memory failure */
+#define BHT_ERR_SEM_CREAT_FAIL          9
+#define BHT_ERR_NO_DEVICE				10		/*!< \brief Device not found */
+#define BHT_ERR_CANT_OPEN_DEV			11		/*!< \brief Can't open device */
+#define BHT_ERR_DEV_NOT_INITED			12		/*!< \brief Device not initialized */
+#define BHT_ERR_DEV_ALREADY_OPEN		13		/*!< \brief Device already open */
+#define BHT_ERR_UNSUPPORTED_BACKPLANE	14		/*!< \brief Unsupported backplane in DevID */
+#define BHT_ERR_UNSUPPORTED_BOARDTYPE	15		/*!< \brief Unsupported board type in DevID */
+#define BHT_ERR_UNSUPPORTED_CHANNELTYPE 16		/*!< \brief Unsupported channel type in DevID */
+#define BHT_ERR_CANT_OPEN_DRIVER		17		/*!< \brief Can't open driver */
+#define BHT_ERR_CANT_SET_DRV_OPTIONS	18		/*!< \brief Can't set driver options */
+#define BHT_ERR_CANT_GET_DEV_INFO		19		/*!< \brief Can't get device info */
+#define BHT_ERR_INVALID_BOARD_NUM		20		/*!< \brief Invalid board number */
+#define BHT_ERR_INVALID_CHANNEL_NUM		21		/*!< \brief Invalid channel number */
 
-#define BHT_ERR_DEVICE_CLOSE_FAIL		17		/*!< \brief Device close failure */
-#define BHT_ERR_DRIVER_CLOSE_FAIL		18		/*!< \brief Driver close failure */
-#define BHT_ERR_KP_OPEN_FAIL     		19		/*!< \brief Kernel Plug-In Open failure */
-#define BHT_ERR_WINDRIVER_INIT_FAIL     20		/*!< \brief WinDriver lib init failure */
-#define BHT_ERR_MEM_ALLOC_FAIL          21		/*!< \brief malloc failure */
+#define BHT_ERR_DEVICE_CLOSE_FAIL		22		/*!< \brief Device close failure */
+#define BHT_ERR_DRIVER_CLOSE_FAIL		23		/*!< \brief Driver close failure */
+#define BHT_ERR_KP_OPEN_FAIL     		24		/*!< \brief Kernel Plug-In Open failure */
+#define BHT_ERR_WINDRIVER_INIT_FAIL     25		/*!< \brief WinDriver lib init failure */
+#define BHT_ERR_MEM_ALLOC_FAIL          26		/*!< \brief malloc failure */
 
-#define BHT_ERR_UNSUPPORTED_DEVICE_TYPE 24
-
-
-#ifndef NULL
-#define NULL 0UL
-#endif
-
-#ifndef OK
-#define OK 0UL
-#endif
-
-#ifndef ERROR
-#define ERROR -1
-#endif
-
- #define BHT_FALSE                   0
- #define BHT_TRUE                    1
-
-#define BHT_WAITFOREVER             (-1)
-
-typedef unsigned char    bht_L0_u8;
-typedef unsigned short   bht_L0_u16;
-typedef unsigned int     bht_L0_u32;
-typedef signed int       bht_L0_s32;
-typedef unsigned long    bht_L0_u64;
-typedef signed int       bht_L0_bool;
-typedef signed int       bht_L0_sem;
-
-typedef enum
-{
-    BHT_L0_FALSE = 0,
-    BHT_L0_TRUE = 1 
-};
-
-typedef enum
-{
-    BHT_L0_DEVICE_TYPE_PMCA429 = 0x00,
-    BHT_L0_DEVICE_TYPE_PCIA429,
-    BHT_L0_DEVICE_TYPE_CPCIA429,
-    BHT_L0_DEVICE_TYPE_PXIA429,
-    BHT_L0_DEVICE_TYPE_PMC1553,
-    BHT_L0_DEVICE_TYPE_UNINITIALIZED,
-    BHT_L0_DEVICE_TYPE_MAX
-}bht_L0_dtype_e;
-
-typedef enum
-{
-    BHT_L0_INTERFACE_TYPE_SIM = 0,
-    BHT_L0_INTERFACE_TYPE_PCI,
-    BHT_L0_INTERFACE_TYPE_PCIE,
-    BHT_L0_INTERFACE_TYPE_ENET
-}bht_L0_itype_e;
-
-typedef enum
-{
-    BHT_L0_LOGIC_TYPE_A429 = 0,
-    BHT_L0_LOGIC_TYPE_1553 = 1
-}bht_L0_ltype_e;
-
-typedef struct
-{
-    bht_L0_dtype_e dtype;
-    bht_L0_itype_e itype;
-    bht_L0_ltype_e ltype;
-}bht_L0_dtypeinfo_t;
-
-typedef void (*BHT_L0_USER_ISRFUNC)(void*);
-
-#ifndef _BITS_H_
-enum 
-{
-    BIT0  = 0x00000001, BIT1  = 0x00000002, BIT2  = 0x00000004, BIT3  = 0x00000008,
-    BIT4  = 0x00000010, BIT5  = 0x00000020, BIT6  = 0x00000040, BIT7  = 0x00000080,
-    BIT8  = 0x00000100, BIT9  = 0x00000200, BIT10 = 0x00000400, BIT11 = 0x00000800,
-    BIT12 = 0x00001000, BIT13 = 0x00002000, BIT14 = 0x00004000, BIT15 = 0x00008000,
-    BIT16 = 0x00010000, BIT17 = 0x00020000, BIT18 = 0x00040000, BIT19 = 0x00080000,
-    BIT20 = 0x00100000, BIT21 = 0x00200000, BIT22 = 0x00400000, BIT23 = 0x00800000,
-    BIT24 = 0x01000000, BIT25 = 0x02000000, BIT26 = 0x04000000, BIT27 = 0x08000000,
-    BIT28 = 0x10000000, BIT29 = 0x20000000, BIT30 = 0x40000000,
-    BIT31 = 0x80000000
-};
-#endif
+#define BHT_ERR_UNSUPPORTED_DEVICE_TYPE 27
 
 
-__declspec(dllexport) bht_L0_s32 
+__declspec(dllexport) bht_L0_u32 
 bht_L0_init(void);
 
 __declspec(dllexport)  void 
 bht_L0_msleep(bht_L0_u32 msdelay);
 
-__declspec(dllexport)  bht_L0_s32 
+__declspec(dllexport) bht_L0_u32
+bht_L0_device_scan(bht_L0_dtype_e dtype);
+
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_map_memory(bht_L0_device_t *device, 
         void * arg);
 
-__declspec(dllexport)  bht_L0_s32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_unmap_memory(bht_L0_device_t *device);
 
-__declspec(dllexport)  bht_L0_s32 
-bht_L0_read_mem32(bht_L0_device_t *device, 
-        bht_L0_u32 offset, 
-        bht_L0_u32 *data, 
-        bht_L0_u32 count);
-        
-__declspec(dllexport)  bht_L0_s32 
+__declspec(dllexport) bht_L0_u32
+bht_L0_read_mem32(bht_L0_device_t *device,
+		bht_L0_u32 offset,
+		bht_L0_u32 *data,
+		bht_L0_u32 count);
+
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_read_mem32_dma(bht_L0_device_t *device, 
         bht_L0_u32 offset, 
         bht_L0_u32 *data, 
         bht_L0_u32 count);
         
-__declspec(dllexport)  bht_L0_s32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_write_mem32(bht_L0_device_t *device, 
         bht_L0_u32 offset, 
         bht_L0_u32 *data, 
         bht_L0_u32 count);
         
-__declspec(dllexport)  bht_L0_s32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_read_mem16(bht_L0_device_t *device, 
         bht_L0_u32 offset, 
         bht_L0_u16 *data, 
         bht_L0_u32 count);
         
-__declspec(dllexport)  bht_L0_s32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_write_mem16(bht_L0_device_t *device, 
         bht_L0_u32 offset, 
         bht_L0_u16 *data, 
         bht_L0_u32 count);
         
-__declspec(dllexport)  bht_L0_s32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_read_setupmem32(bht_L0_device_t *device, 
         bht_L0_u32 offset, 
         bht_L0_u32 *data, 
         bht_L0_u32 count);
         
-__declspec(dllexport)  bht_L0_s32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_write_setupmem32(bht_L0_device_t *device, 
         bht_L0_u32 offset, 
         bht_L0_u32 *data, 
         bht_L0_u32 count);
 
-__declspec(dllexport)  bht_L0_s32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_read_setupmem16(bht_L0_device_t *device, 
         bht_L0_u32 offset, 
         bht_L0_u16 *data, 
         bht_L0_u32 count);
 
-__declspec(dllexport)  bht_L0_s32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_write_setupmem16(bht_L0_device_t *device, 
         bht_L0_u32 offset, 
         bht_L0_u16 *data, 
         bht_L0_u32 count);
         
-__declspec(dllexport)  bht_L0_s32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_attach_inthandler(bht_L0_device_t *device, 
         bht_L0_u32 chan_regoffset, 
         BHT_L0_USER_ISRFUNC isr, 
         void * arg);
 
-__declspec(dllexport)  bht_L0_s32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_detach_inthandler(bht_L0_device_t *device);
 
 __declspec(dllexport)  bht_L0_sem
@@ -367,10 +294,10 @@ bht_L0_semc_create(bht_L0_u32 initial_cnt, bht_L0_u32 max_cnt);
 __declspec(dllexport) bht_L0_sem
 bht_L0_semm_create(void);
 
-__declspec(dllexport)  bht_L0_s32 
+__declspec(dllexport)  bht_L0_u32 
 bht_L0_sem_take(bht_L0_sem sem, bht_L0_s32 timeout_ms);
 
-__declspec(dllexport)  bht_L0_s32
+__declspec(dllexport)  bht_L0_u32
 bht_L0_sem_give(bht_L0_sem sem);
 
 __declspec(dllexport)  bht_L0_u32
