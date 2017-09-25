@@ -32,6 +32,12 @@ modification history
 #define FPGA_EEPROM_SIZE               0x10000
 
 bht_L0_u32
+bht_L1_init(void)
+{
+	return bht_L0_init();
+}
+
+bht_L0_u32
 bht_L1_bd_fpga_eeprom_read(bht_L1_device_handle_t device,
         bht_L0_u16 addr,
         bht_L0_u8 *data)

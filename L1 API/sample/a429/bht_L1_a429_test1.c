@@ -78,7 +78,7 @@
 
 typedef struct
 {
-	bht_L0_device_t *device;
+	bht_L1_device_handle_t device;
 	bht_L0_u32 chan_num;
 	bht_L0_u32 data_word_num;
 }a429_thread_arg_t;
@@ -86,18 +86,21 @@ typedef struct
 typedef struct
 {
     bht_L0_u32 chan_num;
-    bht_L1_a429_chan_comm_param_t comm_param;
-    bht_L0_u32 loop_en;
-    bht_L1_a429_slope_e slope;
-    bht_L1_a429_tx_chan_inject_param_t inject_param;
-    bht_L0_u32 period;
+    bht_L1_a429_baud_rate_e baud;
+    bht_L1_a429_parity_e parity;
+    bht_L1_a429_send_mode_e send_mode;
+    bht_L1_a429_err_type_e err_type;
 }a429_tx_chan_param_t;
 
 typedef struct
 {
     bht_L0_u32 chan_num;
-    bht_L1_a429_chan_comm_param_t comm_param;
-    bht_L1_a429_rx_chan_gather_param_t gather_param;
+    bht_L1_a429_baud_rate_e baud;
+    bht_L1_a429_parity_e parity;
+    bht_L1_a429_recv_mode_e recv_mode;
+    bht_L1_able_e filter_en;
+    bht_L0_u16 threshold_count;
+    bht_L0_u16 threshold_time;
 }a429_rx_chan_param_t;
 
 typedef enum
@@ -110,136 +113,104 @@ typedef enum
 const static a429_tx_chan_param_t a429_test_tx_chan_param[] = 
 {
 #ifdef A429_TX_CHAN1
-{1, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
-    BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
+{1, BAUD, TX_PARITY, BHT_L1_A429_SEND_MODE_NONPERIOD, BHT_L1_A429_ERR_TYPE_NONE},
 #endif
 #ifdef A429_TX_CHAN2
-{2, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
-    BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
+{2, BAUD, TX_PARITY, BHT_L1_A429_SEND_MODE_NONPERIOD, BHT_L1_A429_ERR_TYPE_NONE},
 #endif
 #ifdef A429_TX_CHAN3
-{3, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
-    BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
+{3, BAUD, TX_PARITY, BHT_L1_A429_SEND_MODE_NONPERIOD, BHT_L1_A429_ERR_TYPE_NONE},
 #endif
 #ifdef A429_TX_CHAN4
-{4, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
-    BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
+{4, BAUD, TX_PARITY, BHT_L1_A429_SEND_MODE_NONPERIOD, BHT_L1_A429_ERR_TYPE_NONE},
 #endif
 #ifdef A429_TX_CHAN5
-{5, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
-    BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
+{5, BAUD, TX_PARITY, BHT_L1_A429_SEND_MODE_NONPERIOD, BHT_L1_A429_ERR_TYPE_NONE},
 #endif
 #ifdef A429_TX_CHAN6
-{6, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
-    BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
+{6, BAUD, TX_PARITY, BHT_L1_A429_SEND_MODE_NONPERIOD, BHT_L1_A429_ERR_TYPE_NONE},
 #endif
 #ifdef A429_TX_CHAN7
-{7, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
-    BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
+{7, BAUD, TX_PARITY, BHT_L1_A429_SEND_MODE_NONPERIOD, BHT_L1_A429_ERR_TYPE_NONE},
 #endif
 #ifdef A429_TX_CHAN8
-{8, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
-    BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
+{8, BAUD, TX_PARITY, BHT_L1_A429_SEND_MODE_NONPERIOD, BHT_L1_A429_ERR_TYPE_NONE},
 #endif
 #ifdef A429_TX_CHAN9
-{9, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
-    BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
+{9, BAUD, TX_PARITY, BHT_L1_A429_SEND_MODE_NONPERIOD, BHT_L1_A429_ERR_TYPE_NONE},
 #endif
 #ifdef A429_TX_CHAN10
-{10, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
-    BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
+{10, BAUD, TX_PARITY, BHT_L1_A429_SEND_MODE_NONPERIOD, BHT_L1_A429_ERR_TYPE_NONE},
 #endif
 #ifdef A429_TX_CHAN11
-{11, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
-    BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
+{11, BAUD, TX_PARITY, BHT_L1_A429_SEND_MODE_NONPERIOD, BHT_L1_A429_ERR_TYPE_NONE},
 #endif
 #ifdef A429_TX_CHAN12
-{12, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
-    BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
+{12, BAUD, TX_PARITY, BHT_L1_A429_SEND_MODE_NONPERIOD, BHT_L1_A429_ERR_TYPE_NONE},
 #endif
 #ifdef A429_TX_CHAN13
-{13, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
-    BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
+{13, BAUD, TX_PARITY, BHT_L1_A429_SEND_MODE_NONPERIOD, BHT_L1_A429_ERR_TYPE_NONE},
 #endif
 #ifdef A429_TX_CHAN14
-{14, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
-    BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
+{14, BAUD, TX_PARITY, BHT_L1_A429_SEND_MODE_NONPERIOD, BHT_L1_A429_ERR_TYPE_NONE},
 #endif
 #ifdef A429_TX_CHAN15
-{15, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
-    BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
+{15, BAUD, TX_PARITY, BHT_L1_A429_SEND_MODE_NONPERIOD, BHT_L1_A429_ERR_TYPE_NONE},
 #endif
 #ifdef A429_TX_CHAN16
-{16, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, TX_PARITY}, BHT_L1_DISABLE, 
-    BHT_L1_A429_SLOPE_1_5_US, {BHT_L1_A429_WORD_BIT32, BHT_L1_A429_GAP_4BIT, BHT_L1_DISABLE}, 0},
+{16, BAUD, TX_PARITY, BHT_L1_A429_SEND_MODE_NONPERIOD, BHT_L1_A429_ERR_TYPE_NONE},
 #endif
 };
 
 const static a429_rx_chan_param_t a429_test_rx_chan_param[] = 
 {
 #ifdef A429_RX_CHAN1
-{1, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
-    RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
+{1, BAUD, RX_PARITY, BHT_L1_A429_RECV_MODE_LIST, BHT_L1_DISABLE, THRESHOLD_COUNT, THRESHOLD_TIME},
 #endif
 #ifdef A429_RX_CHAN2
-{2, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
-    RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
+{2, BAUD, RX_PARITY, BHT_L1_A429_RECV_MODE_LIST, BHT_L1_DISABLE, THRESHOLD_COUNT, THRESHOLD_TIME},
 #endif
 #ifdef A429_RX_CHAN3
-{3, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
-    RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
+{3, BAUD, RX_PARITY, BHT_L1_A429_RECV_MODE_LIST, BHT_L1_DISABLE, THRESHOLD_COUNT, THRESHOLD_TIME},
 #endif
 #ifdef A429_RX_CHAN4
-{4, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
-    RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
+{4, BAUD, RX_PARITY, BHT_L1_A429_RECV_MODE_LIST, BHT_L1_DISABLE, THRESHOLD_COUNT, THRESHOLD_TIME},
 #endif
 #ifdef A429_RX_CHAN5
-{5, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
-    RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
+{5, BAUD, RX_PARITY, BHT_L1_A429_RECV_MODE_LIST, BHT_L1_DISABLE, THRESHOLD_COUNT, THRESHOLD_TIME},
 #endif
 #ifdef A429_RX_CHAN6
-{6, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
-    RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
+{6, BAUD, RX_PARITY, BHT_L1_A429_RECV_MODE_LIST, BHT_L1_DISABLE, THRESHOLD_COUNT, THRESHOLD_TIME},
 #endif
 #ifdef A429_RX_CHAN7
-{7, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
-    RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
+{7, BAUD, RX_PARITY, BHT_L1_A429_RECV_MODE_LIST, BHT_L1_DISABLE, THRESHOLD_COUNT, THRESHOLD_TIME},
 #endif
 #ifdef A429_RX_CHAN8
-{8, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
-    RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
+{8, BAUD, RX_PARITY, BHT_L1_A429_RECV_MODE_LIST, BHT_L1_DISABLE, THRESHOLD_COUNT, THRESHOLD_TIME},
 #endif
 #ifdef A429_RX_CHAN9
-{9, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
-    RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
+{9, BAUD, RX_PARITY, BHT_L1_A429_RECV_MODE_LIST, BHT_L1_DISABLE, THRESHOLD_COUNT, THRESHOLD_TIME},
 #endif
 #ifdef A429_RX_CHAN10
-{10, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
-    RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
+{10, BAUD, RX_PARITY, BHT_L1_A429_RECV_MODE_LIST, BHT_L1_DISABLE, THRESHOLD_COUNT, THRESHOLD_TIME},
 #endif
 #ifdef A429_RX_CHAN11
-{11, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
-    RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
+{11, BAUD, RX_PARITY, BHT_L1_A429_RECV_MODE_LIST, BHT_L1_DISABLE, THRESHOLD_COUNT, THRESHOLD_TIME},
 #endif
 #ifdef A429_RX_CHAN12
-{12, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
-    RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
+{12, BAUD, RX_PARITY, BHT_L1_A429_RECV_MODE_LIST, BHT_L1_DISABLE, THRESHOLD_COUNT, THRESHOLD_TIME},
 #endif
 #ifdef A429_RX_CHAN13
-{13, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
-    RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
+{13, BAUD, RX_PARITY, BHT_L1_A429_RECV_MODE_LIST, BHT_L1_DISABLE, THRESHOLD_COUNT, THRESHOLD_TIME},
 #endif
 #ifdef A429_RX_CHAN14
-{14, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
-    RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
+{14, BAUD, RX_PARITY, BHT_L1_A429_RECV_MODE_LIST, BHT_L1_DISABLE, THRESHOLD_COUNT, THRESHOLD_TIME},
 #endif
 #ifdef A429_RX_CHAN15
-{15, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
-    RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
+{15, BAUD, RX_PARITY, BHT_L1_A429_RECV_MODE_LIST, BHT_L1_DISABLE, THRESHOLD_COUNT, THRESHOLD_TIME},
 #endif
 #ifdef A429_RX_CHAN16
-{16, {BHT_L1_A429_CHAN_WORK_MODE_OPEN, BAUD, RX_PARITY}, {BHT_L1_ENABLE,
-    RECV_MODE, THRESHOLD_COUNT, THRESHOLD_TIME}},
+{16, BAUD, RX_PARITY, BHT_L1_A429_RECV_MODE_LIST, BHT_L1_DISABLE, THRESHOLD_COUNT, THRESHOLD_TIME},
 #endif
 };
 #endif
@@ -255,7 +226,7 @@ static a429_thread_arg_t arg_rx[16 + 1] = {0};
 
 static bht_L0_u32 recv_err_flag = 0;
 #define BHT_L2_DEVICE_MAX   16
-static const char dtype_string[BHT_L0_DEVICE_TYPE_MAX] = 
+static const char *dtype_string[BHT_L0_DEVICE_TYPE_MAX] = 
 {
     "PMCA429",
     "PCIA429",
@@ -268,6 +239,7 @@ static bht_L1_device_handle_t handle_list[BHT_L0_DEVICE_TYPE_MAX][BHT_L2_DEVICE_
 static bht_L0_u32 scan_info[BHT_L0_DEVICE_TYPE_MAX] = {0};
 static bht_L0_dtype_e cur_dtype = BHT_L0_DEVICE_TYPE_MAX;
 static bht_L0_u32 cur_device_no = BHT_L2_DEVICE_MAX;
+static bht_L1_device_handle_t cur_device = NULL;
 
 static void testbuf_rand(bht_L0_u32 *testbuf, bht_L0_u32 size)
 {
@@ -410,8 +382,6 @@ static DWORD WINAPI a429_channel_send_thread(const void * arg)
 	const bht_L0_u32 data_word_num = ((a429_thread_arg_t *)arg)->data_word_num;
 	bht_L0_u32 idx = 0;
 	bht_L0_u32 result = BHT_SUCCESS;
-	bht_L0_u32 value;
-    bht_L1_a429_mib_data_t mib_data;
 
 	printf("tx channel[%d] start\n", chan_num);
 
@@ -419,7 +389,7 @@ static DWORD WINAPI a429_channel_send_thread(const void * arg)
 
 	while(idx < data_word_num)
 	{
-		if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_send(device, chan_num, BHT_L1_A429_OPT_RANDOM_SEND, test_tx_buf[idx])))
+		if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_send(device, chan_num, test_tx_buf[idx])))
 		{
 //			printf("tx_chan_send failed[idx = %d], error info : %s, result = %d\n", \
 //				idx, bht_L1_error_to_string(result), result);
@@ -510,7 +480,7 @@ static void tx_thread_creat(void)
 		break;
     }while(1);
 
-    arg_tx[chan_num].device = DEVID;
+    arg_tx[chan_num].device = cur_device;
     arg_tx[chan_num].chan_num = chan_num;
 
     hThread[thread_count] = CreateThread(NULL, 100 * 1024, (LPTHREAD_START_ROUTINE)a429_channel_send_thread, (LPVOID)&arg_tx[chan_num], 0, NULL);
@@ -534,7 +504,7 @@ static void tx_thread_creat_all(void)
 
     for(idx = 0; idx < 16; idx++)
     {
-        arg_tx[idx].device = DEVID;
+        arg_tx[idx].device = cur_device;
         arg_tx[idx].data_word_num = data_word_num;
         arg_tx[idx].chan_num = idx + 1;
 
@@ -560,7 +530,7 @@ static void rx_thread_creat(void)
 
     arg_rx[chan_num].data_word_num = DIAG_GetNumber("number of 429 words you want to recv", INPUT_DATA_FORMAT_DEC, 0, A429_DATAWORD_TEST_NUM);
 
-    arg_rx[chan_num].device = DEVID;
+    arg_rx[chan_num].device = cur_device;
 
     hThread[thread_count] = CreateThread(NULL, 100 * 1024, (LPTHREAD_START_ROUTINE)a429_channel_recv_thread, (LPVOID)&arg_rx[chan_num], 0, NULL);
 
@@ -583,7 +553,7 @@ static void rx_thread_creat_all(void)
 
     for(idx = 0; idx < 16; idx++)
     {
-        arg_rx[idx].device = DEVID;
+		arg_rx[idx].device = cur_device;
         arg_rx[idx].data_word_num = data_word_num;
         arg_rx[idx].chan_num = idx + 1;
 
@@ -609,6 +579,7 @@ static void irigb_test(bht_L0_device_t *device)
     printf("irigb test menu\n");
     printf("-------------------------\n");
 
+    device = cur_device;
     do
     {
         printf("1. irigb mode config\n");
@@ -623,7 +594,7 @@ static void irigb_test(bht_L0_device_t *device)
             case 1:
                 do
                 {
-                    if(BHT_SUCCESS != bht_L1_a429_irigb_mode(device, &mode, BHT_L1_PARAM_OPT_GET);                   )
+                    if(BHT_SUCCESS != bht_L1_a429_irigb_mode(device, &mode, BHT_L1_PARAM_OPT_GET))
                         goto irigb_test_err;
                     if(BHT_L1_A429_IRIGB_MODE_MASTER== mode)
                         printf("1. Slave\n");
@@ -787,6 +758,8 @@ static void baud_rate(bht_L1_device_handle_t device)
     bht_L1_chan_type_e type;
     bht_L1_a429_baud_rate_e baud;
     bht_L1_a429_parity_e parity;
+
+    device = cur_device;
 
     printf("Baud rate / parity config menu\n");
     printf("--------------------------------------\n");
@@ -991,7 +964,7 @@ static void baud_rate(bht_L1_device_handle_t device)
                         }                            
                         if(option2 != DIAG_EXIT_MENU)
                         {
-                            for(chan_num = 1; chan_num < BHT_L1_A429_CHAN_MAX; chan_num++)
+                            for(chan_num = 1; chan_num <= BHT_L1_A429_CHAN_MAX; chan_num++)
                             {
                                 if(BHT_SUCCESS != (result = bht_L1_a429_chan_baud(device, chan_num, type, &baud, BHT_L1_PARAM_OPT_SET)))
                                 {
@@ -1029,7 +1002,7 @@ static void baud_rate(bht_L1_device_handle_t device)
                             
                         if(option2 != DIAG_EXIT_MENU)
                         {
-                            for(chan_num = 1; chan_num < BHT_L1_A429_CHAN_MAX; chan_num++)
+                            for(chan_num = 1; chan_num <= BHT_L1_A429_CHAN_MAX; chan_num++)
                             {
                                 if(BHT_SUCCESS != bht_L1_a429_chan_parity(device, chan_num, type, &parity, BHT_L1_PARAM_OPT_SET))
                                 {
@@ -1053,7 +1026,9 @@ static void loop_cfg(bht_L1_device_handle_t device)
     DWORD option;
     bht_L0_u32 result;
     bht_L0_u32 chan_num;
-    bht_L1_able_e able = BHT_L1_ENABLE;    
+    bht_L1_able_e able = BHT_L1_ENABLE;  
+
+    device = cur_device;
 
     chan_num = input_channel_num(BHT_L1_CHAN_TYPE_TX);
     do
@@ -1114,6 +1089,8 @@ static void tx_trouble_cfg(bht_L1_device_handle_t device)
     bht_L0_u32 result;
     bht_L0_u32 chan_num;
     bht_L1_a429_err_type_e err_type;    
+
+    device = cur_device;
     
     chan_num = input_channel_num(BHT_L1_CHAN_TYPE_TX);
 
@@ -1173,6 +1150,8 @@ static void tx_period_test(bht_L1_device_handle_t device)
     bht_L0_u32 data = 0;
     bht_L0_u32 index;
     bht_L1_a429_send_mode_e send_mode;
+
+    device = cur_device;
     
     printf("\n");
     printf("Tx channel period test menu\n");
@@ -1309,8 +1288,10 @@ static void rx_gather_param_cfg(bht_L1_device_handle_t device)
     bht_L0_u32 start = 1, end = 16;
     bht_L1_able_e able;
     bht_L1_a429_recv_mode_e recv_mode;
-    bht_L0_u32 threshold_count;
-    bht_L0_u32 threshold_time;
+    bht_L0_u16 threshold_count;
+    bht_L0_u16 threshold_time;
+
+    device = cur_device;
     
     printf("\n");
     printf("Rx channel gather param config menu\n");
@@ -1487,7 +1468,13 @@ static void rx_filter_cfg(bht_L0_device_t *device)
     bht_L0_u32 chan_num;
     bht_L0_u32 rdwr = 0;
     bht_L0_u32 start = 1, end = 16;
-    bht_L1_a429_rx_chan_filter_t filter_param;
+    bht_L1_a429_list_type_e list_type;
+    bht_L0_u8 label;
+    bht_L0_u8 sdi;
+    bht_L0_u8 ssm;
+
+    device = cur_device;
+    
     
     printf("\n");
     printf("Rx channel label filter param config menu\n");
@@ -1506,9 +1493,9 @@ static void rx_filter_cfg(bht_L0_device_t *device)
         break;
     }while(1);       
 
-    filter_param.label = DIAG_GetNumber("label", INPUT_DATA_FORMAT_DEC, 0, 255);
-    filter_param.sdi = DIAG_GetNumber("sdi", INPUT_DATA_FORMAT_DEC, 0, 3);
-    filter_param.ssm = DIAG_GetNumber("ssm", INPUT_DATA_FORMAT_DEC, 0, 3);
+    label = DIAG_GetNumber("label", INPUT_DATA_FORMAT_DEC, 0, 255);
+    sdi = DIAG_GetNumber("sdi", INPUT_DATA_FORMAT_DEC, 0, 3);
+    ssm = DIAG_GetNumber("ssm", INPUT_DATA_FORMAT_DEC, 0, 3);
 
     if(2 == rdwr)
     {
@@ -1521,25 +1508,25 @@ static void rx_filter_cfg(bht_L0_device_t *device)
                 continue;
 
             if(1 == option)
-                filter_param.filter_mode = BHT_L1_A429_LIST_TYPE_WHITELIST;
+				list_type = BHT_L1_A429_LIST_TYPE_WHITE;
             else if(2 == option)
-                filter_param.filter_mode = BHT_L1_A429_LIST_TYPE_BLACKLIST;
+				list_type = BHT_L1_A429_LIST_TYPE_BLACK;
             break;
         }while(1);
         
-        if(BHT_SUCCESS != (bht_L1_a429_rx_chan_filter_cfg(device, chan_num, &filter_param, BHT_L1_PARAM_OPT_SET)))
+        if(BHT_SUCCESS != (bht_L1_a429_rx_chan_filter_label(device, chan_num, label, sdi, ssm, &list_type, BHT_L1_PARAM_OPT_SET)))
         {
             printf("rx chan[%d] filter param set failed\n", chan_num);
         }
     }
     else
     {
-        if(BHT_SUCCESS != (bht_L1_a429_rx_chan_filter_cfg(device, chan_num, &filter_param, BHT_L1_PARAM_OPT_GET)))
+        if(BHT_SUCCESS != (bht_L1_a429_rx_chan_filter_label(device, chan_num, label, sdi, ssm, &list_type, BHT_L1_PARAM_OPT_GET)))
         {
             printf("rx chan[%d] filter param set failed\n", chan_num);
         }
         else
-            printf("%s\n", filter_param.filter_mode ? "Wthite" : "Black");
+            printf("%s\n", list_type ? "Wthite" : "Black");
     }
 }
 
@@ -1548,8 +1535,7 @@ static void mib_clear(void)
     DWORD option;
     bht_L0_u32 result;
     bht_L0_u32 chan_num;
-    bht_L1_chan_type_e type;
-    bht_L1_a429_chan_comm_param_t comm_param;    
+    bht_L1_chan_type_e type;  
 
 //    do
 //    {
@@ -1573,18 +1559,11 @@ static void mib_clear(void)
     
     chan_num = input_channel_num(type);
 
-    if(BHT_L1_CHAN_TYPE_RX == type)
-        if(BHT_SUCCESS != (result = bht_L1_a429_rx_chan_mib_clear(DEVID, chan_num)))
-        {
-            printf("%s err, message : %s [result = %d]\n", __FUNCTION__, bht_L1_error_to_string(result), result);
-            return;
-        }
-    else
-        if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_mib_clear(DEVID, chan_num)))
-        {
-            printf("%s err, message : %s [result = %d]\n", __FUNCTION__, bht_L1_error_to_string(result), result);
-            return;
-        }
+    if(BHT_SUCCESS != (result = bht_L1_a429_chan_clear_mib(cur_device, chan_num, type)))
+    {
+        printf("%s err, message : %s [result = %d]\n", __FUNCTION__, bht_L1_error_to_string(result), result);
+        return;
+    }
 }
 
 /* Read/write address menu options */
@@ -1600,10 +1579,16 @@ static void rw_mem(bht_L0_u32 bar, WDC_DIRECTION direction)
     DWORD dwStatus;
     DWORD dwOffset;
     bht_L0_u32 value, result;
+    bht_L0_device_t *device0 = (bht_L0_device_t *)cur_device;
 
 //    printf("%s", (WDC_READ == direction) ?
 //        "Enter offset to read from : 0x" : "Enter offset to write to : 0x");
 //    scanf("%x", &dwOffset);
+    if(NULL == device0)
+    {
+        printf("current device is null, please choose the current device first\n");
+        return;
+    }
 
     dwOffset = DIAG_GetNumber((WDC_READ == direction) ?
         "offset to read from" : "offset to write to", INPUT_DATA_FORMAT_HEX, 0, 0);
@@ -1622,22 +1607,22 @@ static void rw_mem(bht_L0_u32 bar, WDC_DIRECTION direction)
     {
         if(WDC_READ == direction)
         {
-            result = bht_L0_read_setupmem32(DEVID, dwOffset, &value, 1);
+            result = bht_L0_read_setupmem32(device0, dwOffset, &value, 1);
         }
         else
         {
-            result = bht_L0_write_setupmem32(DEVID, dwOffset, &value, 1);
+            result = bht_L0_write_setupmem32(device0, dwOffset, &value, 1);
         }
     }
     else
     {
         if(WDC_READ == direction)
         {
-            result = bht_L0_read_mem32(DEVID, dwOffset, &value, 1);
+            result = bht_L0_read_mem32(device0, dwOffset, &value, 1);
         }
         else
         {
-            result = bht_L0_write_mem32(DEVID, dwOffset, &value, 1);
+            result = bht_L0_write_mem32(device0, dwOffset, &value, 1);
         }
     }
 
@@ -1714,12 +1699,18 @@ static void rw_mem_diag(void)
     }while (MENU_RW_ADDR_EXIT != option);
 }
 
-static void version_check(bht_L0_device_t *device)
+static void version_check(bht_L1_device_handle_t device)
 {
     bht_L0_u32 result;
     bht_L0_u32 logic_version;
 
-    if(BHT_SUCCESS != (result = bht_L1_device_version(device, &logic_version)))
+    if(NULL == device)
+    {
+        printf("current device is null, please choose the current device first\n");
+        return;
+    }
+
+    if(BHT_SUCCESS != (result = bht_L1_device_logic_version(device, &logic_version)))
     {
         printf("Read device version failed, %s(result = %d)\n", bht_L1_error_to_string(result), result);
     }
@@ -1729,7 +1720,7 @@ static void version_check(bht_L0_device_t *device)
     }
 }
 
-static void param_default_config(bht_L0_device_t *device)
+static void param_default_config(bht_L1_device_handle_t device)
 {
     int result;
 	bht_L0_u32 value, idx, i;
@@ -1740,14 +1731,32 @@ static void param_default_config(bht_L0_device_t *device)
     for(idx = 0; idx < ARRAY_SIZE(a429_test_rx_chan_param); idx++)
     {
         rp = &a429_test_rx_chan_param[idx];
-        if(BHT_SUCCESS != (bht_L1_a429_rx_chan_comm_param(DEVID, rp->chan_num, &rp->comm_param, BHT_L1_PARAM_OPT_SET)))
+        if(BHT_SUCCESS != (bht_L1_a429_chan_baud(device, rp->chan_num, BHT_L1_CHAN_TYPE_RX, &rp->baud, BHT_L1_PARAM_OPT_SET)))
         {
             printf("default param set : rx chan[%d] common param set failed\n", rp->chan_num);
             break;
         }
-        if(BHT_SUCCESS != (bht_L1_a429_rx_chan_gather_param(DEVID, rp->chan_num, &rp->gather_param, BHT_L1_PARAM_OPT_SET)))
+        if(BHT_SUCCESS != (bht_L1_a429_chan_parity(device, rp->chan_num, BHT_L1_CHAN_TYPE_RX, &rp->parity, BHT_L1_PARAM_OPT_SET)))
         {
-            printf("default param set : rx chan[%d] gather param set failed\n", rp->chan_num);
+            printf("default param set : rx chan[%d] common param set failed\n", rp->chan_num);
+            break;
+        }
+        if(BHT_SUCCESS != (bht_L1_a429_rx_chan_recv_mode(device, rp->chan_num,&rp->recv_mode, BHT_L1_PARAM_OPT_SET)))
+        {
+            printf("default param set : rx chan[%d] common param set failed\n", rp->chan_num);
+            break;
+        }
+        if(BHT_L1_A429_RECV_MODE_LIST == rp->recv_mode)
+        {
+            if(BHT_SUCCESS != (bht_L1_a429_rx_chan_int_threshold(device, rp->chan_num,&rp->threshold_count, &rp->threshold_time, BHT_L1_PARAM_OPT_SET)))
+            {
+                printf("default param set : rx chan[%d] common param set failed\n", rp->chan_num);
+                break;
+            }
+        }
+        if(BHT_SUCCESS != (bht_L1_a429_rx_chan_filter(device, rp->chan_num,&rp->filter_en, BHT_L1_PARAM_OPT_SET)))
+        {
+            printf("default param set : rx chan[%d] common param set failed\n", rp->chan_num);
             break;
         }
     }
@@ -1755,38 +1764,29 @@ static void param_default_config(bht_L0_device_t *device)
     for(idx = 0; idx < ARRAY_SIZE(a429_test_tx_chan_param); idx++)
     {
         tp = &a429_test_tx_chan_param[idx];
-        if(BHT_SUCCESS != (bht_L1_a429_tx_chan_comm_param(DEVID, tp->chan_num, &tp->comm_param, BHT_L1_PARAM_OPT_SET)))
+
+        if(BHT_SUCCESS != (bht_L1_a429_chan_baud(device, rp->chan_num, BHT_L1_CHAN_TYPE_TX, &rp->baud, BHT_L1_PARAM_OPT_SET)))
+        {
+            printf("default param set : rx chan[%d] common param set failed\n", rp->chan_num);
+            break;
+        }
+        if(BHT_SUCCESS != (bht_L1_a429_chan_parity(device, rp->chan_num, BHT_L1_CHAN_TYPE_TX, &rp->parity, BHT_L1_PARAM_OPT_SET)))
+        {
+            printf("default param set : rx chan[%d] common param set failed\n", rp->chan_num);
+            break;
+        }
+        
+        if(BHT_SUCCESS != (bht_L1_a429_tx_chan_send_mode(device, tp->chan_num, &tp->send_mode, BHT_L1_PARAM_OPT_SET)))
         {
             printf("default param set : tx chan[%d] common param set failed\n", tp->chan_num);
             break;
         }
-        if(BHT_SUCCESS != (bht_L1_a429_tx_chan_inject_param(DEVID, tp->chan_num, &tp->inject_param, BHT_L1_PARAM_OPT_SET)))
+        if(BHT_SUCCESS != (bht_L1_a429_tx_chan_err_inject(device, tp->chan_num, &tp->err_type, BHT_L1_PARAM_OPT_SET)))
         {
-            printf("default param set : tx chan[%d] inject param set failed\n", tp->chan_num);
+            printf("default param set : tx chan[%d] common param set failed\n", tp->chan_num);
             break;
-        }
-        if(BHT_SUCCESS != (bht_L1_a429_tx_chan_loop(DEVID, tp->chan_num, tp->loop_en)))
-        {
-            printf("default param set : tx chan[%d] loop param set failed\n", tp->chan_num);
-            break;
-        }
-//        if(BHT_SUCCESS != (bht_L1_a429_tx_chan_slope_cfg(DEVID, tp->chan_num, tp->slope)))
-//        {
-//            printf("default param set : tx chan[%d] slope param set failed\n", tp->chan_num);
-//            break;
-//        }
-        if(BHT_SUCCESS != (bht_L1_a429_tx_chan_period_param(DEVID, tp->chan_num, &tp->period, BHT_L1_PARAM_OPT_SET)))
-        {
-            printf("default param set : tx chan[%d] period param set failed\n", tp->chan_num);
-            break;
-        }
+        }        
     }
-
-    //enable fpga pci interrupt 
-    value = BIT0;
-    if(BHT_SUCCESS != (result = bht_L0_write_mem32(device, BHT_A429_INTR_EN, &value, 1)))
-        return result;
-
 }
 
 struct flt_label
@@ -1833,11 +1833,12 @@ static void generate_tx_data(void)
     }while(option != DIAG_EXIT_MENU);
 }
 
-static void chips_cope_freq_div(bht_L0_device_t *device)
+static void chips_cope_freq_div(bht_L1_device_handle_t *device)
 {
     bht_L0_u32 option;
     bht_L0_u32 result;
     static bht_L0_u32 divisor = 0, div;
+    bht_L0_device_t *device0 = (bht_L0_device_t *)device;
 
     printf("Chips cope frequency divisor menu(current divisor %d)\n", divisor);
     printf("------------------------\n");
@@ -1856,7 +1857,7 @@ static void chips_cope_freq_div(bht_L0_device_t *device)
         {
             div = DIAG_GetNumber("divisor", INPUT_DATA_FORMAT_DEC, 0, 0);
 
-            if(BHT_SUCCESS != (result = bht_L0_write_mem32(device, BHT_A429_DEBUG_CHIPSCOPE_FREQ_DIV, &div, 1)))
+            if(BHT_SUCCESS != (result = bht_L0_write_mem32(device0, BHT_A429_DEBUG_CHIPSCOPE_FREQ_DIV, &div, 1)))
                 printf("write chips cope divisor failed, %s(result = %d)\n", bht_L1_error_to_string(result), result);
             else
                 divisor = div;
@@ -1888,12 +1889,13 @@ static void device_operate(void)
     
 
     do
-    {
-        printf("%d. scan device\n", DEVICE_OPERATE_SCAN);
-        printf("%d. open device\n", DEVICE_OPERATE_OPEN);
-        printf("%d. close device\n", DEVICE_OPERATE_CLOSE);
-        printf("%d. choose the current device\n", DEVICE_OPERATE_CHOOSE_CUR);
-        printf("%d. exit\n", DEVICE_OPERATE_EXIT);
+    {
+
+        printf("%d. scan device\n", DEVICE_OPERATE_SCAN);
+        printf("%d. open device\n", DEVICE_OPERATE_OPEN);
+        printf("%d. close device\n", DEVICE_OPERATE_CLOSE);
+        printf("%d. choose the current device\n", DEVICE_OPERATE_CHOOSE_CUR);
+        printf("%d. exit\n", DEVICE_OPERATE_EXIT);
 
         if (DIAG_INPUT_FAIL == DIAG_GetMenuOption(&option, DEVICE_OPERATE_CHOOSE_CUR))
         {
@@ -1941,10 +1943,12 @@ static void device_operate(void)
                         device_no = DIAG_GetNumber("device_no",INPUT_DATA_FORMAT_DEC, 0, scan_info[dtype] - 1);
 
                         if(BHT_SUCCESS != bht_L1_device_open(dtype, device_no, 
-                            &handle_list[dtype][device_no], "C://Windows/System32//a429_fpga_top.bin"))
+                            &handle_list[dtype][device_no], "C://Windows//System32//a429_fpga_top.bin"))
                             printf("open failed\n");
                         else
+                        {                            
                             printf("open success\n");
+                        }
                     }                    
                     break;
                 case DEVICE_OPERATE_CLOSE:
@@ -2014,7 +2018,9 @@ static void device_operate(void)
 
                         if(handle_list[dtype][device_no])
                         {
-                            handle_list[dtype][device_no] = NULL;
+                            cur_device_no = device_no;
+                            cur_dtype = dtype;
+                            cur_device = handle_list[dtype][device_no];
                             printf("choose success\n");
                         }
                         else
@@ -2059,7 +2065,7 @@ enum
     OPTION_EXIT = DIAG_EXIT_MENU
 };
 
-static void menu(bht_L0_device_t *device)
+static void menu(bht_L1_device_handle_t device)
 {
     DWORD option;
     bht_L0_u32 result;
@@ -2102,6 +2108,8 @@ static void menu(bht_L0_device_t *device)
             continue;
         }
 
+        device = cur_device;
+
         switch (option)
         {
         case OPTION_EXIT: /* Exit menu */
@@ -2110,16 +2118,16 @@ static void menu(bht_L0_device_t *device)
             baud_rate(device);
             break;        
         case OPTION_TX_LOOP_CFG:
-            loop_cfg();
+            loop_cfg(device);
             break;
         case OPTION_TX_SLOPE_CFG:
             tx_slope_cfg();
             break;
         case OPTION_TX_TROUBLE_CFG:
-            tx_trouble_cfg();
+            tx_trouble_cfg(device);
             break;
         case OPTION_TX_PERIOD_TEST:
-            tx_period_test();
+            tx_period_test(device);
             break;
         case OPTION_TX_THREAD_CREAT: 
             tx_thread_creat();
@@ -2128,7 +2136,7 @@ static void menu(bht_L0_device_t *device)
             tx_thread_creat_all();
             break;
         case OPTION_RX_GATHER_CFG:
-            rx_gather_param_cfg();
+            rx_gather_param_cfg(device);
             break;
         case OPTION_RX_FILTER_CFG:
             rx_filter_cfg(device);
@@ -2143,7 +2151,7 @@ static void menu(bht_L0_device_t *device)
             irigb_test(device);
             break;
         case OPTION_MIB_DUMP:
-            mib_dump(DEVID);
+            mib_dump(device);
             break;
         case OPTION_MIB_CLEAR:
             mib_clear();
@@ -2152,16 +2160,16 @@ static void menu(bht_L0_device_t *device)
             rw_mem_diag();
             break;
         case OPTION_DEVICE_SOFT_RESET_TEST:
-            bht_L1_device_softreset(DEVID);
+            bht_L1_device_reset(device);
             break;
         case OPTION_FPGA_EEPROM_TEST:
-            if(BHT_SUCCESS != bht_L1_bd_fpga_eeprom_test(DEVID))
+			if (BHT_SUCCESS != bht_L1_bd_fpga_eeprom_test(device))
                 printf("Fpga eeprom test failed !!!\n");
             else
                 printf("Fpga eeprom test succ\n");
             break;
         case OPTION_VERSION:
-            version_check(device);
+            version_check(cur_device);
             break;
         case OPTION_BRAKE:
             option = OPTION_BRAKE;
@@ -2169,11 +2177,14 @@ static void menu(bht_L0_device_t *device)
         case OPTION_PARAM_DEFAULT_CONFIG:
             param_default_config(device);
             break;
+
         case OPTION_PCI_LOAD_FPGA:
-            if(BHT_SUCCESS != (result = bht_L1_device_load(device)))
+#if 0
+			if (BHT_SUCCESS != (result = bht_L1_device_load(device, "C://Windows//System32//a429_fpga_top.bin")))
                 printf("%s err, message : %s [result = %d]\n", __FUNCTION__, bht_L1_error_to_string(result), result);
             else
                 printf("Pci load fpga success\n", __FUNCTION__, bht_L1_error_to_string(result), result);
+#endif
             break;
         case OPTION_GENERATE_TX_DATA:
             generate_tx_data();
@@ -2191,14 +2202,15 @@ static void menu(bht_L0_device_t *device)
             break;
 		case OPTION_SAVE_DEFAULT_PARAM:
 #ifdef SUPPORT_DEFAULT_PARAM_SAVE
-            if(BHT_SUCCESS != bht_L1_a429_default_param_save(device))
+			if (BHT_SUCCESS != bht_L1_device_default_param_save(device))
                 printf("save default param failed\n");
             else
                 printf("save default param succ\n");
 #endif
             break;
-
-        
+		case OPTION_DEVICE_OPERATE:
+			device_operate();
+			break;        
         }
     } while (OPTION_EXIT != option);
 }
@@ -2220,8 +2232,10 @@ void main(void)
 	/* scan device */   
 
 	bht_L0_msleep(10);
+
+	bht_L1_init();
     
-    menu(DEVID);
+	menu(cur_device);
 
     //Wait until all threads have terminated.
 	WaitForMultipleObjects(thread_count, hThread, TRUE, INFINITE);

@@ -28,18 +28,16 @@ modification history
 #include <stdio.h>
 #include <stdlib.h>
 
-#define A429_DEBUG 
-#ifdef A429_DEBUG
-#define DEBUG(x, ...)\
+#define DEBUG
+
+#ifdef DEBUG
+#define DEBUG_PRINTF(format, ...)\
 do\
 {\
-    va_list ap;\
-    va_start(ap, x);\
-    (void)printf(x, ap);\
-    va_end(ap);\
-}while(0);
+	(void)printf(format, ##__VA_ARGS__); \
+}while (0);
 #else
-#define DEBUG(x, ...)
+#define DEBUG_PRINTF(x)
 #endif
 
 bht_L0_u32 
@@ -149,10 +147,60 @@ end:
 	return NULL;
 }
 
+static bht_L0_u32
+bht_L1_a429_chan_reset(bht_L0_device_t *device, 
+        bht_L0_u32 chan_num, 
+        bht_L1_chan_type_e chan_type)
+{
+    bht_L0_u32 result = BHT_SUCCESS;
+    bht_L0_u32 value;
+    bht_L1_a429_cb_t *cb = device->private;
+    bht_L0_device_t *device0 = (bht_L0_device_t*)device;
+    bht_L1_a429_chan_data_t *chan_data;
+    bht_L1_a429_send_stat_t *send_stat;   
+
+    BHT_L1_A429_CHAN_NUM_CHECK(chan_num);
+    
+    if(BHT_L1_CHAN_TYPE_RX == chan_type)
+    {
+        chan_data = cb->chan_data + (chan_num - 1);
+
+        DEBUG_PRINTF("cb->chan_data = %p, chan_data = %p, chan_num = %d\n", \
+            cb->chan_data, chan_data, chan_num);
+
+        chan_data->chan_idle_err_cnt = 0;
+        chan_data->chk_times = 0;
+        chan_data->lost_data_cnt = 0;
+        chan_data->recv_data_cnt = 0;
+        chan_data->semc_err_cnt = 0;
+
+        BHT_L1_WRITE_MEM32(device0, BHT_A429_CHOOSE_CHANNEL_NUM, &chan_num, 1, result, end);
+        BHT_L1_READ_MEM32(device0, BHT_A429_CHANNEL_CFG, &value, 1, result, end);
+        chan_data->recv_mode = (bht_L1_a429_recv_mode_e)((value >> 15) & BIT0);
+    }
+    else
+    {
+        chan_num -= 1;
+        send_stat = cb->send_stat + chan_num;
+
+        send_stat->lost_data_cnt = 0;
+        send_stat->send_data_cnt = 0;
+
+        BHT_L1_WRITE_MEM32(device0, BHT_A429_CHOOSE_CHANNEL_NUM, &chan_num, 1, result, end);
+        BHT_L1_READ_MEM32(device0, BHT_A429_CHANNEL_CFG, &value, 1, result, end);
+        send_stat->send_mode = (value & BIT12) ? BHT_L1_A429_SEND_MODE_PERIOD :\
+            BHT_L1_A429_SEND_MODE_NONPERIOD;
+    }
+
+end:
+    return result;
+}
+
 bht_L0_u32
 bht_L1_a429_reset(bht_L0_device_t *device)
 {
     bht_L0_u32 value, index;
+    bht_L0_u32 chan_num;
     bht_L1_a429_cb_t *cb;
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
@@ -165,7 +213,7 @@ bht_L1_a429_reset(bht_L0_device_t *device)
     if(NULL == cb)
         return BHT_ERR_BAD_INPUT;
 
-    BHT_L1_SEM_TAKE(device0, BHT_L1_WAIT_FOREVER, result, end);
+    BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
     
     value = 1;
     BHT_L1_WRITE_MEM32(device0, BHT_A429_DEVICE_SOFT_RESET, &value, 1, result, release_sem);
@@ -197,24 +245,16 @@ bht_L1_a429_reset(bht_L0_device_t *device)
     }
     cb->tot_chans = cb->tot_chans / 2;
 
-    for(index = 0; index < cb->tot_chans; index++)
+    for(chan_num = 1; chan_num <= cb->tot_chans; chan_num++)
     {
-        bht_L0_u32 chan_num = index + BHT_L1_A429_CHAN_MAX;
-        bht_L1_a429_chan_data_t* chan_data = cb->chan_data + index;
-
-        chan_data->chan_idle_err_cnt = 0;
-        chan_data->chk_times = 0;
-        chan_data->lost_data_cnt = 0;
-        chan_data->recv_data_cnt = 0;
-        chan_data->semc_err_cnt = 0;
-
-        BHT_L1_WRITE_MEM32(device0, BHT_A429_CHOOSE_CHANNEL_NUM, &chan_num, 1, result, release_sem);
-        BHT_L1_READ_MEM32(device0, BHT_A429_CHANNEL_CFG, &value, 1, result, release_sem);
-        chan_data->recv_mode = (bht_L1_a429_recv_mode_e)((value >> 15) & BIT0);
+        if(BHT_SUCCESS != bht_L1_a429_chan_reset(device, chan_num, BHT_L1_CHAN_TYPE_RX))
+            goto release_sem;
+        if(BHT_SUCCESS != bht_L1_a429_chan_reset(device, chan_num, BHT_L1_CHAN_TYPE_TX))
+            goto release_sem;
     }
     
 release_sem:
-    BHT_L1_SEM_GIVE(device0, result, end);
+    BHT_L1_SEM_GIVE(device0->mutex_sem, result, end);
 end:
     return result;
 }
@@ -222,11 +262,14 @@ end:
 bht_L0_u32
 bht_L1_a429_private_alloc(bht_L0_device_t *device)
 {
+    bht_L0_u32 chan_num;
     bht_L0_u32 value, index;
     bht_L1_a429_cb_t *cb;
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
     bht_L1_a429_recv_mode_e recv_mode;
+    bht_L1_a429_chan_data_t *chan_data;
+    bht_L1_a429_send_stat_t *send_stat;
 
     if(BHT_L0_LOGIC_TYPE_A429 != device0->ltype)
         return BHT_ERR_BAD_INPUT;
@@ -234,7 +277,8 @@ bht_L1_a429_private_alloc(bht_L0_device_t *device)
     /* alloc private data */
     if(NULL == (cb = (bht_L1_a429_cb_t *)calloc(1, sizeof(bht_L1_a429_cb_t))))
         return BHT_ERR_MEM_ALLOC_FAIL;
-    
+
+    DEBUG_PRINTF("reset\n");
     /* reset logic */
     value = 1;
     bht_L0_write_mem32(device0, BHT_A429_DEVICE_SOFT_RESET, &value, 1);
@@ -243,7 +287,7 @@ bht_L1_a429_private_alloc(bht_L0_device_t *device)
         bht_L0_msleep(1);
         bht_L0_read_mem32(device0, BHT_A429_DEVICE_STATE, &value, 1);
     }while(value != 0x00000001);
-    
+
     /* read totchans */
     cb->tot_chans = 0;
     if(BHT_SUCCESS == (result = bht_L0_read_mem32(device0, \
@@ -252,7 +296,9 @@ bht_L1_a429_private_alloc(bht_L0_device_t *device)
         for(index = 0; index < 32; index++)
         {
             if(BIT0 & (value >> index))
+            {
                 cb->tot_chans += 1;
+            }
         }
         
         if(cb->tot_chans % 2)
@@ -267,7 +313,6 @@ bht_L1_a429_private_alloc(bht_L0_device_t *device)
     {
         goto alloc_err;
     }
-    
     /* alloc channel data */
     if(cb->tot_chans)
     {
@@ -278,35 +323,70 @@ bht_L1_a429_private_alloc(bht_L0_device_t *device)
             goto alloc_err;
         }
 
+        if(NULL == (cb->send_stat = (bht_L1_a429_send_stat_t*) \
+            calloc(cb->tot_chans, sizeof(bht_L1_a429_send_stat_t))))
+        {
+            result = BHT_ERR_MEM_ALLOC_FAIL;
+            goto alloc_err;
+        }
+
         for(index = 0; index < cb->tot_chans; index++)
         {
-            ((bht_L1_a429_chan_data_t*)(cb->chan_data + index))->semc = \
-                bht_L0_semc_create(0, BHT_L1_A429_RXP_BUF_MAX);
-            if(((bht_L1_a429_chan_data_t*)(cb->chan_data + index))->semc < 0)
+            chan_data = cb->chan_data + index;
+            send_stat = cb->send_stat + index;
+            
+            chan_data->semc = bht_L0_semc_create(0, BHT_L1_A429_RXP_BUF_MAX);
+            if(chan_data->semc < 0)
             {
                 result = BHT_ERR_SEM_CREAT_FAIL;
                 goto  alloc_err;
             }
 
-            ((bht_L1_a429_chan_data_t*)(cb->chan_data + index))->rxp_ring = \
-                ring_buf_init(sizeof(bht_L1_a429_rxp_t), BHT_L1_A429_RXP_BUF_MAX);
-            if(NULL == ((bht_L1_a429_chan_data_t*)(cb->chan_data + index))->rxp_ring)
+            chan_data->rxp_ring = ring_buf_init(sizeof(bht_L1_a429_rxp_t), BHT_L1_A429_RXP_BUF_MAX);
+            if(NULL == chan_data->rxp_ring)
             {
                 result = BHT_ERR_MEM_ALLOC_FAIL;
                 goto  alloc_err;
             }
 
-            if(BHT_SUCCESS != bht_L1_a429_rx_chan_recv_mode(device0, (index + 1), &recv_mode, \
-                BHT_L1_PARAM_OPT_GET))
-                goto alloc_err;
-            ((bht_L1_a429_chan_data_t*)(cb->chan_data + index))->recv_mode = recv_mode;
+            chan_data->chan_idle_err_cnt = 0;
+            chan_data->chk_times = 0;
+            chan_data->lost_data_cnt = 0;
+            chan_data->recv_data_cnt = 0;
+            chan_data->semc_err_cnt = 0;
 
+            chan_num = index + 1;
+            BHT_L1_WRITE_MEM32(device0, BHT_A429_CHOOSE_CHANNEL_NUM, &chan_num, 1, result, alloc_err);
+            BHT_L1_READ_MEM32(device0, BHT_A429_CHANNEL_CFG, &value, 1, result, alloc_err);
+            chan_data->recv_mode = (bht_L1_a429_recv_mode_e)((value >> 15) & BIT0);
+
+            send_stat = cb->send_stat + index;
+
+            send_stat->lost_data_cnt = 0;
+            send_stat->send_data_cnt = 0;
+
+            BHT_L1_WRITE_MEM32(device0, BHT_A429_CHOOSE_CHANNEL_NUM, &chan_num, 1, result, alloc_err);
+            BHT_L1_READ_MEM32(device0, BHT_A429_CHANNEL_CFG, &value, 1, result, alloc_err);
+            send_stat->send_mode = (value & BIT12) ? BHT_L1_A429_SEND_MODE_PERIOD :\
+                BHT_L1_A429_SEND_MODE_NONPERIOD;    
         }
             
     }
 
-    /* run reset hook */
-    bht_L1_a429_reset_hook(device0);
+    /* attach isr and enable 429 device interrupt */
+    if(BHT_SUCCESS != (result = bht_L0_attach_inthandler(device0, 0, \
+        (BHT_L0_USER_ISRFUNC)bht_L1_a429_isr, (void*)device0)))
+        return result;
+
+    /* enable 429 device interrupt */
+    value = BIT8 | BIT11 | BIT16 | BIT18 | BIT19;
+    if(BHT_SUCCESS != (result = bht_L0_write_setupmem32(device0, PLX9056_INTCSR, &value, 1)))
+        return result;
+
+    /* enable 429 pci interrupt */
+    value = BIT0;
+    if(BHT_SUCCESS != (result = bht_L0_write_mem32(device0, BHT_A429_INTR_EN, &value, 1)))
+        return result;
 
     /* link device private */
     device0->private = (void*)cb;
@@ -325,6 +405,7 @@ alloc_err:
             }
         }
         free(cb->chan_data);
+		free(cb->send_stat);
     }
     if(cb)
         free(cb);
@@ -336,6 +417,7 @@ bht_L0_u32
 bht_L1_a429_private_free(bht_L0_device_t *device)
 {
     bht_L0_u32 index;
+    bht_L0_u32 result = BHT_SUCCESS;
     bht_L1_a429_cb_t *cb;
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
 
@@ -355,9 +437,13 @@ bht_L1_a429_private_free(bht_L0_device_t *device)
             }
         }
         free(cb->chan_data);
+        free(cb->send_stat);
     }
     if(cb)
         free(cb);
+
+    if(BHT_SUCCESS != (result = bht_L0_detach_inthandler(device0)))
+        return result;
 
     device0->private = NULL;
 
@@ -548,21 +634,32 @@ bht_L1_a429_chan_baud(bht_L1_device_handle_t device,
     bht_L1_a429_slope_e slope;
 
 	BHT_L1_A429_CHAN_NUM_CHECK(chan_num);
-
+    
 	BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
-	
+    
     BHT_L1_A429_CFG(device0, BHT_L1_ENABLE, result, release_sem);
-
 	chan_num = (BHT_L1_CHAN_TYPE_RX == chan_type) ? (chan_num + BHT_L1_A429_CHAN_MAX - 1) :\
 		(chan_num - 1);
 
 	BHT_L1_WRITE_MEM32(device0, BHT_A429_CHOOSE_CHANNEL_NUM, &chan_num, 1, result, cfg_disable);
 
     if(BHT_L1_PARAM_OPT_GET == param_opt)
-		BHT_L1_READ_MEM32(device0, BHT_A429_BAUD_RATE_SET, ((bht_L0_u32*)baud), 1, result, cfg_disable);
+    {
+		BHT_L1_READ_MEM32(device0, BHT_A429_BAUD_RATE_SET, ((bht_L0_u32*)&value), 1, result, cfg_disable);
+        if(0 != value)
+            *baud = 100 * 1000000 / value;
+        else
+            *baud = 0;
+    }
 	else
     {
-		BHT_L1_WRITE_MEM32(device0, BHT_A429_BAUD_RATE_SET, ((bht_L0_u32*)baud), 1, result, cfg_disable);
+        if(0 == (*baud))
+        {
+            result = BHT_ERR_BAD_INPUT;
+            goto cfg_disable;
+        }
+        value = 100 * 1000000 / (*baud);
+		BHT_L1_WRITE_MEM32(device0, BHT_A429_BAUD_RATE_SET, ((bht_L0_u32*)&value), 1, result, cfg_disable);
 
         /* slope config */
         if(BHT_L1_CHAN_TYPE_TX == chan_type)
@@ -696,7 +793,8 @@ bht_L1_a429_chan_clear_mib(bht_L1_device_handle_t device,
 
     BHT_L1_WRITE_MEM32(device0, BHT_A429_MIBS_CLR, &value, 1, result, release_sem);
 
-    bht_L1_a429_reset_hook(device0);
+    if(BHT_SUCCESS != bht_L1_a429_chan_reset(device0, chan_num, chan_type))
+        goto release_sem;
     
 release_sem:
     BHT_L1_SEM_GIVE(device0->mutex_sem, result, end);
@@ -1230,7 +1328,7 @@ bht_L1_a429_tx_chan_err_inject(bht_L1_device_handle_t device,
 
 	BHT_L1_WRITE_MEM32(device0, BHT_A429_CHOOSE_CHANNEL_NUM, &chan_num, 1, result, cfg_disable);
 
-    BHT_L1_READ_MEM32(device0, BHT_A429_CHANNEL_CFG, &cfg, 1, result, cfg_disable);
+    BHT_L1_READ_MEM32(device0, BHT_A429_CHANNEL_CFG, (bht_L0_u32*)&cfg, 1, result, cfg_disable);
 
     if(BHT_L1_PARAM_OPT_GET == param_opt)
 	{
@@ -1291,7 +1389,7 @@ bht_L1_a429_tx_chan_err_inject(bht_L1_device_handle_t device,
                 result =  BHT_ERR_BAD_INPUT;
                 goto cfg_disable;
         }      
-		BHT_L1_WRITE_MEM32(device0, BHT_A429_CHANNEL_CFG, &cfg, 1, result, cfg_disable);
+		BHT_L1_WRITE_MEM32(device0, BHT_A429_CHANNEL_CFG, (bht_L0_u32*)&cfg, 1, result, cfg_disable);
 	}
 cfg_disable:
 	BHT_L1_A429_CFG(device0, BHT_L1_DISABLE, result, release_sem);
@@ -1334,7 +1432,7 @@ bht_L1_a429_chan_dump(bht_L0_device_t *device,
         printf("mib err_cnt           [0x%08x]\n", mib_data.err_cnt);
         if(BHT_SUCCESS != bht_L1_a429_rx_chan_stat(device, chan_num, &value))
             goto end;
-        printf("recv data count       [0x%08x]\n", end);
+        printf("recv data count       [0x%08x]\n", value);
         BHT_L1_READ_MEM32(device0, BHT_A429_INTR_STATE, &value, 1, result, end);
         printf("pci int stat   0x0028 [0x%08x]\n", value);
         BHT_L1_READ_MEM32(device0, BHT_A429_INTR_CHANNEL_VECTOR, &value, 1, result, end);

@@ -23,7 +23,7 @@ extern "C" {
 #define BHT_ERR_LOAD_FPGA_FAIL      1005        /* load fpga fail */
 #define BHT_ERR_DEFAULT_PARAM       1006
 
-typedef void * bht_L1_device_handle_t;
+typedef void* bht_L1_device_handle_t;
 
 typedef enum
 {
@@ -411,6 +411,15 @@ bht_L1_a429_chan_dump(bht_L0_device_t *device,
         
 
 /* 1553B */
+
+
+
+/* board */
+__declspec(dllexport) bht_L0_u32
+bht_L1_init(void);
+
+__declspec(dllexport) bht_L0_u32
+bht_L1_bd_fpga_eeprom_test(bht_L1_device_handle_t device);
 
 #ifdef __cplusplus
 }

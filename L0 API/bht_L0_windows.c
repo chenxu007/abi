@@ -23,7 +23,20 @@ modification history
 #include <bht_L0_device.h>
 #include <bht_L0_config.h>
 #include <stdio.h>
+#define DEBUG
 
+#ifdef DEBUG
+#define DEBUG_PRINTF(x, ...)\
+do\
+{\
+	va_list ap; \
+	va_start(ap, x); \
+	(void)printf(x, ap);\
+	va_end(ap);\
+}while (0);
+#else
+#define DEBUG_PRINTF(x, ...)
+#endif
 #define LICENSE_10_2 "6C3CC2CFE89E7AD0424A070D434A6F6DC4950E31.hwacreate"
 
 /* windows pci device control block */
@@ -151,12 +164,18 @@ bht_L0_device_scan(bht_L0_dtype_e dtype)
             {
                 device_id = BHT_PCI_DEVICE_ID_PMC429;
             }
-            else
-                return 0;
+			else
+			{
+				DEBUG_PRINTF("interface type not support\n");
+				return 0;
+			}
             /* scan */
-            if((WD_STATUS_SUCCESS != WDC_PciScanDevices(BHT_PCI_VENDOR_ID, device_id, &scan_result))
-                || (scan_result.dwNumDevices < 0))
-                return 0;
+			if ((WD_STATUS_SUCCESS != WDC_PciScanDevices(BHT_PCI_VENDOR_ID, device_id, &scan_result))
+				|| (scan_result.dwNumDevices < 0))
+			{
+				DEBUG_PRINTF("WDC_PciScanDevices err\n");
+				return 0;
+			}
 
             return scan_result.dwNumDevices;
         default:

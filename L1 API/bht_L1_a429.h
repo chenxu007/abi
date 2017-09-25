@@ -205,6 +205,13 @@ typedef struct
 
 typedef struct
 {
+    bht_L1_a429_send_mode_e send_mode;
+    bht_L0_u32 send_data_cnt;
+    bht_L0_u32 lost_data_cnt;    
+}bht_L1_a429_send_stat_t;
+
+typedef struct
+{
     bht_L0_u32 tot_chans;                   /* total channels */
 
     bht_L0_s32 last_err;
@@ -221,7 +228,8 @@ typedef struct
 
     
     
-    bht_L1_a429_chan_data_t *chan_data;     /* channel data array */
+    bht_L1_a429_chan_data_t *chan_data;     /* rx channel data array */
+    bht_L1_a429_send_stat_t *send_stat;
 }bht_L1_a429_cb_t;
 
 bht_L0_u32
@@ -230,8 +238,8 @@ bht_L1_a429_private_alloc(bht_L0_device_t *device);
 bht_L0_u32
 bht_L1_a429_private_free(bht_L0_device_t *device);
 
-void
-bht_L1_a429_reset_hook(bht_L0_device_t *device);
+bht_L0_u32
+bht_L1_a429_reset(bht_L0_device_t *device);
 #ifdef __cplusplus
 }
 #endif

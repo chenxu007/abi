@@ -20,6 +20,7 @@ modification history
 #include <bht_L0_plx9056.h>
 #include <bht_L1_a429.h>
 #include <bht_L1.h>
+#include <bht_L1_defs.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -32,6 +33,16 @@ modification history
 #define SLAVE_SERIAL
 #define NEW_BOARD
 #define DEBUG
+
+#ifdef DEBUG
+#define DEBUG_PRINTF(format, ...)\
+do\
+{\
+	(void)printf(format, ##__VA_ARGS__); \
+}while (0);
+#else
+#define DEBUG_PRINTF(x)
+#endif
 
 #ifdef WINDOWS_OPS
 #ifdef WINDOWS_BIT64
@@ -306,7 +317,7 @@ bht_L1_device_open(bht_L0_dtype_e dtype,
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = NULL;
 
-    device = NULL;
+    *device = NULL;
     if(BHT_L0_DEVICE_TYPE_MAX <= dtype)
         return BHT_ERR_BAD_INPUT;
     
@@ -325,6 +336,7 @@ bht_L1_device_open(bht_L0_dtype_e dtype,
         goto open_err;
 
     device0->mutex_sem = bht_L0_semm_create();
+
     if(0 > device0->mutex_sem)
     {
         result = BHT_ERR_SEM_CREAT_FAIL;
@@ -345,6 +357,7 @@ bht_L1_device_open(bht_L0_dtype_e dtype,
         if(BHT_SUCCESS != result)
             goto open_err;
         device0->reset = bht_L1_a429_reset;
+        DEBUG_PRINTF("bht_L1_a429_private_alloc succ\n");
     }
     else
     {
@@ -352,8 +365,7 @@ bht_L1_device_open(bht_L0_dtype_e dtype,
         goto open_err;
     }
 
-    device = (bht_L1_device_handle_t *)device0;
-    
+    *device = device0;
     return result;
     
 open_err:
