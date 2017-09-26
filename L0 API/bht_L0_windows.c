@@ -159,8 +159,7 @@ bht_L0_device_scan(bht_L0_dtype_e dtype)
     {
         case BHT_L0_INTERFACE_TYPE_PCI:
             /* device id*/
-            if((BHT_L0_DEVICE_TYPE_PMCA429 == dtype) || (BHT_L0_DEVICE_TYPE_PCIA429 == dtype) || 
-               (BHT_L0_DEVICE_TYPE_CPCIA429 == dtype) || (BHT_L0_DEVICE_TYPE_PXIA429 == dtype))
+            if((BHT_L0_DEVICE_TYPE_PMCA429 == dtype))
             {
                 device_id = BHT_PCI_DEVICE_ID_PMC429;
             }

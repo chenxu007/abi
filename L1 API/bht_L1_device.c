@@ -707,17 +707,18 @@ bht_L1_device_default_param_save(bht_L1_device_handle_t device)
         return result;
     }
 
-    printf("saving...\n\ntime escape %3d senconds", ++count);
+    printf("saving...\n\ntime escape %5d ms", count);
     do
     {
-        bht_L0_msleep(1000);
-        printf("\b\b\b\b\b\b\b\b\b\b\b\b%3d senconds", ++count);
+        bht_L0_msleep(10);
+        printf("\b\b\b\b\b\b\b\b%5d ms", (count += 10));
         if(BHT_SUCCESS != (result = bht_L0_read_mem32(device, BHT_A429_SAVE_DEFAULT_PARAM_STATUS, &value, 1)))
         {
             printf("read SAVE_DEFAULT_PARAM_STATUS failed\n");
             return result;
         }
     }while(0 != value);
+    printf("\n");
 
     return result;
 }

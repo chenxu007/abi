@@ -165,8 +165,8 @@ bht_L1_a429_chan_reset(bht_L0_device_t *device,
     {
         chan_data = cb->chan_data + (chan_num - 1);
 
-        DEBUG_PRINTF("cb->chan_data = %p, chan_data = %p, chan_num = %d\n", \
-            cb->chan_data, chan_data, chan_num);
+//        DEBUG_PRINTF("cb->chan_data = %p, chan_data = %p, chan_num = %d\n", \
+//            cb->chan_data, chan_data, chan_num);
 
         chan_data->chan_idle_err_cnt = 0;
         chan_data->chk_times = 0;
@@ -199,7 +199,7 @@ end:
 bht_L0_u32
 bht_L1_a429_reset(bht_L0_device_t *device)
 {
-    bht_L0_u32 value, index;
+    bht_L0_u32 value, index, count = 0;
     bht_L0_u32 chan_num;
     bht_L1_a429_cb_t *cb;
     bht_L0_u32 result = BHT_SUCCESS;
@@ -217,9 +217,11 @@ bht_L1_a429_reset(bht_L0_device_t *device)
     
     value = 1;
     BHT_L1_WRITE_MEM32(device0, BHT_A429_DEVICE_SOFT_RESET, &value, 1, result, release_sem);
+    printf("resetting...\n\ntime escape %5d ms", count);
     do
     {
-        bht_L0_msleep(1);
+        bht_L0_msleep(10);
+        printf("\b\b\b\b\b\b\b\b%5d ms", (count += 10));
         BHT_L1_READ_MEM32(device0, BHT_A429_DEVICE_STATE, &value, 1, result, release_sem);
     }while(value != 0x00000001);
 
@@ -948,13 +950,15 @@ bht_L1_a429_rx_chan_filter(bht_L1_device_handle_t device,
 
     if(BHT_L1_PARAM_OPT_GET == param_opt)
     {
-        *able = (value & BIT16) ? BHT_L1_ENABLE : BHT_L1_DISABLE;
+        *able = (value & BIT16) ? BHT_L1_DISABLE : BHT_L1_ENABLE;
     }
 	else
     {   
+//        DEBUG_PRINTF("1 value = 0x%08x\n", value);
         value &= (~(bht_L0_u32)BIT16);
-        if(!*able)
+        if(*able == BHT_L1_DISABLE)
             value |= BIT16;
+//        DEBUG_PRINTF("2 value = 0x%08x\n", value);
         BHT_L1_WRITE_MEM32(device0, BHT_A429_CHANNEL_CFG, &value, 1, result, cfg_disable);
     }
 cfg_disable:
@@ -1125,6 +1129,7 @@ bht_L1_a429_tx_chan_send_mode(bht_L1_device_handle_t device,
 	BHT_L1_WRITE_MEM32(device0, BHT_A429_CHOOSE_CHANNEL_NUM, &chan_num, 1, result, cfg_disable);
 
     BHT_L1_READ_MEM32(device0, BHT_A429_CHANNEL_CFG, &value, 1, result, cfg_disable);
+//    DEBUG_PRINTF("1 value = 0x%08x\n", value);
 
     if(BHT_L1_PARAM_OPT_GET == param_opt)
     {
@@ -1140,7 +1145,8 @@ bht_L1_a429_tx_chan_send_mode(bht_L1_device_handle_t device,
             value &= ~(bht_L0_u32)BIT12;
             /*value bit12 */
             value |= (*send_mode == BHT_L1_A429_SEND_MODE_PERIOD) ? BIT12 : 0;
-            
+
+//            DEBUG_PRINTF("2 value = 0x%08x\n", value);
             BHT_L1_WRITE_MEM32(device0, BHT_A429_CHANNEL_CFG, &value, 1, result, cfg_disable);
         }
     }
@@ -1327,12 +1333,12 @@ bht_L1_a429_tx_chan_err_inject(bht_L1_device_handle_t device,
 	chan_num -= 1;
 
 	BHT_L1_WRITE_MEM32(device0, BHT_A429_CHOOSE_CHANNEL_NUM, &chan_num, 1, result, cfg_disable);
-
     BHT_L1_READ_MEM32(device0, BHT_A429_CHANNEL_CFG, (bht_L0_u32*)&cfg, 1, result, cfg_disable);
+    DEBUG_PRINTF("cfg = 0x%08x, bit_count = %d, gap = %d, parity = %d\n", 
+        cfg, cfg.bit_count_err, cfg.gap_err, cfg.parity_err);
 
     if(BHT_L1_PARAM_OPT_GET == param_opt)
-	{
-	     
+	{        
 	    if((BHT_L1_A429_WORD_BIT32 == cfg.bit_count_err)
             && (BHT_L1_A429_GAP_4BIT == cfg.gap_err)
             && (BHT_L1_DISABLE == cfg.parity_err))
@@ -1388,7 +1394,9 @@ bht_L1_a429_tx_chan_err_inject(bht_L1_device_handle_t device,
             default:
                 result =  BHT_ERR_BAD_INPUT;
                 goto cfg_disable;
-        }      
+        } 
+        DEBUG_PRINTF("cfg = 0x%08x, bit_count = %d, gap = %d, parity = %d\n", 
+            cfg, cfg.bit_count_err, cfg.gap_err, cfg.parity_err);
 		BHT_L1_WRITE_MEM32(device0, BHT_A429_CHANNEL_CFG, (bht_L0_u32*)&cfg, 1, result, cfg_disable);
 	}
 cfg_disable:
@@ -1448,9 +1456,9 @@ bht_L1_a429_chan_dump(bht_L0_device_t *device,
         printf("loop_en       0x0040 [0x%08x]\n", loop);
         BHT_L1_WRITE_MEM32(device0, BHT_A429_CHOOSE_CHANNEL_NUM, &chan_num, 1, result, end);
         BHT_L1_READ_MEM32(device0, BHT_A429_CHANNEL_CFG, &value, 1, result, end);
-        printf("channel_cfg    0x1008 [0x%08x]\n", value);
+        printf("channel_cfg   0x1008 [0x%08x]\n", value);
         BHT_L1_READ_MEM32(device0, BHT_A429_BAUD_RATE_SET, &value, 1, result, end);
-        printf("baud           0x100C [0x%08x]\n", value);
+        printf("baud          0x100C [0x%08x]\n", value);
 //        printf("period        0x1300 [0x%08x]\n", device_param->tx_chan_param[chan_num - 1].period);
         printf("mib cnt              [0x%08x]\n", mib_data.cnt);
         printf("mib err_cnt          [0x%08x]\n", mib_data.err_cnt);

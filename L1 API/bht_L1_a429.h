@@ -157,18 +157,18 @@ extern "C" {
 
 typedef struct
 {
-    bht_L0_u32 chan_type : 1;
-    bht_L0_u32 chan_stat : 2;
-    bht_L0_u32 bit_count_err : 2;
-    bht_L0_u32 gap_err : 1;
-    bht_L0_u32 parity_err : 1;
-    bht_L0_u32 tx_parity : 1;
-    bht_L0_u32 revs1 : 7;
-    bht_L0_u32 flt_en : 1;
-    bht_L0_u32 recv_mode :1;
-    bht_L0_u32 rx_parity :2;
-    bht_L0_u32 send_mode :1;
     bht_L0_u32 resv2 : 12;
+    bht_L0_u32 send_mode :1;
+    bht_L0_u32 rx_parity :2;
+    bht_L0_u32 recv_mode :1;
+    bht_L0_u32 flt_en : 1;
+    bht_L0_u32 revs1 : 7;
+    bht_L0_u32 tx_parity : 1;
+    bht_L0_u32 parity_err : 1;
+    bht_L0_u32 gap_err : 1;
+    bht_L0_u32 bit_count_err : 2;
+    bht_L0_u32 chan_stat : 2;
+    bht_L0_u32 chan_type : 1;
 }bht_L1_a429_cfg_t;
 
 typedef enum
