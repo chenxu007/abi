@@ -51,6 +51,8 @@ bht_L1_a429_isr(bht_L0_device_t *device)
     bht_L1_a429_cb_t *cb = device0->private;
     bht_L1_a429_chan_data_t *chan_data;
 
+    printf("%s\n", __FUNCTION__);
+    
     BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
 
     cb->int_cnt++;
