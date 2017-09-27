@@ -229,9 +229,9 @@ static bht_L0_u32 recv_err_flag = 0;
 static const char *dtype_string[BHT_L0_DEVICE_TYPE_MAX] = 
 {
     "PMCA429",
-    "PCIA429",
-    "CPCIA429",
-    "PXIA429",
+//    "PCIA429",
+//    "CPCIA429",
+//    "PXIA429",
     "PMC1553",
     "UNINITIALIZED"
 };
@@ -248,8 +248,8 @@ static void testbuf_rand(bht_L0_u32 *testbuf, bht_L0_u32 size)
     srand(time(NULL));
 
     for(idx = 0; idx < size; idx++)
-        testbuf[idx] = 0x7FFFFFFF & rand();
-		//testbuf[idx] = 0x7FFFFFFF & idx;
+//        testbuf[idx] = 0x7FFFFFFF & rand();
+		testbuf[idx] = 0x7FFFFFFF & idx;
 }
 
 static DIAG_INPUT_RESULT DIAG_GetMenuOption(PDWORD pdwOption, DWORD dwMax)
@@ -384,20 +384,15 @@ static DWORD WINAPI a429_channel_send_thread(const void * arg)
 	bht_L0_u32 result = BHT_SUCCESS;
 
 	printf("tx channel[%d] start\n", chan_num);
-
-    if(BHT_SUCCESS != bht_L1_a429_chan_open(device, chan_num, BHT_L1_CHAN_TYPE_TX))
-    {
-        printf("open tx channel %d failed\n", chan_num);
-        return 0;
-    }
+    
 	bht_L0_msleep(20);
 
 	while(idx < data_word_num)
 	{
 		if(BHT_SUCCESS != (result = bht_L1_a429_tx_chan_send(device, chan_num, test_tx_buf[idx])))
 		{
-			printf("tx_chan_send failed[idx = %d], error info : %s, result = %d\n", \
-				idx, bht_L1_error_to_string(result), result);
+//			printf("tx_chan_send failed[idx = %d], error info : %s, result = %d\n", \
+//				idx, bht_L1_error_to_string(result), result);
 			bht_L0_msleep(1);
 		}
         else
@@ -434,11 +429,6 @@ static DWORD WINAPI a429_channel_recv_thread(const void * arg)
     bht_L0_u32 tot_num = 0;
 
     printf("rx channel[%d] start\n", chan_num);
-    if(BHT_SUCCESS != bht_L1_a429_chan_open(device, chan_num, BHT_L1_CHAN_TYPE_RX))
-    {
-        printf("open tx channel %d failed\n", chan_num);
-        return 0;
-    }
 	//system("pause");
     
 	while(tot_num < data_word_num)
@@ -452,7 +442,7 @@ static DWORD WINAPI a429_channel_recv_thread(const void * arg)
         test_rx_buf[chan_num - 1][tot_num++] = 0x7FFFFFFF & rxp.data;
 		if(tot_num %1024 == 0)
 			printf("rx channel[%d] recv %d/%d\n", chan_num, tot_num/1024, data_word_num/1024);
-		printf("rx channel[%d] recv index %d data %08x\n", chan_num, tot_num, test_rx_buf[chan_num - 1][tot_num - 1]);
+//		printf("rx channel[%d] recv index %d data %08x\n", chan_num, tot_num, test_rx_buf[chan_num - 1][tot_num - 1]);
 	}
 
     for(idx = 0; idx < tot_num; idx++)
@@ -504,6 +494,12 @@ static void tx_thread_creat(void)
     arg_tx[chan_num].device = cur_device;
     arg_tx[chan_num].chan_num = chan_num;
 
+    if(BHT_SUCCESS != bht_L1_a429_chan_open(cur_device, chan_num, BHT_L1_CHAN_TYPE_TX))
+    {
+        printf("open tx channel %d failed\n", chan_num);
+        return 0;
+    }
+
     hThread[thread_count] = CreateThread(NULL, 100 * 1024, (LPTHREAD_START_ROUTINE)a429_channel_send_thread, (LPVOID)&arg_tx[chan_num], 0, NULL);
 
     if(NULL == hThread[thread_count])
@@ -523,11 +519,17 @@ static void tx_thread_creat_all(void)
 
     data_word_num = DIAG_GetNumber("number of 429 words you want to send", INPUT_DATA_FORMAT_DEC, 0, A429_DATAWORD_TEST_NUM);
 
-    for(idx = 0; idx < 16; idx++)
+    for(idx = 1; idx <= 16; idx++)
     {
         arg_tx[idx].device = cur_device;
         arg_tx[idx].data_word_num = data_word_num;
-        arg_tx[idx].chan_num = idx + 1;
+        arg_tx[idx].chan_num = idx;
+
+        if(BHT_SUCCESS != bht_L1_a429_chan_open(cur_device, idx, BHT_L1_CHAN_TYPE_TX))
+        {
+			printf("open tx channel %d failed\n", idx);
+            return 0;
+        }
 
         hThread[thread_count] = CreateThread(NULL, 100 * 1024, (LPTHREAD_START_ROUTINE)a429_channel_send_thread, (LPVOID)&arg_tx[idx], 0, NULL);
 
@@ -553,6 +555,12 @@ static void rx_thread_creat(void)
 
     arg_rx[chan_num].device = cur_device;
 
+    if(BHT_SUCCESS != bht_L1_a429_chan_open(cur_device, chan_num, BHT_L1_CHAN_TYPE_RX))
+    {
+        printf("open tx channel %d failed\n", chan_num);
+        return 0;
+    }
+
     hThread[thread_count] = CreateThread(NULL, 100 * 1024, (LPTHREAD_START_ROUTINE)a429_channel_recv_thread, (LPVOID)&arg_rx[chan_num], 0, NULL);
 
     if(NULL == hThread[thread_count])
@@ -572,11 +580,17 @@ static void rx_thread_creat_all(void)
 
     data_word_num = DIAG_GetNumber("number of 429 words you want to recv", INPUT_DATA_FORMAT_DEC, 0, A429_DATAWORD_TEST_NUM);
 
-    for(idx = 0; idx < 16; idx++)
+    for(idx = 1; idx <= 16; idx++)
     {
 		arg_rx[idx].device = cur_device;
         arg_rx[idx].data_word_num = data_word_num;
-        arg_rx[idx].chan_num = idx + 1;
+        arg_rx[idx].chan_num = idx;
+
+        if(BHT_SUCCESS != bht_L1_a429_chan_open(cur_device, arg_rx[idx].chan_num, BHT_L1_CHAN_TYPE_RX))
+        {
+			printf("open rx channel %d failed\n", idx);
+            return 0;
+        }
 
         hThread[thread_count] = CreateThread(NULL, 100 * 1024, (LPTHREAD_START_ROUTINE)a429_channel_recv_thread, (LPVOID)&arg_rx[idx], 0, NULL);
 
@@ -1936,7 +1950,7 @@ static void device_operate(void)
     bht_L0_u32 device_no;
     
     printf("Device operate menu(current device : %s%d)\n", 
-        (BHT_L0_DEVICE_TYPE_PMCA429 == cur_dtype) ? "PMC429" : "UNKNOWN", cur_device_no);
+        (BHT_L0_DEVICE_TYPE_ARINC429 == cur_dtype) ? "PMC429" : "UNKNOWN", cur_device_no);
     printf("------------------------\n");
     
 
@@ -2009,14 +2023,24 @@ static void device_operate(void)
                                     if(BHT_SUCCESS != bht_L1_device_open(dtype, device_no, 
                                         &handle_list[dtype][device_no], "C://Windows//System32//a429_fpga_top.bin"))
                                         printf("open failed\n");
-                                    else                 
+                                    else
+                                    {
+                                        cur_device = handle_list[dtype][device_no];
+                                        cur_device_no = device_no;
+                                        cur_dtype = dtype;
                                         printf("open success\n");
+                                    }
                                 else
                                     if(BHT_SUCCESS != bht_L1_device_open(dtype, device_no, 
                                         &handle_list[dtype][device_no], NULL))
                                             printf("open failed\n");
-                                    else                 
+                                    else      
+                                    {
+                                        cur_device = handle_list[dtype][device_no];
+                                        cur_device_no = device_no;
+                                        cur_dtype = dtype;
                                         printf("open success\n");
+                                    }
                                 break;
                             }
                         }while(1);
@@ -2030,7 +2054,7 @@ static void device_operate(void)
                             printf("--------%s--------\n", dtype_string[dtype]);
                         for(device_no = 0; device_no < scan_info[dtype]; device_no++)
                             if(NULL != handle_list[dtype][device_no])
-                                printf("%s%d  ", dtype_string[dtype], device_no);
+                                printf("%s%d", dtype_string[dtype], device_no);
                         if(scan_info[dtype])
                             printf("\n");
                     }
@@ -2044,7 +2068,7 @@ static void device_operate(void)
                     {
                         printf("--------%s--------\n", dtype_string[dtype]);
                         for(device_no = 0; device_no < scan_info[dtype]; device_no++)
-                            if(NULL == handle_list[dtype][device_no])
+                            if(NULL != handle_list[dtype][device_no])
                                 printf("%s%d  ", dtype_string[dtype], device_no);
                         printf("\n");
                         device_no = DIAG_GetNumber("device_no",INPUT_DATA_FORMAT_DEC, 0, scan_info[dtype] - 1);
@@ -2265,7 +2289,7 @@ static void menu(bht_L1_device_handle_t device)
             break;
         case OPTION_CONFIG_FROM_XML:
 #ifdef SUPPORT_CONFIG_FROM_XML
-            if(BHT_SUCCESS != bht_L1_a429_config_from_xml(device, "./config.xml"))
+            if(BHT_SUCCESS != bht_L1_device_config_from_xml(device, "./config.xml"))
                 printf("config from xml failed\n");
             else
                 printf("config from xml succ\n");

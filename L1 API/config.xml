@@ -1,0 +1,45 @@
+<!--
+修订记录：
+17-09-27 针对A429新API接口设计，config.xml格式修改-->
+<?xml version="1.0" encoding="utf-8"?>
+<DeviceArray>
+    <Device DevType="ARINC429" DevID="0">
+        <Channel ChanType="TX" ChanID="1" Baud="100000" Verify="EVEN">
+            <Param>
+                <ChannelStatus>Open</ChannelStatus>
+                <LoopEnable>Enable</LoopEnable>
+                <PeriodAttr IsPeriodChannel="Yes"><!-- 如果为周期通道，则在子节点中获取周期 -->
+                    <Period>10</Period>
+                </PeriodAttr>
+                <ErrInjectType>ErrInjectTypeNone</ErrInjectType>
+            </Param>
+        </Channel>
+        <Channel ChanType="RX" ChanID="1" Baud="100000" Verify="EVEN">
+            <Param>
+                <ChannelStatus>Open</ChannelStatus>
+                <FilterEnable>Disable</FilterEnable>
+                <ReceiveMode Mode="List"><!-- 如果为队列模式，则从子节点中获取队列深度阀值和时间阀值 -->
+                    <ListDepthThreshold>512</ListDepthThreshold>
+                    <ListTimeThreshold>50</ListTimeThreshold>
+                </ReceiveMode>
+            </Param>
+        </Channel>
+    </Device>
+</DeviceArray>
+<!-- 
+说明：
+DevType,设备类型,设备类型支持以下类型：1）ARINC429；
+                                       2）MIL-STD-1553B；
+DevID，设备编号，0-15
+ChanID，通道编号，1-16
+Verify,校验方式，ODD(奇校验)，EVEN（偶校验），NONE（无校验）
+ChannelStatus，通道状态，Open,Close,CloseAndClearFIFO
+ErrInjectType，故障注入可以选择以下类型：1）ErrInjectTypeNone，不注入故障；
+                                         2）ErrInjectType31Bit，注入31bit计数故障；
+                                         3）ErrInjectType33Bit，注入33bit计数故障；
+                                         4）ErrInjectType2Gap，注入2Gap字间间隙故障；
+                                         5）ErrInjectTypeParity，注入奇偶校验故障；
+FilterEnable，过滤使能，同“采集模式使能”意义相反，去除“采集模式使能”概念，因为其从字面上不能和接收通道的过滤标签对应
+ReceiveMode,接收模式，List - 队列模式，Sample - 采样模式（采样模式不关注队列深度阀值和队列时间阀值）-->
+
+

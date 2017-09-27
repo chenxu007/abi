@@ -24,6 +24,7 @@ modification history
 #include <stdlib.h>
 #include <fcntl.h>
 #include <io.h>
+#include <assert.h>
 
 #define FPGA_ADDR_EEPROM_WRITE         0x4000
 #define FPGA_ADDR_EEPROM_READ          0x4004

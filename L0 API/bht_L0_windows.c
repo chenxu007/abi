@@ -50,6 +50,26 @@ typedef struct
 
 static bht_L0_u32 devices_cb[16][256][16] = {0}; /* Backplane type, board type, board */
 
+static BOOL DeviceValidate(const PWDC_DEVICE pDev)
+{
+    DWORD i, dwNumAddrSpaces = pDev->dwNumAddrSpaces;
+
+    /* NOTE: You can modify the implementation of this function in order to
+             verify that the device has the resources you expect to find */
+    
+    /* Verify that the device has at least one active address space */
+    for (i = 0; i < dwNumAddrSpaces; i++)
+    {
+        if (WDC_AddrSpaceIsActive(pDev, i))
+            return TRUE;
+    }
+    
+    /* In this sample we accept the device even if it doesn't have any
+     * address spaces */ 
+    printf("Device does not have any active memory or I/O address spaces\n");
+    return TRUE;
+}
+
 static void pci_card_info_dump(WD_PCI_CARD_INFO * card_info)
 {
     bht_L0_u32 index;
@@ -159,7 +179,7 @@ bht_L0_device_scan(bht_L0_dtype_e dtype)
     {
         case BHT_L0_INTERFACE_TYPE_PCI:
             /* device id*/
-            if((BHT_L0_DEVICE_TYPE_PMCA429 == dtype))
+            if((BHT_L0_DEVICE_TYPE_ARINC429 == dtype))
             {
                 device_id = BHT_PCI_DEVICE_ID_PMC429;
             }
@@ -210,9 +230,10 @@ bht_L0_map_memory(bht_L0_device_t *device,
                 if(NULL != device->lld_hand)
                     break;
 
+                BZERO(card_info);
+
                 /* device id*/
-                if((BHT_L0_DEVICE_TYPE_PMCA429 == dtype) || (BHT_L0_DEVICE_TYPE_PCIA429 == dtype) || 
-                   (BHT_L0_DEVICE_TYPE_CPCIA429 == dtype) || (BHT_L0_DEVICE_TYPE_PXIA429 == dtype))
+                if(BHT_L0_DEVICE_TYPE_ARINC429 == dtype)
                 {
                     pci_device_id = BHT_PCI_DEVICE_ID_PMC429;
                 }
@@ -233,9 +254,16 @@ bht_L0_map_memory(bht_L0_device_t *device,
                 if(WD_STATUS_SUCCESS != WDC_PciGetDeviceInfo(&card_info))
                     return BHT_ERR_NO_DEVICE;
                 
-                if(WD_STATUS_SUCCESS != WDC_PciDeviceOpen(&((WDC_DEVICE_HANDLE)device->lld_hand), \
+                if(WD_STATUS_SUCCESS != WDC_PciDeviceOpen((WDC_DEVICE_HANDLE*)&device->lld_hand, \
                     &card_info, NULL, NULL, NULL, NULL))
                     return BHT_ERR_CANT_OPEN_DEV;
+
+                if (!DeviceValidate((PWDC_DEVICE)device->lld_hand))
+                {
+                    DEBUG_PRINTF("Device is not valid\n");
+                    WDC_PciDeviceClose((WDC_DEVICE_HANDLE)device->lld_hand);
+                    return BHT_ERR_CANT_OPEN_DEV;
+                }
             }while(0); 
             break;
         default:
@@ -524,7 +552,7 @@ bht_L0_attach_inthandler(bht_L0_device_t *device,
 {
     DWORD ret;
     bht_L0_u32 result = BHT_SUCCESS;	
-    bht_L0_itype_e itype = device->itype;
+    bht_L0_itype_e itype = device->itype;    
 
     switch(itype)
     {
@@ -553,6 +581,7 @@ bht_L0_attach_inthandler(bht_L0_device_t *device,
 //                (pTrans+2)->cmdTrans = WDC_ADDR_IS_MEM(dev->pAddrDesc+2) ? WM_DWORD : WP_DWORD;
 
 //                (pTrans+2)->Data.Dword = BIT0;
+                
      
 				if(WD_STATUS_SUCCESS != (ret = WDC_IntEnable((WDC_DEVICE_HANDLE)device->lld_hand, \
                     NULL, 0, INTERRUPT_CMD_COPY, (INT_HANDLER)isr, (PVOID)arg, WDC_IS_KP((WDC_DEVICE_HANDLE)device->lld_hand))))
@@ -580,12 +609,19 @@ bht_L0_u32 bht_L0_detach_inthandler(bht_L0_device_t *device)
 {
     bht_L0_u32 result = BHT_SUCCESS;	
     bht_L0_itype_e itype = device->itype;
+    PWDC_DEVICE pDev = (PWDC_DEVICE)device->lld_hand;
     
     switch(itype)
     {
         case BHT_L0_INTERFACE_TYPE_PCI:            
             if(NULL != device->lld_hand)
             {
+                if(!WDC_IntIsEnabled(pDev))
+                {
+                    DEBUG_PRINTF("interrupt is not enable\n");
+                    return BHT_FAILURE;
+                }
+                
                 if(!WDC_IntIsEnabled((WDC_DEVICE_HANDLE)device->lld_hand))
             	{
             		return BHT_ERR_DRIVER_INT_DETACH_FAIL;

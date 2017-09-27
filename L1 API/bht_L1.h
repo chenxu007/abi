@@ -8,7 +8,7 @@ extern "C" {
 #include <bht_L0_types.h>
 #include <bht_L0.h>
 
-//#define SUPPORT_CONFIG_FROM_XML
+#define SUPPORT_CONFIG_FROM_XML
 #define SUPPORT_DEFAULT_PARAM_SAVE
 
 #define BHT_L1_API_VERSION          0x01000000      /* Version V 1.0.0.0 */
@@ -153,15 +153,6 @@ bht_L1_error_to_string(bht_L0_u32 err_num);
  */
 __declspec(dllexport) bht_L0_u32
 bht_L1_device_scan(bht_L0_dtype_e dtype);
-
-/* bht_L1_device_info_get, device scan
-// * @param device_array,the device infomation will store in this array_size
-// * @param array_size, the size of device_array
-// * return the number of deivce which have been finded
-// */
-//__declspec(dllexport) bht_L0_u32
-//bht_L1_device_info_get(bht_L1_device_info_t (*device_array)[], 
-//        bht_L0_u32 array_size);
         
 /* bht_L1_device_open, device open
  * @param device_info, the device infomation that you want to open
@@ -174,23 +165,6 @@ bht_L1_device_open(bht_L0_dtype_e dtype,
         bht_L1_device_handle_t *device,
         const char *filename);
 
-/* bht_L1_device_open, device close
- * @param device_handle, the device handle
- * return BHT_SUCCESS or error
- */
-/*
- * Function bht_L1_device_close
- * Description 
- * @param bht_L1_device_handle_t device_handle  
- * Output        : None
- * @Return 
- * Others        : 
- * Record
- * 1.Date        : 20170915
- *   Author      : chenxu
- *   Modification: Created function
-
-*****************************************************************************/
 __declspec(dllexport) bht_L0_u32
 bht_L1_device_close(bht_L1_device_handle_t device);
 
@@ -201,19 +175,6 @@ bht_L1_device_close(bht_L1_device_handle_t device);
 __declspec(dllexport) bht_L0_u32
 bht_L1_device_reset(bht_L1_device_handle_t device);
 
-/* bht_L1_device_pciload, device fpga logic load from pci
-// * @param device_handle, the device handle
-// * @param filename, the name of file (fpga bin file with path) which you want to load
-// * return BHT_SUCCESS or error
-// */
-//__declspec(dllexport) bht_L0_u32
-//bht_L1_device_pciload(bht_L1_device_handle_t device,
-//        const bht_L0_u8 *filename);
-        
-/* bht_L1_device_logic_version, get logic version
- * @param device_handle, the device handle
- * return logic version
- */
 __declspec(dllexport) bht_L0_u32
 bht_L1_device_logic_version(bht_L1_device_handle_t device,
 		bht_L0_u32 *version);
@@ -355,7 +316,7 @@ bht_L1_a429_rx_chan_filter_label(bht_L1_device_handle_t device,
         bht_L1_param_opt_e param_opt);        
         
 __declspec(dllexport) bht_L0_u32 
-bht_L1_a429_rx_chan_recv(bht_L0_device_t *device, 
+bht_L1_a429_rx_chan_recv(bht_L1_device_handle_t device, 
         bht_L0_u32 chan_num, 
         bht_L1_a429_rxp_t *rxp_buf, 
         bht_L0_u32 max_rxp, 
@@ -405,7 +366,7 @@ bht_L1_a429_tx_chan_err_inject(bht_L1_device_handle_t device,
         bht_L1_param_opt_e param_opt);
 
 __declspec(dllexport) bht_L0_u32
-bht_L1_a429_chan_dump(bht_L0_device_t *device, 
+bht_L1_a429_chan_dump(bht_L1_device_handle_t device, 
         bht_L0_u32 chan_num, 
         bht_L1_chan_type_e type);
         
@@ -418,8 +379,32 @@ bht_L1_a429_chan_dump(bht_L0_device_t *device,
 __declspec(dllexport) bht_L0_u32
 bht_L1_init(void);
 
+/* fpga eeprom api */
+__declspec(dllexport) bht_L0_u32
+bht_L1_bd_fpga_eeprom_read(bht_L1_device_handle_t device,
+        bht_L0_u16 addr,
+        bht_L0_u8 *data);
+
+__declspec(dllexport) bht_L0_u32
+bht_L1_bd_fpga_eeprom_write(bht_L1_device_handle_t device,
+        bht_L0_u16 addr,
+        bht_L0_u8 data);
+
 __declspec(dllexport) bht_L0_u32
 bht_L1_bd_fpga_eeprom_test(bht_L1_device_handle_t device);
+        
+/* plx eeprom api */
+__declspec(dllexport) bht_L0_u32 
+bht_L1_bd_plx_eeprom_read(bht_L1_device_handle_t device,
+        bht_L0_u32 addr,
+        bht_L0_u16 *buf, 
+        bht_L0_u32 count);
+        
+__declspec(dllexport) bht_L0_u32 
+bht_L1_bd_plx_eeprom_write(bht_L1_device_handle_t device,
+        bht_L0_u32 addr,
+        bht_L0_u16 *buf, 
+        bht_L0_u32 count);
 
 #ifdef __cplusplus
 }
