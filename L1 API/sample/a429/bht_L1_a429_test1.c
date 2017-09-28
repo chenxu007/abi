@@ -384,7 +384,13 @@ static DWORD WINAPI a429_channel_send_thread(const void * arg)
 	bht_L0_u32 result = BHT_SUCCESS;
 
 	printf("tx channel[%d] start\n", chan_num);
-    
+
+    if(BHT_SUCCESS != (result = bht_L1_a429_chan_open(device, chan_num, BHT_L1_CHAN_TYPE_TX)))
+    {
+        printf("close tx channel %d failed,result = %d(%s)\n", chan_num, result, bht_L1_error_to_string(result));
+        return 0;
+    }
+
 	bht_L0_msleep(20);
 
 	while(idx < data_word_num)
@@ -403,13 +409,9 @@ static DWORD WINAPI a429_channel_send_thread(const void * arg)
 				printf("tx channel[%d] send %d/%d\n", chan_num, idx/1024, data_word_num/1024);
         }
 	}
+    
+    bht_L0_msleep(2000);
 
-//    if(BHT_SUCCESS != bht_L1_a429_chan_close(device, chan_num, BHT_L1_CHAN_TYPE_TX))
-//    {
-//        printf("close tx channel %d failed\n", chan_num);
-//        return 0;
-//    }
-    bht_L0_msleep(1000);
     printf("tx channel[%d] send complete\n", chan_num);
 
 	return 0;
@@ -430,6 +432,12 @@ static DWORD WINAPI a429_channel_recv_thread(const void * arg)
 
     printf("rx channel[%d] start\n", chan_num);
 	//system("pause");
+
+    if(BHT_SUCCESS != (result = bht_L1_a429_chan_open(device, chan_num, BHT_L1_CHAN_TYPE_RX)))
+    {
+        printf("open tx channel %d failed,result = %d(%s)\n", chan_num, result, bht_L1_error_to_string(result));
+        return 0;
+    }
     
 	while(tot_num < data_word_num)
 	{
@@ -458,11 +466,11 @@ static DWORD WINAPI a429_channel_recv_thread(const void * arg)
     else
         printf("rx channel[%d] recv total[%d] bytes, do not recv complete[%d]!!!\n", chan_num, tot_num, A429_DATAWORD_TEST_NUM);
 
-//    if(BHT_SUCCESS != bht_L1_a429_chan_close(device, chan_num, BHT_L1_CHAN_TYPE_RX))
-//    {
-//        printf("close tx channel %d failed\n", chan_num);
-//        return 0;
-//    }
+    if(BHT_SUCCESS != bht_L1_a429_chan_close(device, chan_num, BHT_L1_CHAN_TYPE_RX))
+    {
+        printf("close tx channel %d failed\n", chan_num);
+        return 0;
+    }
 
 	return 0;
 }
@@ -473,6 +481,7 @@ static void tx_thread_creat(void)
     bht_L0_u32 chan_num;
     bht_L0_u8 sInput[256];
     bht_L0_s32 iRet;
+    HANDLE thread_hand;
 
     chan_num = input_channel_num(BHT_L1_CHAN_TYPE_TX);
 
@@ -494,15 +503,10 @@ static void tx_thread_creat(void)
     arg_tx[chan_num].device = cur_device;
     arg_tx[chan_num].chan_num = chan_num;
 
-    if(BHT_SUCCESS != bht_L1_a429_chan_open(cur_device, chan_num, BHT_L1_CHAN_TYPE_TX))
-    {
-        printf("open tx channel %d failed\n", chan_num);
-        return 0;
-    }
+//    hThread[thread_count] = 
+        thread_hand = CreateThread(NULL, 100 * 1024, (LPTHREAD_START_ROUTINE)a429_channel_send_thread, (LPVOID)&arg_tx[chan_num], 0, NULL);
 
-    hThread[thread_count] = CreateThread(NULL, 100 * 1024, (LPTHREAD_START_ROUTINE)a429_channel_send_thread, (LPVOID)&arg_tx[chan_num], 0, NULL);
-
-    if(NULL == hThread[thread_count])
+    if(NULL == thread_hand)
 	{
 		printf("CreateThread TX channel[%d] send thread failed\n", arg_tx[chan_num].chan_num);
 	}
@@ -516,6 +520,7 @@ static void tx_thread_creat_all(void)
     DWORD option;
     bht_L0_u32 idx;
     bht_L0_u32 data_word_num;
+    HANDLE thread_hand;
 
     data_word_num = DIAG_GetNumber("number of 429 words you want to send", INPUT_DATA_FORMAT_DEC, 0, A429_DATAWORD_TEST_NUM);
 
@@ -525,15 +530,9 @@ static void tx_thread_creat_all(void)
         arg_tx[idx].data_word_num = data_word_num;
         arg_tx[idx].chan_num = idx;
 
-        if(BHT_SUCCESS != bht_L1_a429_chan_open(cur_device, idx, BHT_L1_CHAN_TYPE_TX))
-        {
-			printf("open tx channel %d failed\n", idx);
-            return 0;
-        }
+        thread_hand = CreateThread(NULL, 100 * 1024, (LPTHREAD_START_ROUTINE)a429_channel_send_thread, (LPVOID)&arg_tx[idx], 0, NULL);
 
-        hThread[thread_count] = CreateThread(NULL, 100 * 1024, (LPTHREAD_START_ROUTINE)a429_channel_send_thread, (LPVOID)&arg_tx[idx], 0, NULL);
-
-        if(NULL == hThread[thread_count])
+        if(NULL == thread_hand)
     	{
     		printf("CreateThread TX channel[%d] send thread failed\n", arg_tx[idx].chan_num);
             break;
@@ -547,6 +546,7 @@ static void rx_thread_creat(void)
 {
     DWORD option;
     bht_L0_u32 chan_num;
+    HANDLE thread_hand;
 
     chan_num = input_channel_num(BHT_L1_CHAN_TYPE_RX);
     arg_rx[chan_num].chan_num = chan_num;    
@@ -555,15 +555,9 @@ static void rx_thread_creat(void)
 
     arg_rx[chan_num].device = cur_device;
 
-    if(BHT_SUCCESS != bht_L1_a429_chan_open(cur_device, chan_num, BHT_L1_CHAN_TYPE_RX))
-    {
-        printf("open tx channel %d failed\n", chan_num);
-        return 0;
-    }
+    thread_hand = CreateThread(NULL, 100 * 1024, (LPTHREAD_START_ROUTINE)a429_channel_recv_thread, (LPVOID)&arg_rx[chan_num], 0, NULL);
 
-    hThread[thread_count] = CreateThread(NULL, 100 * 1024, (LPTHREAD_START_ROUTINE)a429_channel_recv_thread, (LPVOID)&arg_rx[chan_num], 0, NULL);
-
-    if(NULL == hThread[thread_count])
+    if(NULL == thread_hand)
 	{
 		printf("CreateThread RX channel[%d] recv thread failed\n", arg_tx[chan_num].chan_num);
 	}
@@ -577,6 +571,7 @@ static void rx_thread_creat_all(void)
     DWORD option;
     bht_L0_u32 idx;
     bht_L0_u32 data_word_num;
+    HANDLE thread_hand;
 
     data_word_num = DIAG_GetNumber("number of 429 words you want to recv", INPUT_DATA_FORMAT_DEC, 0, A429_DATAWORD_TEST_NUM);
 
@@ -586,15 +581,9 @@ static void rx_thread_creat_all(void)
         arg_rx[idx].data_word_num = data_word_num;
         arg_rx[idx].chan_num = idx;
 
-        if(BHT_SUCCESS != bht_L1_a429_chan_open(cur_device, arg_rx[idx].chan_num, BHT_L1_CHAN_TYPE_RX))
-        {
-			printf("open rx channel %d failed\n", idx);
-            return 0;
-        }
+        thread_hand = CreateThread(NULL, 100 * 1024, (LPTHREAD_START_ROUTINE)a429_channel_recv_thread, (LPVOID)&arg_rx[idx], 0, NULL);
 
-        hThread[thread_count] = CreateThread(NULL, 100 * 1024, (LPTHREAD_START_ROUTINE)a429_channel_recv_thread, (LPVOID)&arg_rx[idx], 0, NULL);
-
-        if(NULL == hThread[thread_count])
+        if(NULL == thread_hand)
     	{
     		printf("CreateThread RX channel[%d] recv thread failed\n", arg_tx[idx].chan_num);
             break;
@@ -2073,14 +2062,14 @@ static void device_operate(void)
                         printf("\n");
                         device_no = DIAG_GetNumber("device_no",INPUT_DATA_FORMAT_DEC, 0, scan_info[dtype] - 1);
 
-                        if((handle_list[dtype][device_no]) && (BHT_SUCCESS == bht_L1_device_close(handle_list[dtype][device_no])))
+                        if((handle_list[dtype][device_no]) && (BHT_SUCCESS == (result = bht_L1_device_close(handle_list[dtype][device_no]))))
                         {
                             handle_list[dtype][device_no] = NULL;
                             printf("close success\n");
                         }
                         else
                         {
-                            printf("close failed\n");
+                            printf("close failed, result = %d(%s)\n", result, bht_L1_error_to_string(result));
                         }
                     }  
                     break;

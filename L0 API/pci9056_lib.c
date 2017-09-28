@@ -29,6 +29,7 @@
 typedef struct {
     PCI9056_INT_HANDLER   funcDiagIntHandler;
     PCI9056_EVENT_HANDLER funcDiagEventHandler;
+    void *device;
 } PCI9056_DEV_CTX, *PPCI9056_DEV_CTX;
 /* TODO: You can add fields to store additional device-specific information */
 
@@ -251,9 +252,10 @@ static void DLLCALLCONV PCI9056_IntHandler(PVOID pData)
     intResult.waitResult = (WD_INTERRUPT_WAIT_RESULT)pDev->Int.fStopped;
     intResult.dwEnabledIntType = WDC_GET_ENABLED_INT_TYPE(pDev);
     intResult.dwLastMessage = WDC_GET_ENABLED_INT_LAST_MSG(pDev);
-    
+
+//    printf("device = %p\n", pDevCtx->device);
     /* Execute the diagnostics application's interrupt handler routine */
-    pDevCtx->funcDiagIntHandler((WDC_DEVICE_HANDLE)pDev, &intResult);
+    pDevCtx->funcDiagIntHandler(pDevCtx->device, &intResult);
 }
 
 static BOOL IsItemExists(PWDC_DEVICE pDev, ITEM_TYPE item)
@@ -270,7 +272,7 @@ static BOOL IsItemExists(PWDC_DEVICE pDev, ITEM_TYPE item)
     return FALSE;
 }
 
-DWORD PCI9056_IntEnable(WDC_DEVICE_HANDLE hDev, PCI9056_INT_HANDLER funcIntHandler)
+DWORD PCI9056_IntEnable(WDC_DEVICE_HANDLE hDev, PCI9056_INT_HANDLER funcIntHandler, void *device)
 {
     DWORD dwStatus;
     PWDC_DEVICE pDev = (PWDC_DEVICE)hDev;
@@ -306,12 +308,14 @@ DWORD PCI9056_IntEnable(WDC_DEVICE_HANDLE hDev, PCI9056_INT_HANDLER funcIntHandl
     /* Store the diag interrupt handler routine, which will be executed by
        PCI9056_IntHandler() when an interrupt is received */
     pDevCtx->funcDiagIntHandler = funcIntHandler;
+    pDevCtx->device = device;
+    printf("device = %p\n", device);
     
     /* Enable the interrupts */
     /* NOTE: When adding read transfer commands, set the INTERRUPT_CMD_COPY flag
              in the 4th argument (dwOptions) passed to WDC_IntEnable() */
     dwStatus = WDC_IntEnable(hDev, NULL, 0, 0,
-        PCI9056_IntHandler, (PVOID)pDev, WDC_IS_KP(hDev));
+        PCI9056_IntHandler, (PVOID)hDev, WDC_IS_KP(hDev));
         
     if (WD_STATUS_SUCCESS != dwStatus)
     {

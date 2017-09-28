@@ -2,7 +2,7 @@
 #define __BHT_L0_TYPES_H__
 
 #ifndef NULL
-#define NULL 0UL
+#define NULL ((void*)0)
 #endif
 
 #ifndef OK

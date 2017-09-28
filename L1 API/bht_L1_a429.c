@@ -40,6 +40,14 @@ do\
 #define DEBUG_PRINTF(x)
 #endif
 
+#if 0
+bht_L0_u32 
+bht_L1_a429_isr(bht_L0_device_t *device, void *arg)
+{
+    printf("bht_L1_a429_isr device=%p\n", device);
+    return 0;
+}
+#else
 bht_L0_u32 
 bht_L1_a429_isr(bht_L0_device_t *device)
 {
@@ -50,8 +58,6 @@ bht_L1_a429_isr(bht_L0_device_t *device)
     bht_L1_a429_rxp_t rxp;
     bht_L1_a429_cb_t *cb = device0->private;
     bht_L1_a429_chan_data_t *chan_data;
-
-    printf("%s\n", __FUNCTION__);
     
     BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
 
@@ -148,6 +154,7 @@ release_sem:
 end:
 	return NULL;
 }
+#endif
 
 static bht_L0_u32
 bht_L1_a429_chan_reset(bht_L0_device_t *device, 
@@ -165,7 +172,8 @@ bht_L1_a429_chan_reset(bht_L0_device_t *device,
     
     if(BHT_L1_CHAN_TYPE_RX == chan_type)
     {
-        chan_data = cb->chan_data + (chan_num - 1);
+        chan_num += (BHT_L1_A429_CHAN_MAX - 1);
+        chan_data = cb->chan_data + chan_num;
 
 //        DEBUG_PRINTF("cb->chan_data = %p, chan_data = %p, chan_num = %d\n", \
 //            cb->chan_data, chan_data, chan_num);
@@ -420,7 +428,7 @@ alloc_err:
 bht_L0_u32
 bht_L1_a429_private_free(bht_L0_device_t *device)
 {
-    bht_L0_u32 index;
+    bht_L0_u32 value, index;
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L1_a429_cb_t *cb;
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
@@ -430,6 +438,16 @@ bht_L1_a429_private_free(bht_L0_device_t *device)
 
     cb = device0->private;
 
+    /* diable 9056 interrupt */
+    value = 0;
+    if(BHT_SUCCESS != (result = bht_L0_write_setupmem32(device0, PLX9056_INTCSR, &value, 1)))
+        return result;
+
+    /* clear fpga pci interrupt */
+    value = BIT0;
+    BHT_L1_WRITE_MEM32(device0, BHT_A429_INTR_CLR, &value, 1, result, end);
+    
+    
     DEBUG_PRINTF("start datach interrupt\n");
     if(BHT_SUCCESS != (result = bht_L0_detach_inthandler(device0)))
         return result;
@@ -452,8 +470,8 @@ bht_L1_a429_private_free(bht_L0_device_t *device)
         free(cb);
 
     device0->private = NULL;
-
-    return BHT_SUCCESS;
+end:
+    return result;
 }
 
 bht_L0_u32 

@@ -371,6 +371,7 @@ bht_L1_device_open(bht_L0_dtype_e dtype,
         goto open_err;
     }
 
+    DEBUG_PRINTF("open a device handle %p\n", device0);
     *device = device0;
     return result;
     
@@ -386,6 +387,7 @@ bht_L1_device_close(bht_L1_device_handle_t device)
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t *)device;
 
+    DEBUG_PRINTF("close a device handle %p\n", device0);
     if(NULL == device0)
         return BHT_ERR_BAD_INPUT;           
 
