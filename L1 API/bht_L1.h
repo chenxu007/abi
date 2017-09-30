@@ -131,6 +131,12 @@ typedef struct
 	bht_L0_u32 data;
 }bht_L1_a429_rxp_t;
 
+__declspec(dllexport) bht_L0_u32
+bht_L1_init(void);
+
+__declspec(dllexport) bht_L0_u32
+bht_L1_uninit(void);
+
 /* bht_L1_error_to_string, get the error message with error number
  * @param err_num, the error number
  * return, one message pointer will be returned
@@ -367,8 +373,6 @@ bht_L1_a429_chan_dump(bht_L1_device_handle_t device,
 
 
 /* board */
-__declspec(dllexport) bht_L0_u32
-bht_L1_init(void);
 
 /* fpga eeprom api */
 __declspec(dllexport) bht_L0_u32

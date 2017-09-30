@@ -360,6 +360,8 @@ bht_L1_device_reset(bht_L1_device_handle_t device)
 {
     bht_L0_device_t *device0 = (bht_L0_device_t *)device;
 
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+    
     if(NULL != device0->reset)
         return device0->reset(device0);
     else

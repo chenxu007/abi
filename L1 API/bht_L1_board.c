@@ -39,6 +39,12 @@ bht_L1_init(void)
 }
 
 bht_L0_u32
+bht_L1_uninit(void)
+{
+	return bht_L0_uninit();
+}
+
+bht_L0_u32
 bht_L1_bd_fpga_eeprom_read(bht_L1_device_handle_t device,
         bht_L0_u16 addr,
         bht_L0_u8 *data)

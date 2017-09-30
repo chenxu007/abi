@@ -48,6 +48,8 @@ typedef struct {
     void *arg;
 } PCI9056_DEV_CTX, *PPCI9056_DEV_CTX;
 
+static bht_L0_u32 is_wd_lib_inited = 0;
+
 static BOOL DeviceValidate(const PWDC_DEVICE pDev)
 {
     DWORD i, dwNumAddrSpaces = pDev->dwNumAddrSpaces;
@@ -450,7 +452,6 @@ static void pci_card_info_dump(WD_PCI_CARD_INFO * card_info)
 bht_L0_u32 
 bht_L0_init(void)
 {
-    static bht_L0_u32 is_wd_lib_inited = 0;
     DWORD dwStatus = WD_STATUS_SUCCESS; 
 
     if(is_wd_lib_inited)
@@ -482,6 +483,27 @@ bht_L0_init(void)
 #endif
 
     is_wd_lib_inited = 1;
+
+    return BHT_SUCCESS;
+}
+
+bht_L0_u32 
+bht_L0_uninit(void)
+{
+    DWORD dwStatus = WD_STATUS_SUCCESS; 
+
+    if(!is_wd_lib_inited)
+        return BHT_SUCCESS;
+ 
+    /* Uninit the WDC library and close the handle to WinDriver */
+    dwStatus = WDC_DriverClose();
+    if (WD_STATUS_SUCCESS != dwStatus)
+    {
+        DEBUG_PRINTF("Failed to uninit the WDC library. Error 0x%lx\n",dwStatus);
+        return BHT_ERR_LOW_LEVEL_DRIVER_ERR;
+    }
+    
+    is_wd_lib_inited = 0;
 
     return BHT_SUCCESS;
 }

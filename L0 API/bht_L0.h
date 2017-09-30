@@ -216,6 +216,9 @@ extern const bht_L0_dtypeinfo_t bht_L0_dtypeinfo_items[BHT_L0_DEVICE_TYPE_MAX];
 __declspec(dllexport) bht_L0_u32 
 bht_L0_init(void);
 
+__declspec(dllexport) bht_L0_u32 
+bht_L0_uninit(void);
+
 __declspec(dllexport)  void 
 bht_L0_msleep(bht_L0_u32 msdelay);
 
