@@ -22,7 +22,6 @@ extern "C" {
 #endif
 
 #include <bht_L0_types.h>
-#include <bht_L0_device.h>
 
 #define BHT_L0_API_VERSION          0x01000000      /* Version V 1.0.0.0 */
 
@@ -186,7 +185,6 @@ extern "C" {
 #define BHT_ERR_DRIVER_INT_DETACH_FAIL  6
 #define BHT_ERR_DRIVER_READ_FAIL		7		/*!< \brief Driver read memory failure */
 #define BHT_ERR_DRIVER_WRITE_FAIL		8		/*!< \brief Driver write memory failure */
-#define BHT_ERR_SEM_CREAT_FAIL          9
 #define BHT_ERR_NO_DEVICE				10		/*!< \brief Device not found */
 #define BHT_ERR_CANT_OPEN_DEV			11		/*!< \brief Can't open device */
 #define BHT_ERR_DEV_NOT_INITED			12		/*!< \brief Device not initialized */
@@ -208,6 +206,12 @@ extern "C" {
 
 #define BHT_ERR_UNSUPPORTED_DEVICE_TYPE 27
 
+#define BHT_ERR_SEM_TAKE                28
+#define BHT_ERR_SEM_GIVE                29
+#define BHT_ERR_SEM_DESTROY             30
+#define BHT_ERR_SEM_CREAT_FAIL          31
+
+extern const bht_L0_dtypeinfo_t bht_L0_dtypeinfo_items[BHT_L0_DEVICE_TYPE_MAX];
 
 __declspec(dllexport) bht_L0_u32 
 bht_L0_init(void);

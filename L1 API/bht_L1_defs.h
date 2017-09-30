@@ -42,4 +42,11 @@
         }\
 	}while(0)
 
+#define BHT_L1_DEVICE_STATUS_CHK_RTN(device)\
+    do\
+    {\
+        if((!device) || (BHT_L0_DEVICE_STATUS_OPENED != device->device_status))\
+            return BHT_ERR_DEVICE_NOT_OPEN;\
+    }while(0)
+
 #endif

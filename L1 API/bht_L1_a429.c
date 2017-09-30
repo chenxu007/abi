@@ -16,7 +16,6 @@ modification history
 
 #include <bht_L0.h>
 #include <bht_L0_types.h>
-#include <bht_L0_device.h>
 #include <bht_L0_plx9056.h>
 #include <bht_L1.h>
 #include <bht_L1_a429.h>
@@ -40,14 +39,6 @@ do\
 #define DEBUG_PRINTF(x)
 #endif
 
-#if 0
-bht_L0_u32 
-bht_L1_a429_isr(bht_L0_device_t *device, void *arg)
-{
-    printf("bht_L1_a429_isr device=%p\n", device);
-    return 0;
-}
-#else
 bht_L0_u32 
 bht_L1_a429_isr(bht_L0_device_t *device)
 {
@@ -58,6 +49,8 @@ bht_L1_a429_isr(bht_L0_device_t *device)
     bht_L1_a429_rxp_t rxp;
     bht_L1_a429_cb_t *cb = device0->private;
     bht_L1_a429_chan_data_t *chan_data;
+
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
     
     BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
 
@@ -154,7 +147,6 @@ release_sem:
 end:
 	return NULL;
 }
-#endif
 
 static bht_L0_u32
 bht_L1_a429_chan_reset(bht_L0_device_t *device, 
@@ -168,7 +160,7 @@ bht_L1_a429_chan_reset(bht_L0_device_t *device,
     bht_L1_a429_chan_data_t *chan_data;
     bht_L1_a429_send_stat_t *send_stat;   
 
-    BHT_L1_A429_CHAN_NUM_CHECK(chan_num);
+    BHT_L1_A429_CHAN_NUM_CHK_RTN(chan_num);
     
     if(BHT_L1_CHAN_TYPE_RX == chan_type)
     {
@@ -215,8 +207,8 @@ bht_L1_a429_reset(bht_L0_device_t *device)
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
     
-    if(NULL == device0)
-        return BHT_ERR_BAD_INPUT;
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+
     if(BHT_L0_LOGIC_TYPE_A429 != device0->ltype)
         return BHT_ERR_BAD_INPUT;
     cb = (bht_L1_a429_cb_t *)device0->private;
@@ -482,6 +474,8 @@ bht_L1_a429_irigb_mode(bht_L1_device_handle_t device,
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
 
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+
     BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
 
 	if (BHT_L1_PARAM_OPT_SET == param_opt)
@@ -505,6 +499,8 @@ bht_L1_a429_irigb_time(bht_L0_device_t *device,
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
 
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+    
     BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
 
 	if (BHT_L1_PARAM_OPT_SET == param_opt)
@@ -532,6 +528,8 @@ bht_L1_a429_get_totchans(bht_L1_device_handle_t device,
 
     *totchans = 0;
 
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+
     BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
 
     BHT_L1_READ_MEM32(device0, BHT_A429_CARD_TYPE, &value, 1, result, release_sem);
@@ -557,11 +555,9 @@ bht_L1_a429_chan_ctrl(bht_L1_device_handle_t device,
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
 
-	BHT_L1_A429_CHAN_NUM_CHECK(chan_num);
-
-	BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
+	BHT_L1_A429_CHAN_NUM_CHK_RTN(chan_num);	
 	
-    BHT_L1_A429_CFG(device0, BHT_L1_ENABLE, result, release_sem);
+    BHT_L1_A429_CFG(device0, BHT_L1_ENABLE, result, end);
 
 	chan_num = (BHT_L1_CHAN_TYPE_RX == chan_type) ? (chan_num + BHT_L1_A429_CHAN_MAX - 1) :\
 		(chan_num - 1);
@@ -575,9 +571,7 @@ bht_L1_a429_chan_ctrl(bht_L1_device_handle_t device,
 
 	BHT_L1_WRITE_MEM32(device0, BHT_A429_CHANNEL_CFG, &value, 1, result, cfg_disable);	
 cfg_disable:
-	BHT_L1_A429_CFG(device0, BHT_L1_DISABLE, result, release_sem);
-release_sem:
-	BHT_L1_SEM_GIVE(device0->mutex_sem, result, end);    
+	BHT_L1_A429_CFG(device0, BHT_L1_DISABLE, result, end); 
 end:
 	return result;
 }
@@ -587,9 +581,19 @@ bht_L1_a429_chan_open(bht_L1_device_handle_t device,
         bht_L0_u32 chan_num,
         bht_L1_chan_type_e chan_type)
 {
+    bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
 
-	return bht_L1_a429_chan_ctrl(device0, chan_num, chan_type, BHT_L1_A429_CHAN_STAT_OPEN);
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+
+    BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
+
+	result = bht_L1_a429_chan_ctrl(device0, chan_num, chan_type, BHT_L1_A429_CHAN_STAT_OPEN);
+
+release_sem:
+	BHT_L1_SEM_GIVE(device0->mutex_sem, result, end);   
+end:
+    return result;
 }
 
 bht_L0_u32 
@@ -597,9 +601,19 @@ bht_L1_a429_chan_close(bht_L1_device_handle_t device,
         bht_L0_u32 chan_num,
         bht_L1_chan_type_e chan_type)
 {
+    bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
 
-	return bht_L1_a429_chan_ctrl(device0, chan_num, chan_type, BHT_L1_A429_CHAN_STAT_CLOSE);
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+
+    BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
+
+	result = bht_L1_a429_chan_ctrl(device0, chan_num, chan_type, BHT_L1_A429_CHAN_STAT_CLOSE);
+
+release_sem:
+	BHT_L1_SEM_GIVE(device0->mutex_sem, result, end);   
+end:
+    return result;
 }
 
 bht_L0_u32 
@@ -607,9 +621,19 @@ bht_L1_a429_chan_close_and_clear_fifo(bht_L1_device_handle_t device,
         bht_L0_u32 chan_num,
         bht_L1_chan_type_e chan_type)
 {
+    bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
 
-	return bht_L1_a429_chan_ctrl(device0, chan_num, chan_type, BHT_L1_A429_CHAN_STAT_CLOSE_AND_CLEAR_FIFO);
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+
+    BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
+
+	result = bht_L1_a429_chan_ctrl(device0, chan_num, chan_type, BHT_L1_A429_CHAN_STAT_CLOSE_AND_CLEAR_FIFO);
+
+release_sem:
+	BHT_L1_SEM_GIVE(device0->mutex_sem, result, end);   
+end:
+    return result;
 }
 
 bht_L0_u32 
@@ -622,7 +646,9 @@ bht_L1_a429_chan_get_stat(bht_L1_device_handle_t device,
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
 
-	BHT_L1_A429_CHAN_NUM_CHECK(chan_num);
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+    
+	BHT_L1_A429_CHAN_NUM_CHK_RTN(chan_num);
 
 	BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
 	
@@ -657,7 +683,9 @@ bht_L1_a429_chan_baud(bht_L1_device_handle_t device,
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
     bht_L1_a429_slope_e slope;
 
-	BHT_L1_A429_CHAN_NUM_CHECK(chan_num);
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+    
+	BHT_L1_A429_CHAN_NUM_CHK_RTN(chan_num);
     
 	BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
     
@@ -722,7 +750,9 @@ bht_L1_a429_chan_parity(bht_L1_device_handle_t device,
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
 
-	BHT_L1_A429_CHAN_NUM_CHECK(chan_num);
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+    
+	BHT_L1_A429_CHAN_NUM_CHK_RTN(chan_num);
 
 	BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
 	
@@ -781,7 +811,9 @@ bht_L1_a429_chan_get_mib(bht_L1_device_handle_t device,
     #define BHT_A429_MIB_BASE_ADDR    BHT_A429_NUM_WORD_CHANNEL0
     #define BHT_A429_MIB_CHANNEL_STEP   0x00000010
 
-    BHT_L1_A429_CHAN_NUM_CHECK(chan_num);
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+    
+    BHT_L1_A429_CHAN_NUM_CHK_RTN(chan_num);
 
 	BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
 
@@ -806,7 +838,9 @@ bht_L1_a429_chan_clear_mib(bht_L1_device_handle_t device,
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
 
-    BHT_L1_A429_CHAN_NUM_CHECK(chan_num);
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+    
+    BHT_L1_A429_CHAN_NUM_CHK_RTN(chan_num);
 
 	BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
 
@@ -836,7 +870,9 @@ bht_L1_a429_chan_loop(bht_L1_device_handle_t device,
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
 
-    BHT_L1_A429_CHAN_NUM_CHECK(chan_num);
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+    
+    BHT_L1_A429_CHAN_NUM_CHK_RTN(chan_num);
 
 	BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
 
@@ -872,7 +908,9 @@ bht_L1_a429_rx_chan_recv_mode(bht_L1_device_handle_t device,
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
     bht_L1_a429_cb_t *cb = device0->private;
 
-	BHT_L1_A429_CHAN_NUM_CHECK(chan_num);
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+    
+	BHT_L1_A429_CHAN_NUM_CHK_RTN(chan_num);
 
 	BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
 
@@ -918,7 +956,9 @@ bht_L1_a429_rx_chan_int_threshold(bht_L1_device_handle_t device,
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
 
-	BHT_L1_A429_CHAN_NUM_CHECK(chan_num);
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+    
+	BHT_L1_A429_CHAN_NUM_CHK_RTN(chan_num);
 
 	BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
 	
@@ -958,7 +998,9 @@ bht_L1_a429_rx_chan_filter(bht_L1_device_handle_t device,
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
 
-	BHT_L1_A429_CHAN_NUM_CHECK(chan_num);
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+    
+	BHT_L1_A429_CHAN_NUM_CHK_RTN(chan_num);
 
 	BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
 	
@@ -1004,7 +1046,9 @@ bht_L1_a429_rx_chan_filter_label(bht_L1_device_handle_t device,
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
 
-	BHT_L1_A429_CHAN_NUM_CHECK(chan_num);
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+    
+	BHT_L1_A429_CHAN_NUM_CHK_RTN(chan_num);
 
 	BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);    
 
@@ -1058,7 +1102,9 @@ bht_L1_a429_rx_chan_recv(bht_L1_device_handle_t device,
     bht_L0_s32 ratio = 0;
     bht_L1_a429_cb_t *cb;
 
-    BHT_L1_A429_CHAN_NUM_CHECK(chan_num);
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+    
+    BHT_L1_A429_CHAN_NUM_CHK_RTN(chan_num);
     
     if((timeout_ms < BHT_L1_WAIT_FOREVER) || (max_rxp == 0))
         return BHT_ERR_BAD_INPUT;
@@ -1118,7 +1164,9 @@ bht_L1_a429_rx_chan_stat(bht_L0_device_t *device,
     bht_L1_a429_cb_t *cb;
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
 
-    BHT_L1_A429_CHAN_NUM_CHECK(chan_num);
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+    
+    BHT_L1_A429_CHAN_NUM_CHK_RTN(chan_num);
 
     if(NULL == (cb = (bht_L1_a429_cb_t*) device0->private))
         return BHT_ERR_BAD_INPUT;
@@ -1140,7 +1188,9 @@ bht_L1_a429_tx_chan_send_mode(bht_L1_device_handle_t device,
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
 
-	BHT_L1_A429_CHAN_NUM_CHECK(chan_num);
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+    
+	BHT_L1_A429_CHAN_NUM_CHK_RTN(chan_num);
 
 	BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
 	
@@ -1191,7 +1241,9 @@ bht_L1_a429_tx_chan_period(bht_L1_device_handle_t device,
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
 
-    BHT_L1_A429_CHAN_NUM_CHECK(chan_num);
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+    
+    BHT_L1_A429_CHAN_NUM_CHK_RTN(chan_num);
 
 	BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end); 
 
@@ -1233,7 +1285,9 @@ bht_L1_a429_tx_chan_send(bht_L1_device_handle_t device,
     bht_L1_a429_send_stat_t * send_stat = NULL;
     bht_L0_u32 step = 0;
 
-    BHT_L1_A429_CHAN_NUM_CHECK(chan_num);
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+    
+    BHT_L1_A429_CHAN_NUM_CHK_RTN(chan_num);
     
 	BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end); 
 
@@ -1266,7 +1320,9 @@ bht_L1_a429_tx_chan_update_data(bht_L1_device_handle_t device,
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
 
-    BHT_L1_A429_CHAN_NUM_CHECK(chan_num);
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+    
+    BHT_L1_A429_CHAN_NUM_CHK_RTN(chan_num);
 
 	BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end); 
 
@@ -1290,7 +1346,9 @@ bht_L1_a429_tx_chan_start(bht_L1_device_handle_t device,
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
 
-    BHT_L1_A429_CHAN_NUM_CHECK(chan_num);
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+    
+    BHT_L1_A429_CHAN_NUM_CHK_RTN(chan_num);
 
 	BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end); 
 
@@ -1319,7 +1377,8 @@ bht_L1_a429_tx_chan_stop(bht_L1_device_handle_t device,
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
 
-    BHT_L1_A429_CHAN_NUM_CHECK(chan_num);
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+    BHT_L1_A429_CHAN_NUM_CHK_RTN(chan_num);
 
 	BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end); 
 
@@ -1351,7 +1410,8 @@ bht_L1_a429_tx_chan_err_inject(bht_L1_device_handle_t device,
     bht_L0_device_t *device0 = (bht_L0_device_t*)device;
     bht_L1_a429_cfg_t cfg;
 
-	BHT_L1_A429_CHAN_NUM_CHECK(chan_num);
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+	BHT_L1_A429_CHAN_NUM_CHK_RTN(chan_num);
 
 	BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
 	
@@ -1446,7 +1506,8 @@ bht_L1_a429_chan_dump(bht_L0_device_t *device,
     bht_L1_a429_cb_t *cb = device0->private;
     bht_L1_a429_send_stat_t *send_stat = NULL;
 
-    BHT_L1_A429_CHAN_NUM_CHECK(chan_num);
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+    BHT_L1_A429_CHAN_NUM_CHK_RTN(chan_num);
 
     BHT_L1_READ_MEM32(device0, BHT_A429_LOOP_EN, &loop, 1, result, end); 
     if(BHT_SUCCESS != bht_L1_a429_chan_get_mib(device, chan_num, type, &mib_data))

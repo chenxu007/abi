@@ -6,6 +6,52 @@ extern "C" {
 #endif
 
 #include <bht_L1.h>
+#include <bht_L0.h>
+#include <bht_L0_types.h>
+#include <bht_L1_ring.h>
+
+#define SUPPORT_CONFIG_FROM_XML
+#define SUPPORT_DEFAULT_PARAM_SAVE
+#define BHT_L1_A429_CHAN_MAX               16
+#define BHT_L1_A429_RXP_BUF_MAX            1024
+
+#ifdef SUPPORT_CONFIG_FROM_XML
+#include <mxml.h>
+#define STRING_DEVTYPE_A429 "ARINC429"
+#define STRING_DEVTYPE_1553 "MIL-STD-1553B"
+#define STRING_CHANTYPE_RX "RX"
+#define STRING_CHANTYPE_TX "TX"
+#define STRING_ENABLE "Enable"
+#define STRING_DISABLE "Disable"
+#define STRING_VERIFY_ODD "ODD"
+#define STRING_VERIFY_EVEN "EVEN"
+#define STRING_VERIFY_NONE "NONE"
+#define STRING_RECVMODE_LIST "List"
+#define STRING_RECVMODE_Sample "Sample"
+#define STRING_WORKMODE_OPEN "Open"
+#define STRING_WORKMODE_CLOSE "Close"
+#define STRING_WORKMODE_CLOSEANDCLEARFIFO "CloseAndClearFIFO"
+#define STRING_ERRINJECTTYPE_NONE "ErrInjectTypeNone"
+#define STRING_ERRINJECTTYPE_31BIT "ErrInjectType31Bit"
+#define STRING_ERRINJECTTYPE_33BIT "ErrInjectType33Bit"
+#define STRING_ERRINJECTTYPE_2GAP "ErrInjectType2Gap"
+#define STRING_ERRINJECTTYPE_PARITY "ErrInjectTypeParity"
+#endif
+    
+#define BHT_L1_A429_CHAN_NUM_CHK_RTN(chan_num)\
+	do\
+	{\
+	    if((chan_num > BHT_L1_A429_CHAN_MAX) || (chan_num < 1))\
+            return BHT_ERR_BAD_INPUT;\
+	}while(0);
+#define BHT_L1_A429_CFG(device, able, result, error_label)\
+	do\
+    {\
+        bht_L0_u32 temp_value = able;\
+		if(BHT_SUCCESS != (result = bht_L0_write_mem32(device, BHT_A429_CFG_ENABLE, &temp_value, 1)))\
+            goto error_label;\
+	}while (0);
+
 /*----------------  A429_REG -----------------*/
 
 /***************  通用寄存器******************/
@@ -122,38 +168,9 @@ extern "C" {
 #define BHT_A429_SAVE_DEFAULT_PARAM_CTRL   0x6000
 #define BHT_A429_SAVE_DEFAULT_PARAM_STATUS 0x6004
 
-
-
 #define BHT_A429_FILTER_READ               0x6008
 #define BHT_A429_FILTER_DATA               0x600C
 
-#include <bht_L0.h>
-#include <bht_L0_types.h>
-#include <bht_L1_ring.h>
-
-#define BHT_L1_A429_CHAN_MAX               16
-#define BHT_L1_A429_RXP_BUF_MAX            1024
-
-#define DEVICE_MUTEX_INIT(board_num) \
-    device_cb[board_num].device_mutex = bht_L0_semc_create(1, 1);
-#define DEVICE_MUTEX_LOCK(board_num) \
-    bht_L0_sem_take(device_cb[board_num].device_mutex, BHT_L1_WAIT_FOREVER);
-#define DEVICE_MUTEX_UNLOCK(board_num) \
-    bht_L0_sem_give(device_cb[board_num].device_mutex);
-    
-#define BHT_L1_A429_CHAN_NUM_CHECK(chan_num)\
-	do\
-	{\
-	    if((chan_num > BHT_L1_A429_CHAN_MAX) || (chan_num < 1))\
-            return BHT_ERR_BAD_INPUT;\
-	}while(0);
-#define BHT_L1_A429_CFG(device, able, result, error_label)\
-	do\
-    {\
-        bht_L0_u32 temp_value = able;\
-		if(BHT_SUCCESS != (result = bht_L0_write_mem32(device, BHT_A429_CFG_ENABLE, &temp_value, 1)))\
-            goto error_label;\
-	}while (0);
 
 typedef struct
 {

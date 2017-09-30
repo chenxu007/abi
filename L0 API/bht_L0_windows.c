@@ -24,7 +24,6 @@ modification history
 #include <utils.h>
 
 #include <bht_L0.h>
-#include <bht_L0_device.h>
 #include <bht_L0_config.h>
 #include <stdio.h>
 #define DEBUG
@@ -561,7 +560,7 @@ bht_L0_map_memory(bht_L0_device_t *device,
                 DWORD pci_device_id = 0;
 				WD_PCI_CARD_INFO card_info;
                 WDC_DEVICE_HANDLE hDev;
-                
+                WD_PCI_SLOT pSlot;
 
                 if(NULL != device->lld_hand)
                     break;
@@ -576,7 +575,10 @@ bht_L0_map_memory(bht_L0_device_t *device,
                 else
                     return BHT_ERR_UNSUPPORTED_DEVICE_TYPE;
 
-                hDev = DeviceFindAndOpen(pci_vendor_id, pci_device_id, device_no);
+                if(!DeviceFind(pci_vendor_id, pci_device_id, device_no, &pSlot))
+                    return BHT_ERR_NO_DEVICE;
+
+                hDev = DeviceOpen(&pSlot);
                 if(NULL == hDev)
                     result = BHT_ERR_CANT_OPEN_DEV;
                 else
@@ -1027,7 +1029,7 @@ bht_L0_sem_take(bht_L0_sem sem, bht_L0_s32 timeout_ms)
     if(ret == 0)
         return BHT_SUCCESS;
     else
-        return BHT_FAILURE;
+        return BHT_ERR_SEM_TAKE;
 }
 
 bht_L0_u32 
@@ -1041,7 +1043,7 @@ bht_L0_sem_give(bht_L0_sem sem)
     if(BHT_TRUE == ret)
         return BHT_SUCCESS;
     else
-        return BHT_FAILURE;
+        return BHT_ERR_SEM_GIVE;
 }
 
 bht_L0_u32
@@ -1053,7 +1055,7 @@ bht_L0_sem_destroy(bht_L0_sem sem)
     if(BHT_TRUE == ret)
         return BHT_SUCCESS;
     else
-        return BHT_FAILURE;
+        return BHT_ERR_SEM_DESTROY;
 }
 
 #endif

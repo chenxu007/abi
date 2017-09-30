@@ -5,23 +5,22 @@
 extern "C" {
 #endif
 
-#include <bht_L0_types.h>
 #include <bht_L0.h>
-
-#define SUPPORT_CONFIG_FROM_XML
-#define SUPPORT_DEFAULT_PARAM_SAVE
 
 #define BHT_L1_API_VERSION          0x01000000      /* Version V 1.0.0.0 */
 
 /********* Layer 1 Error Codes (1000 to 1999) *********/
-#define BHT_ERR_DEVICE_NOT_INIT     1000
-#define BHT_ERR_BAD_INPUT			1000		/*!< \brief Bad input parameters. */
-#define BHT_ERR_BUFFER_FULL			1001		/*!< \brief 1553-ARINC PB (CDP/PCB or RXP/PXP) buffer is full */
-#define BHT_ERR_TIMEOUT				1002		/*!< \brief Timeout error. */
-#define BHT_ERR_DEVICEINUSE			1003		/*!< \brief Device in use already */
-#define BHT_ERR_NO_DATA_AVAILABLE   1004		/*!< \brief No Data Available */
-#define BHT_ERR_LOAD_FPGA_FAIL      1005        /* load fpga fail */
-#define BHT_ERR_DEFAULT_PARAM       1006
+#define BHT_ERR_BAD_INPUT			    1000		/*!< \brief Bad input parameters. */
+#define BHT_ERR_OPERATE_ALREADY_DONE    1001
+#define BHT_ERR_DEVICE_NOT_INIT         1010
+#define BHT_ERR_DEVICE_NOT_OPEN         1011
+#define BHT_ERR_BUFFER_FULL			    1021		/*!< \brief 1553-ARINC PB (CDP/PCB or RXP/PXP) buffer is full */
+#define BHT_ERR_TIMEOUT				    1022		/*!< \brief Timeout error. */
+#define BHT_ERR_DEVICEINUSE			    1023		/*!< \brief Device in use already */
+#define BHT_ERR_NO_DATA_AVAILABLE       1024		/*!< \brief No Data Available */
+#define BHT_ERR_LOAD_FPGA_FAIL          1025        /* load fpga fail */
+#define BHT_ERR_DEFAULT_PARAM           1026
+
 
 typedef void* bht_L1_device_handle_t;
 
@@ -51,8 +50,8 @@ typedef enum
 
 typedef enum
 {
-    BHT_L1_A429_PARITY_ODD  = 1,
     BHT_L1_A429_PARITY_EVEN = 0,
+    BHT_L1_A429_PARITY_ODD  = 1,
     BHT_L1_A429_PARITY_NONE = 2,
 }bht_L1_a429_parity_e;
 
@@ -98,12 +97,9 @@ typedef enum
 }bht_L1_a429_err_type_e;
 
 typedef enum {
-    BHT_L1_A429_BAUD_5K = 5000, 
     BHT_L1_A429_BAUD_12_5K = 12500,
     BHT_L1_A429_BAUD_50K = 50000,
     BHT_L1_A429_BAUD_100K = 100000,
-	BHT_L1_A429_BAUD_150K = 150000,
-    BHT_L1_A429_BAUD_200K = 200000
 }bht_L1_a429_baud_rate_e;
 
 typedef enum
@@ -118,20 +114,15 @@ typedef struct
 	bht_L0_u32 err_cnt;                     /* mib - recv or send error word count*/
 }bht_L1_a429_mib_data_t;
 
-typedef union
+typedef struct
 {
-	bht_L0_u32 time[2];
-
-	struct
-	{
-		bht_L0_u32 tm_us : 10;
-		bht_L0_u32 tm_ms : 10;
-		bht_L0_u32 tm_sec : 6;
-		bht_L0_u32 tm_min : 6;
-		bht_L0_u32 tm_hour : 5;
-		bht_L0_u32 tm_day : 9;
-		bht_L0_u32 resv : 18;
-	}tm;
+	bht_L0_u32 tm_us : 10;
+	bht_L0_u32 tm_ms : 10;
+	bht_L0_u32 tm_sec : 6;
+	bht_L0_u32 tm_min : 6;
+	bht_L0_u32 tm_hour : 5;
+	bht_L0_u32 tm_day : 9;
+	bht_L0_u32 resv : 18;
 }bht_L1_a429_irigb_time_t;
 
 typedef struct

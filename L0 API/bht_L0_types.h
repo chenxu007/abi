@@ -57,6 +57,12 @@ typedef enum
     BHT_L0_LOGIC_TYPE_1553 = 1
 }bht_L0_ltype_e;
 
+typedef enum
+{
+    BHT_L0_DEVICE_STATUS_CLOSED = 0,
+    BHT_L0_DEVICE_STATUS_OPENED
+}bht_L0_device_status_e;
+
 typedef struct
 {
     bht_L0_dtype_e dtype;
@@ -87,6 +93,8 @@ typedef struct _bht_L0_device_t_
 	bht_L0_itype_e itype;
 	bht_L0_ltype_e ltype;
 	bht_L0_u32 device_no;
+
+    bht_L0_device_status_e device_status;
 
 	void *lld_hand;
 	bht_L0_sem mutex_sem;

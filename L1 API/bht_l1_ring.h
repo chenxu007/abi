@@ -7,8 +7,6 @@ extern "C" {
 
 /* this ring buffer method can be used in single producer, multi customers */
 
-/* ring buf define */
-//#define RING_BUF_DEFINE(_name, _element)
 struct ring_buf
 {
     unsigned char * base;
@@ -18,15 +16,6 @@ struct ring_buf
     unsigned int item_out;
 };
 
-#if 0
-extern struct ring_buf * ring_buf_init(struct ring_buf *r, unsigned char *base, unsigned int item_size, unsigned int item_cnt);
-
-
-extern unsigned char * ring_buf_put(struct ring_buf *r, unsigned char * item);
-
-extern unsigned int ring_buf_get(struct ring_buf *r, unsigned char * item);
-
-#else
 struct ring_buf * 
 ring_buf_init(unsigned int item_size, 
         unsigned int item_cnt);
@@ -41,14 +30,6 @@ ring_buf_get(struct ring_buf *r,
 
 void 
 ring_buf_free(struct ring_buf * r);
-#endif
-
-/* ring buf initialize */
-//#define RING_BUF_INIT(_name, _element, _size, )
-
-
-
-
 
 #ifdef __cplusplus
 }

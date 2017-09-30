@@ -35,14 +35,6 @@ extern "C" {
 #define BHT_ERR_DEVICEINUSE			1003		/*!< \brief Device in use already */
 #define BHT_ERR_NO_DATA_AVAILABLE   1004		/*!< \brief No Data Available */
 #define BHT_ERR_LOAD_FPGA_FAIL      1005        /* load fpga fail */
-#define BHT_ERR_DEFAULT_PARAM       1006
-
-typedef enum
-{
-    BHT_L1_A429_LINK_STAT_CLOSED = 0,
-    BHT_L1_A429_LINK_STAT_FINDED = 1,
-    BHT_L1_A429_LINK_STAT_OPENED = 2,
-}bht_L1_a429_link_stat_e;
 
 typedef enum
 {
@@ -106,6 +98,19 @@ typedef enum
 
 typedef enum
 {
+    BHT_L1_A429_WORD_BIT32  = 0,
+    BHT_L1_A429_WORD_BIT31  = 1,
+    BHT_L1_A429_WORD_BIT33  = 2,
+}bht_L1_a429_word_bit_e;
+
+typedef enum
+{
+    BHT_L1_A429_GAP_4BIT  = 0,
+    BHT_L1_A429_GAP_2BIT  = 1,
+}bht_L1_a429_gap_e;
+
+typedef enum
+{
     BHT_L1_A429_IRIGB_MODE_SLAVE = 1,
     BHT_L1_A429_IRIGB_MODE_MASTER = 0
 }bht_L1_a429_irigb_mode_e;
@@ -114,7 +119,7 @@ typedef enum
 {
     BHT_L1_A429_RECV_MODE_LIST = 0,
     BHT_L1_A429_RECV_MODE_SAMPLE = 1,
-}bht_L1_a429_recv_mode_e;
+}bht_L1_a429_recv_mod_e;
 
 typedef enum
 {
@@ -157,7 +162,7 @@ typedef struct
 typedef struct
 {
     bht_L0_u32 gather_enable;               /* 0 - disable, 1 - enable */
-    bht_L1_a429_recv_mode_e recv_mode;       /* select list mode or sample mode */
+    bht_L1_a429_recv_mod_e recv_mode;       /* select list mode or sample mode */
     bht_L0_u16 threshold_count;              /* 0-1023 */
     bht_L0_u16 threshold_time;               /* 单位120us */
 }bht_L1_a429_rx_chan_gather_param_t;
@@ -200,20 +205,20 @@ bht_L1_error_to_string(bht_L0_u32 err_num);
  * return BHT_SUCCESS or other error number.
  */
 __declspec(dllexport) bht_L0_u32 
-bht_L1_device_probe(bht_L0_device_t *device);
+bht_L1_device_probe(bht_L0_u32 dev_id);
 
 /* bht_L1_device_remove remove device from driver
  * @param dev_id
  * return BHT_SUCCESS or other error number.
  */
 __declspec(dllexport) bht_L0_u32 
-bht_L1_device_remove(bht_L0_device_t *device);
+bht_L1_device_remove(bht_L0_u32 dev_id);
 
 __declspec(dllexport) bht_L0_u32 
-bht_L1_device_softreset(bht_L0_device_t *device);
+bht_L1_device_softreset(bht_L0_u32 dev_id);
 
 __declspec(dllexport) bht_L0_u32 
-bht_L1_device_version(bht_L0_device_t *device, bht_L0_u32 *version);
+bht_L1_device_version(bht_L0_u32 dev_id, bht_L0_u32 *version);
 
 /**************************a429 general*************************/
 /* bht_L1_a429_default_init ,the a429 device will be softreset,
@@ -222,7 +227,7 @@ bht_L1_device_version(bht_L0_device_t *device, bht_L0_u32 *version);
  * return BHT_SUCCESS or other error number.
  */
 __declspec(dllexport) bht_L0_u32 
-bht_L1_a429_default_init(bht_L0_device_t *device);
+bht_L1_a429_default_init(bht_L0_u32 dev_id);
 
 /* bht_L1_a429_irigb_mode_cfg ,the a429 device irig-b mode config
  * @param dev_id
@@ -230,7 +235,7 @@ bht_L1_a429_default_init(bht_L0_device_t *device);
  * return BHT_SUCCESS or other error number.
  */
 __declspec(dllexport) bht_L0_u32 
-bht_L1_a429_irigb_mode_cfg(bht_L0_device_t *device, 
+bht_L1_a429_irigb_mode_cfg(bht_L0_u32 dev_id, 
         bht_L1_a429_irigb_mode_e mode);
 
 /* bht_L1_a429_irigb_time ,the a429 device irig-b time config
@@ -241,7 +246,7 @@ bht_L1_a429_irigb_mode_cfg(bht_L0_device_t *device,
  * return BHT_SUCCESS or other error number.
  */
 __declspec(dllexport) bht_L0_u32 
-bht_L1_a429_irigb_time(bht_L0_device_t *device, 
+bht_L1_a429_irigb_time(bht_L0_u32 dev_id, 
         bht_L1_a429_irigb_time_t *ti, 
         bht_L1_param_opt_e param_opt);
 
@@ -255,7 +260,7 @@ bht_L1_a429_irigb_time(bht_L0_device_t *device,
  * return BHT_SUCCESS or other error number.
  */
 __declspec(dllexport) bht_L0_u32 
-bht_L1_a429_tx_chan_comm_param(bht_L0_device_t *device, 
+bht_L1_a429_tx_chan_comm_param(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num,
         bht_L1_a429_chan_comm_param_t *comm_param, 
         bht_L1_param_opt_e param_opt);
@@ -270,7 +275,7 @@ bht_L1_a429_tx_chan_comm_param(bht_L0_device_t *device,
  * return BHT_SUCCESS or other error number.
  */   
 __declspec(dllexport) bht_L0_u32 
-bht_L1_a429_tx_chan_inject_param(bht_L0_device_t *device, 
+bht_L1_a429_tx_chan_inject_param(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num, 
         bht_L1_a429_tx_chan_inject_param_t *inject_param, 
         bht_L1_param_opt_e param_opt);
@@ -289,7 +294,7 @@ bht_L1_a429_tx_chan_inject_param(bht_L0_device_t *device,
  * return BHT_SUCCESS or other error number.
  */
 __declspec(dllexport) bht_L0_u32
-bht_L1_a429_tx_chan_period_param(bht_L0_device_t *device,
+bht_L1_a429_tx_chan_period_param(bht_L0_u32 dev_id,
         bht_L0_u32 chan_num,
         bht_L0_u32 * period,
         bht_L1_param_opt_e param_opt);
@@ -302,7 +307,7 @@ bht_L1_a429_tx_chan_period_param(bht_L0_device_t *device,
  * return BHT_SUCCESS or other error number.
  */          
 __declspec(dllexport) bht_L0_u32 
-bht_L1_a429_tx_chan_loop(bht_L0_device_t *device, 
+bht_L1_a429_tx_chan_loop(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num, 
         bht_L0_u32 opt);
 
@@ -327,7 +332,7 @@ bht_L1_a429_tx_chan_loop(bht_L0_device_t *device,
  * return BHT_SUCCESS or other error number.
  */        
 __declspec(dllexport) bht_L0_u32 
-bht_L1_a429_tx_chan_mib_clear(bht_L0_device_t *device, 
+bht_L1_a429_tx_chan_mib_clear(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num);
         
 /* bht_L1_a429_tx_chan_mib_get ,the a429 transmit channel 
@@ -339,7 +344,7 @@ bht_L1_a429_tx_chan_mib_clear(bht_L0_device_t *device,
  * return BHT_SUCCESS or other error number.
  */        
 __declspec(dllexport) bht_L0_u32 
-bht_L1_a429_tx_chan_mib_get(bht_L0_device_t *device, 
+bht_L1_a429_tx_chan_mib_get(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num, 
         bht_L1_a429_mib_data_t *mib_data); 
         
@@ -361,7 +366,7 @@ bht_L1_a429_tx_chan_mib_get(bht_L0_device_t *device,
  * return BHT_SUCCESS or other error number.
  */             
 __declspec(dllexport) bht_L0_u32
-bht_L1_a429_tx_chan_send(bht_L0_device_t *device, 
+bht_L1_a429_tx_chan_send(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num,
         bht_L1_a429_send_opt_e opt,
         bht_L0_u32 data);
@@ -376,7 +381,7 @@ bht_L1_a429_tx_chan_send(bht_L0_device_t *device,
  * return BHT_SUCCESS or other error number.
  */
 __declspec(dllexport) bht_L0_u32 
-bht_L1_a429_rx_chan_comm_param(bht_L0_device_t *device, 
+bht_L1_a429_rx_chan_comm_param(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num,
         bht_L1_a429_chan_comm_param_t *comm_param, 
         bht_L1_param_opt_e param_opt);
@@ -390,7 +395,7 @@ bht_L1_a429_rx_chan_comm_param(bht_L0_device_t *device,
  * return BHT_SUCCESS or other error number.
  */        
 __declspec(dllexport) bht_L0_u32 
-bht_L1_a429_rx_chan_gather_param(bht_L0_device_t *device,
+bht_L1_a429_rx_chan_gather_param(bht_L0_u32 dev_id,
         bht_L0_u32 chan_num,
         bht_L1_a429_rx_chan_gather_param_t *gather_param,
         bht_L1_param_opt_e param_opt);
@@ -403,7 +408,7 @@ bht_L1_a429_rx_chan_gather_param(bht_L0_device_t *device,
  * return BHT_SUCCESS or other error number.
  */  
 __declspec(dllexport) bht_L0_u32 
-bht_L1_a429_rx_chan_filter_cfg(bht_L0_device_t *device, 
+bht_L1_a429_rx_chan_filter_cfg(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num, 
         bht_L1_a429_rx_chan_filter_t *filter,
         bht_L1_param_opt_e param_opt);
@@ -416,7 +421,7 @@ bht_L1_a429_rx_chan_filter_cfg(bht_L0_device_t *device,
  * return BHT_SUCCESS or other error number.
  */        
 __declspec(dllexport) bht_L0_u32 
-bht_L1_a429_rx_chan_mib_clear(bht_L0_device_t *device, 
+bht_L1_a429_rx_chan_mib_clear(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num);
         
 /* bht_L1_a429_rx_chan_mib_get ,the a429 receive channel 
@@ -428,7 +433,7 @@ bht_L1_a429_rx_chan_mib_clear(bht_L0_device_t *device,
  * return BHT_SUCCESS or other error number.
  */        
 __declspec(dllexport) bht_L0_u32 
-bht_L1_a429_rx_chan_mib_get(bht_L0_device_t *device, 
+bht_L1_a429_rx_chan_mib_get(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num, 
         bht_L1_a429_mib_data_t *mib_data); 
 
@@ -445,7 +450,7 @@ bht_L1_a429_rx_chan_mib_get(bht_L0_device_t *device,
  * return BHT_SUCCESS or other error number.
  */         
 __declspec(dllexport) bht_L0_u32 
-bht_L1_a429_rx_chan_recv(bht_L0_device_t *device, 
+bht_L1_a429_rx_chan_recv(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num, 
         bht_L1_a429_rxp_t *rxp_buf, 
         bht_L0_u32 max_rxp, 
@@ -459,7 +464,7 @@ bht_L1_a429_rx_chan_recv(bht_L0_device_t *device,
  * return BHT_SUCCESS or other error number.
  */
 __declspec(dllexport) bht_L0_u32
-bht_L1_a429_chan_dump(bht_L0_device_t *device, 
+bht_L1_a429_chan_dump(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num, 
         bht_L1_chan_type_e type);
 
@@ -470,7 +475,7 @@ bht_L1_a429_chan_dump(bht_L0_device_t *device,
  * return BHT_SUCCESS or other error number.
  */
 __declspec(dllexport) bht_L0_u32
-bht_L1_a429_rx_chan_stat(bht_L0_device_t *device, 
+bht_L1_a429_rx_chan_stat(bht_L0_u32 dev_id, 
         bht_L0_u32 chan_num,
         bht_L0_u32 *recv_num);
 
@@ -479,7 +484,7 @@ bht_L1_a429_rx_chan_stat(bht_L0_device_t *device,
  * return BHT_SUCCESS or other error number.
  */
 __declspec(dllexport) bht_L0_u32 
-bht_L1_device_load(bht_L0_device_t *device);
+bht_L1_device_load(bht_L0_u32 dev_id);
 
 /* bht_L1_bd_fpga_eeprom_read ,read form fpga eeprom 
  * @param dev_id
@@ -488,7 +493,7 @@ bht_L1_device_load(bht_L0_device_t *device);
  * return BHT_SUCCESS or other error number.
  */
 __declspec(dllexport) bht_L0_u32
-bht_L1_bd_fpga_eeprom_read(bht_L0_device_t *device,
+bht_L1_bd_fpga_eeprom_read(bht_L0_u32 dev_id,
         bht_L0_u16 addr,
         bht_L0_u8 *data);
 
@@ -499,16 +504,16 @@ bht_L1_bd_fpga_eeprom_read(bht_L0_device_t *device,
  * return BHT_SUCCESS or other error number.
  */
 __declspec(dllexport) bht_L0_u32
-bht_L1_bd_fpga_eeprom_write(bht_L0_device_t *device,
+bht_L1_bd_fpga_eeprom_write(bht_L0_u32 dev_id,
         bht_L0_u16 addr,
         bht_L0_u8 data);
 
 __declspec(dllexport) bht_L0_u32
-bht_L1_a429_config_from_xml(bht_L0_device_t *device, 
+bht_L1_a429_config_from_xml(bht_L0_u32 dev_id, 
         const char *filename);
 
 __declspec(dllexport) bht_L0_u32
-bht_L1_bd_fpga_eeprom_test(bht_L0_device_t *device);
+bht_L1_bd_fpga_eeprom_test(bht_L0_u32 dev_id);
 
 __declspec(dllexport) bht_L0_u32
 bht_L1_a429_default_param_save(bht_L0_u32 dev_id);

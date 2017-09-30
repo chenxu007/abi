@@ -31,7 +31,6 @@ modification history
 #define BHT_L1_CHANNEL_MAX      16
 
 #define SLAVE_SERIAL
-#define NEW_BOARD
 #define DEBUG
 
 #ifdef DEBUG
@@ -43,71 +42,6 @@ do\
 #else
 #define DEBUG_PRINTF(x)
 #endif
-
-#ifdef WINDOWS_OPS
-#ifdef WINDOWS_BIT64
-#define FPGA_UPDATE_FILE_PATH           "c:\\Windows\\SysWOW64\\"
-#else
-#ifdef NEW_BOARD
-#define FPGA_UPDATE_FILE_PATH           "W:\\ARINC_429_k7_config\\"
-#else
-#define FPGA_UPDATE_FILE_PATH           "W:\\spartan6_config\\"
-#endif
-//#define FPGA_UPDATE_FILE_PATH           "X:\\doc\\fpga_bin\\"
-//#define FPGA_UPDATE_FILE_PATH           "C:\\WINDOWS\\system32\\"
-#endif
-#else
-#define FPGA_UPDATE_FILE_PATH           "/tffs0/"
-#endif
-//#define FPGA_UPDATE_FILE_NAME           "A429_FPGA_1_0.bin"
-#define FPGA_UPDATE_FILE_NAME           "a429_fpga_top.bin"
-//#define FPGA_UPDATE_FILE_NAME           "a429_fpga_top(1553).bin"
-
-#ifdef SUPPORT_CONFIG_FROM_XML
-#include <mxml.h>
-#define STRING_DEVTYPE_A429 "ARINC429"
-#define STRING_DEVTYPE_1553 "MIL-STD-1553B"
-#define STRING_CHANTYPE_RX "RX"
-#define STRING_CHANTYPE_TX "TX"
-#define STRING_ENABLE "Enable"
-#define STRING_DISABLE "Disable"
-#define STRING_VERIFY_ODD "ODD"
-#define STRING_VERIFY_EVEN "EVEN"
-#define STRING_VERIFY_NONE "NONE"
-#define STRING_RECVMODE_LIST "List"
-#define STRING_RECVMODE_Sample "Sample"
-#define STRING_WORKMODE_OPEN "Open"
-#define STRING_WORKMODE_CLOSE "Close"
-#define STRING_WORKMODE_CLOSEANDCLEARFIFO "CloseAndClearFIFO"
-#define STRING_ERRINJECTTYPE_NONE "ErrInjectTypeNone"
-#define STRING_ERRINJECTTYPE_31BIT "ErrInjectType31Bit"
-#define STRING_ERRINJECTTYPE_33BIT "ErrInjectType33Bit"
-#define STRING_ERRINJECTTYPE_2GAP "ErrInjectType2Gap"
-#define STRING_ERRINJECTTYPE_PARITY "ErrInjectTypeParity"
-
-#endif
-
-typedef struct
-{
-    bht_L0_dtype_e dtype;
-    bht_L0_bool is_scaned;
-    bht_L0_u32 tot_num;
-}bht_L1_device_scan_t;
-
-static bht_L1_device_scan_t device_scan_table[BHT_L0_DEVICE_TYPE_MAX] = {0};
-
-//static void 
-//device_scan_table_init(void)
-//{
-//    bht_L0_u32 dtype;
-
-//    for(dtype = 0; dtype < BHT_L1_DEVICE_MAX; dtype++)
-//    {
-//        device_scan_table[dtype].dtype = dtype;
-//        device_scan_table[dtype].is_scaned = BHT_L0_FALSE;
-//        device_scan_table[dtype].tot_num = 0;
-//    } 
-//}
 
 #ifdef SLAVE_SERIAL
 bht_L0_u32 
@@ -211,17 +145,16 @@ bht_L1_device_load(bht_L0_device_t *device,
 
 #else
 bht_L0_u32 
-bht_L1_device_load(bht_L0_device_t *device,
+bht_L1_device_load(bht_L1_device_handle_t device,
         const char *filename)
 {
     int fd;
     bht_L0_s32 len, idx, value;
-    bht_L0_itype_e itype = bht_L0_dtypeinfo_items[device->dtype].itype;
-    bht_L0_ltype_e ltype = bht_L0_dtypeinfo_items[device->dtype].ltype;
     bht_L0_u32 result = BHT_SUCCESS;
+    bht_L0_device_t *device0 = device;
     bht_L0_u8 buffer[512];
 
-    if(BHT_L0_INTERFACE_TYPE_PCI == itype)
+    if(BHT_L0_INTERFACE_TYPE_PCI == device0->itype)
     {
      
         if(BHT_SUCCESS != (result = bht_L0_read_setupmem32(device, PLX9056_CNTRL, &value, 1)))
@@ -372,6 +305,9 @@ bht_L1_device_open(bht_L0_dtype_e dtype,
     }
 
     DEBUG_PRINTF("open a device handle %p\n", device0);
+
+    device0->device_status = BHT_L0_DEVICE_STATUS_OPENED;
+    
     *device = device0;
     return result;
     
@@ -387,9 +323,9 @@ bht_L1_device_close(bht_L1_device_handle_t device)
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t *)device;
 
-    DEBUG_PRINTF("close a device handle %p\n", device0);
-    if(NULL == device0)
-        return BHT_ERR_BAD_INPUT;           
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+
+    BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, close_err);
 
     if(BHT_L0_LOGIC_TYPE_A429 == device0->ltype)
     {
@@ -402,6 +338,8 @@ bht_L1_device_close(bht_L1_device_handle_t device)
         result = BHT_ERR_UNSUPPORTED_DTYPE;
         goto close_err;
     }
+
+    device0->device_status = BHT_L0_DEVICE_STATUS_CLOSED;
 
     DEBUG_PRINTF("start unmap\n");
     if(BHT_SUCCESS != (result = bht_L0_unmap_memory(device0)))
@@ -422,9 +360,6 @@ bht_L1_device_reset(bht_L1_device_handle_t device)
 {
     bht_L0_device_t *device0 = (bht_L0_device_t *)device;
 
-    if(NULL == device0)
-        return BHT_ERR_DEVICE_NOT_INIT;     
-
     if(NULL != device0->reset)
         return device0->reset(device0);
     else
@@ -438,8 +373,9 @@ bht_L1_device_logic_version(bht_L1_device_handle_t device,
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t *)device;
 
-    if(NULL == device0)
-        return BHT_ERR_BAD_INPUT;
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+
+    BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, release_sem);
 
     if(BHT_L0_LOGIC_TYPE_A429 == device0->ltype)
     {
@@ -450,7 +386,9 @@ bht_L1_device_logic_version(bht_L1_device_handle_t device,
     {
         result = BHT_ERR_UNSUPPORTED_DTYPE;
     }
-    
+release_sem:
+    BHT_L1_SEM_GIVE(device0->mutex_sem, result, end);
+end:
     return result;
 }
 
@@ -461,9 +399,13 @@ bht_L1_device_hw_version(bht_L1_device_handle_t device,
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t *)device;
 
-    if(NULL == device0)
-        return BHT_ERR_BAD_INPUT;
-    
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+
+    BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
+
+release_sem:
+    BHT_L1_SEM_GIVE(device0->mutex_sem, result, end);
+end:
     return result;
 }
 
@@ -480,8 +422,9 @@ bht_L1_device_config_from_xml(bht_L1_device_handle_t device,
 	mxml_node_t *Device, *Channel, *Param, *ErrInject, *ReceiveMode;
     char * attr;
 
-    if(NULL == device0)
-        return BHT_ERR_BAD_INPUT;
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+
+    BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
     
     if ((NULL == filename) || ((fp = fopen(filename, "rb")) == NULL))
         return BHT_FAILURE;
@@ -492,7 +435,10 @@ bht_L1_device_config_from_xml(bht_L1_device_handle_t device,
     fclose(fp);
 
     if(!tree)
-        return BHT_FAILURE;
+    {
+        result = BHT_FAILURE;
+        goto release_sem;
+    }
 
     //phase tree and config the device
     Device = tree;
@@ -688,6 +634,9 @@ bht_L1_device_config_from_xml(bht_L1_device_handle_t device,
     
 config_failed:
     mxmlDelete(tree);
+release_sem:
+    BHT_L1_SEM_GIVE(device0->mutex_sem, result, end);
+end:
     return result;
 }
 #endif
@@ -698,27 +647,29 @@ bht_L1_device_default_param_save(bht_L1_device_handle_t device)
     bht_L0_u32 result;
     bht_L0_u32 value;
     bht_L0_u32 count = 0;
-    
+    bht_L0_device_t *device0 = (bht_L0_device_t *)device;
+
+    BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
+
+    BHT_L1_SEM_TAKE(device0->mutex_sem, BHT_L1_WAIT_FOREVER, result, end);
+
     value = BIT0;
-    if(BHT_SUCCESS != (result = bht_L0_write_mem32(device, BHT_A429_SAVE_DEFAULT_PARAM_CTRL, &value, 1)))
-    {
-        printf("write SAVE_DEFAULT_PARAM_CTRL failed\n");
-        return result;
-    }
+    BHT_L1_WRITE_MEM32(device0, BHT_A429_SAVE_DEFAULT_PARAM_CTRL, &value, 1, result, release_sem);
 
     printf("saving...\n\ntime escape %5d ms", count);
     do
     {
         bht_L0_msleep(10);
+
         printf("\b\b\b\b\b\b\b\b%5d ms", (count += 10));
-        if(BHT_SUCCESS != (result = bht_L0_read_mem32(device, BHT_A429_SAVE_DEFAULT_PARAM_STATUS, &value, 1)))
-        {
-            printf("read SAVE_DEFAULT_PARAM_STATUS failed\n");
-            return result;
-        }
+        
+        BHT_L1_READ_MEM32(device0, BHT_A429_SAVE_DEFAULT_PARAM_STATUS, &value, 1, result, release_sem);
     }while(0 != value);
     printf("\n");
 
+release_sem:
+    BHT_L1_SEM_GIVE(device0->mutex_sem, result, end);
+end:
     return result;
 }
 
