@@ -417,10 +417,10 @@ bht_L1_device_config_from_xml(bht_L1_device_handle_t device,
     bht_L0_u32 result = BHT_SUCCESS;
     bht_L0_device_t *device0 = (bht_L0_device_t *)device;
     FILE * fp = NULL;
-    bht_L0_u32 ChannelCount, DevID;
+    bht_L0_u32 DevID;
     mxml_node_t	*tree, *node;
 	mxml_node_t *Device, *Channel, *Param, *ErrInject, *ReceiveMode;
-    char * attr;
+    char *attr;
 
     BHT_L1_DEVICE_STATUS_CHK_RTN(device0);
 
@@ -459,7 +459,6 @@ bht_L1_device_config_from_xml(bht_L1_device_handle_t device,
                 bht_L1_a429_baud_rate_e baud;
                 bht_L1_a429_parity_e parity;
                 bht_L1_a429_err_type_e err_type;
-                bht_L1_a429_chan_stat_e chan_status;
                 bht_L1_a429_send_mode_e send_mode;
                 bht_L1_able_e filter_enable;
                 bht_L1_a429_recv_mode_e recv_mode;
